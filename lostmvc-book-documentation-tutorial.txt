@@ -1,0 +1,119 @@
+= Developing web applications with ease by using LostMVC on NaviServer
+:doctype: book
+:toc:
+:toclevels: 4
+:Author: Clinciu Andrei
+:Email: <info@andreiclinciu.net>
+:Date: 2015
+:numbered:
+:Website: http://unitedbrainpower.com
+
+Copyright (C) 2015 Clinciu Andrei George - United Brain Power
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the section entitled "GNU
+Free Documentation License".
+For more information see (http://www.gnu.org/licenses/fdl.html)
+
+[preface]
+== The world with software
+
+
+== Starting it up
+Before we dive into the beautiful world of programming there are some prequistories.
+You need to work on Linux, as at this time *LostMVS* wasn't tested on Windows at all. 
+If you manage to compile and install *NaviServer* on windows yourself, you're good to go!
+So fire up a +Virtual Box+ and install your favourite +Linux+ distribution, 
+for development I'd suggest Linux Mint and for production Debian. But it's up to you.
+
+To follow this book you need to have a fair understanding of *Tcl*, *Linux*, *SQL*,
+*HTML*, *CSS* and a tiny bit of *JavaScript* including the *jQuery* framework and the *Bootstrap* framework.
+
+When I say fair you don't need to be an expert, but you have to know how  SQL works for example or how to 
+build a simple static HTML website.
+
+
+=== NaviServer setup
+TODO setup NaviServer (automatically and generate script!)
+
+==== nsdbi 
+
+=== Next Scripting Framework
+NaviServer runs best with XOTCL or nx/nsf better known as Next Scripting framework.
+LostMVC was rewritten (easily though!) from TclOO to nx 2.0.
+It's necessary that you understand nx and are able to use it.
+
+We won't teach you nx here, but you can go through the nice tutorial provided here:
+https://next-scripting.org/xowiki/docs/nx/tutorial/index1
+
+The installation is fairly simple
+
+
+=== LostMVC setup
+TODO Download LostMVC from http://unitedbrainpower.com 
+After you've downloaded it extract it under /opt/ns/www/lostmvc 
+
+Now in the Config folder you have the lostmvc configuration file 
+ubp-config which you can open up and read through if you like following the NaviServer documentation.
+
+TODO You can install LostMVC using the commandline tool located in in +tcl/+, we'll presume you're in /opt/ns/www
+[source,bash]
+--------------------------------------------------
+sudo ./lostmvc/tcl/install.tcl install_lostmvc
+
+--------------------------------------------------
+
+This simply copies the  lostmvc/tcl/* to /opt/ns/tcl/lostmvc/*, it sets up the ubp-config.conf.
+
+
+=== Generating websites using the command-line tool
+To create your first application you just need to type the following:
+[source,bash]
+--------------------------------------------------
+./lostmvc/tcl/install.tcl install mywebsite 
+--------------------------------------------------
+
+The +install.tcl+ file provides some easy to use functions which help you in creating apps.
+Like model creation, url creation for Module/Controller/View
+Crud, rbac and module installation.
+It uses a web file called +lostmvcli.adp+ to talk to the webserver and can  be accessed only from 127.0.0.1.
+In the future this can change and it is however advised to use the +generator.adp+ 
+file which you can copy anywhere you like, open it up and change the password first though.
+
+First we need to  setup our local hostname to +mywebsite+ so when we 
+
+=== 
+
+== How's your HTML ?
+
+
+== Do I really need a MVC?
+
+[source,tcl,numbers]
+--------------------------------------------------
+nx::Class create Stack {
+
+   #
+   # Stack of Things
+   #
+
+   :variable things {}
+
+   :public method push {thing} {
+      set :things [linsert ${:things} 0 $thing]
+      return $thing
+   }
+
+   :public method pop {} {
+      set top [lindex ${:things} 0]
+      set :things [lrange ${:things} 1 end]
+      return $top
+   }
+}
+--------------------------------------------------
+
+
+
