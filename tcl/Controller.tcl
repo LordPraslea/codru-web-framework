@@ -303,13 +303,14 @@ nx::Class create Controller {
 		return $actions
 	}
 
+	#	puts "Language [msgcat::mclocale]"
+	#TODO before/preAction identifies filters and or access rules (verify if he may access the page.. etc)
+	#TODO this could be done with ns_register_filter wheb method URL script ?args?
+	#but let's do it 
+	#verify if user has access
+	#DO this here but this could also be found in the DATABASE
 	:public method preAction {{action ""}} {
-		#	puts "Language [msgcat::mclocale]"
-		#TODO before/preAction identifies filters and or access rules (verify if he may access the page.. etc)
-		#TODO this could be done with ns_register_filter wheb method URL script ?args?
-		#but let's do it 
-		#verify if user has access
-		#DO this here but this could also be found in the DATABASE
+
 		set access [my accessRules]	
 		#	set url [ns_conn url]
 		#	set action [string tolower [lindex [join [split $url /]] 1]]
@@ -317,7 +318,7 @@ nx::Class create Controller {
 		set ok 0
 		set verifyrbac 0
 
-	#Role Based Access Control
+		#Role Based Access Control
 	# database = sql database
 	# file = flat file (where is it located..?)
 	# none/off/no = not enabled
