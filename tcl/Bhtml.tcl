@@ -438,7 +438,7 @@ nx::Class create bhtml {
 	}
 
 	:method rowPerRowTableData {} {
-		upvar data data
+		:upvar data data
 		set rowOptions [set type ""]
 		foreach row $data {
 		#Parse the args to view if they contain any hidden settings..
@@ -464,7 +464,7 @@ nx::Class create bhtml {
 	}
 
 	:method perItemTableData {} {
-		upvar data data length length
+		:upvar data data length length
 	#Just a big list of data, manualy split rows
 		set count 1; set row ""
 		foreach item $data {
@@ -577,7 +577,7 @@ nx::Class create bhtml {
 	}
 
 	:method inputGroupAddon {} {
-		upvar right right left left
+		:upvar right right left left
 
 		if {$left !=""} {
 			set :leftSpan [:tag -htmlOptions [list class input-group-addon] span $left]
@@ -689,7 +689,7 @@ nx::Class create bhtml {
 	}
 
 	:method selectOptGroup {} {
-		upvar name name data data
+		:upvar name name data data
 		foreach {group options} $data {
 			foreach {name val} $options {
 				dict set optOptions value $val
@@ -877,7 +877,7 @@ nx::Class create bhtml {
 	}
 
 	:method imgGenerateHtml {} {
-		foreach refVar {lazy src htmlOptions img} { upvar $refVar $refVar }
+		foreach refVar {lazy src htmlOptions img} { :upvar $refVar $refVar }
 
 		#Lazy loader for images
 		if {$lazy} {
@@ -1027,7 +1027,7 @@ nx::Class create bhtml {
 	}
 
 	:method navbarHeaderHtml {} {
-		foreach refVar {brand brandUrl data-target} { upvar $refVar $refVar }
+		foreach refVar {brand brandUrl data-target} { :upvar $refVar $refVar }
 
 		set sr {
 			<span class="sr-only">Toggle navigation</span>
@@ -1046,7 +1046,7 @@ nx::Class create bhtml {
 	}
 
 	:method navbarCollapseWithData {} {
-		foreach refVar {data active extra navbarclass navbarclass2 data-target} { upvar $refVar $refVar }
+		foreach refVar {data active extra navbarclass navbarclass2 data-target} { :upvar $refVar $refVar }
 
 		set links [my makeList -activeli $active -htmlOptions [list class "nav navbar-nav $navbarclass"] $data] ; #"
 		if {$extra != ""} {
@@ -1192,7 +1192,7 @@ nx::Class create bhtml {
 
 	:method panelHeaderAndFooter {} {
 		#TODO any other heading h1-h6
-		upvar h h f f paneltitle paneltitle
+		:upvar h h f f paneltitle paneltitle
 		if {$h != ""} {
 			set paneltitle [my htmltag -htmlOptions [list class panel-title] h3 $h]
 			set :headingHtml [my htmltag -htmlOptions [list class "panel-heading"] div $paneltitle] 
@@ -1277,7 +1277,7 @@ nx::Class create bhtml {
 	}
 	
 	:method modalInitSettings {} {
-		foreach refVar {close button class id zindex htype htmlOptions} { upvar $refVar $refVar }
+		foreach refVar {close button class id zindex htype htmlOptions} { :upvar $refVar $refVar }
 
 		if {$close ==""} {
 			set close [mc Close]
@@ -1297,7 +1297,7 @@ nx::Class create bhtml {
 	}
 
 	:method modalHeader {} {
-		upvar title title htype htype
+		:upvar title title htype htype
 		set closeBtn [my button -options [list data-dismiss modal aria-hidden true class close] "&times;"]
 		set modalTitle [my htmltag -htmlOptions [list class "modal-title"] h4 $title]
 		set modalHeader [my htmltag -htmlOptions [list class "modal-header $htype"] div "$closeBtn $modalTitle"] ; #"
@@ -1305,7 +1305,7 @@ nx::Class create bhtml {
 	}
 
 	:method modalFooter {} {
-		upvar close close ftype ftype f f
+		:upvar close close ftype ftype f f
 		set modalFooter ""
 		if {$f != ""} {
 			append f [my button -options [list data-dismiss modal] $close   ]	
@@ -1348,7 +1348,7 @@ nx::Class create bhtml {
 
 	#Data contains settings and info for each tab
 	:method processTabsAndNavigationHtml {} {
-		upvar tabs tabs navList navList data data rand rand
+		:upvar tabs tabs navList navList data data rand rand
 		set first 1
 		foreach tab $data {
 			ns_parseargs {{-id ""} -- tabName tabData} $tab
@@ -1392,7 +1392,7 @@ nx::Class create bhtml {
 	}
 
 	:method processAccordionData {} {
-		foreach refVar {data  accordionID rand in first type } { upvar $refVar $refVar }
+		foreach refVar {data  accordionID rand in first type } { :upvar $refVar $refVar }
 
 		foreach panel $data {
 			ns_parseargs {{-id ""} -- panelName panelData} $panel
@@ -1471,7 +1471,7 @@ nx::Class create bhtml {
 	}
 
 	:method processCarouselItems {} {
-		foreach refVar {data id active carouselItems indicators i } { upvar $refVar $refVar }
+		foreach refVar {data id active carouselItems indicators i } { :upvar $refVar $refVar }
 
 		foreach panel $data {
 			ns_parseargs { slideImg slideName } $panel
@@ -1488,7 +1488,7 @@ nx::Class create bhtml {
 	}
 	
 	:method processCarouselHtml {} {
-		foreach refVar {carouselItems indicators id} { upvar $refVar $refVar }
+		foreach refVar {carouselItems indicators id} { :upvar $refVar $refVar }
 		#Contains all Carousel items "
 		set inner [my htmltag -htmlOptions [list class "carousel-inner"] div $carouselItems ]
 
