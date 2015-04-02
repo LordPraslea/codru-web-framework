@@ -27,7 +27,7 @@ nx::Class create Controller {
 	}
 
 	:public method render {{-controller ""} {-site ""} -- view args} {
-		upvar pageinfo pageinfo
+		:upvar pageinfo pageinfo
 		set genbhtml 1
 		set vars ""
 
@@ -47,19 +47,19 @@ nx::Class create Controller {
 	}
 
 	:method renderArgs {} {
-		foreach refVar {args vars genbhtml} { upvar $refVar $refVar }
+		foreach refVar {args vars genbhtml} { :upvar $refVar $refVar }
 		foreach {var value} $args {
 			switch $var {
 				bhtml { set genbhtml  0 }
 			}
-			upvar $var $var
+			:upvar $var $var
 			set $var $value
 			lappend vars $$var
 		}
 	}
 
 	:method generateBhtml {} {
-		upvar 1 bhtml bhtml genbhtml genbhtml
+		:upvar 1 bhtml bhtml genbhtml genbhtml
 		if {$genbhtml} {
 			set bhtml [bhtml new ]
 		}
@@ -71,7 +71,7 @@ nx::Class create Controller {
 	# then look in the general module views for generator
 	# If all else fails, use layout.adp
 	:method renderLayout {} {
-		foreach refVar {page pageinfo bhtml} { upvar $refVar $refVar }
+		foreach refVar {page pageinfo bhtml} { :upvar $refVar $refVar }
 		set currentFile [file dir [lindex [ns_adp_info] 0]]
 		set newLayoutFile [file join $currentFile ../views/${:layout}.adp] 
 
@@ -89,7 +89,7 @@ nx::Class create Controller {
 	#TODO find someother way to end execution..
 	:public method simpleRender  {page} {
 
-		upvar pageinfo pageinfo
+		:upvar pageinfo pageinfo
 		dict set pageinfo breadcrumb  [list [mc Home]]
 		set bhtml [bhtml new]
 	
@@ -99,7 +99,7 @@ nx::Class create Controller {
 	}
 
 	:public method errorPage  {heading body} {
-		upvar pageinfo pageinfo
+		:upvar pageinfo pageinfo
 		dict set pageinfo breadcrumb  [list [mc Home] $heading]
 
 		set bhtml [bhtml new]
@@ -126,8 +126,10 @@ nx::Class create Controller {
 			set link [ns_set get $n Referer]
 		} else { set link [ns_conn location] }
 		set goback [$bhtml link -simple 1 "[$bhtml fa fa-arrow-circle-left fa-2x] Or you can also go back from where you came from?" $link]
+				set rnd [rnd 1 6]	
+			set hamster [$bhtml img /img/404/hamster404_${rnd}.jpg]
 
-		set jumbotron [$bhtml jumbotron [msgcat::mc t:404notfound] [msgcat::mc p:404notfound  [concat $extra <p> $goback </p>]]] 
+		set jumbotron [$bhtml jumbotron [msgcat::mc t:404notfound] "$hamster [msgcat::mc p:404notfound  [concat $extra <p> $goback </p>]]"] 
 		#"Couldn't find the thing you were searching for. %s"
 		my simpleRender $jumbotron
 		$bhtml destroy
@@ -244,7 +246,7 @@ nx::Class create Controller {
 	}
 
 	:method determineAndRunUrlAction {} {
-		upvar action action
+		:upvar action action
 		set actionmethods [:info lookup methods action*]
 		if {[set loc [lsearch -nocase $actionmethods *$action]] != -1} {
 		#Catching errors outside the scope, errors inside an view are shown anyway:)
@@ -256,7 +258,7 @@ nx::Class create Controller {
 					my errorPage [msgcat::mc  "Something went a little wrong.."] [msgcat::mc  "Error: %s Details: %s on line %d" \
 					"<b>$result<b>" "<pre>[dict get $options -errorinfo]</pre><br>" [dict get $options -errorline] ]
 				} else {
-					#TODO log error somewhere!
+					#TODO encode error and show it encoded.. so the user sends it to you 
 					my errorPage [msgcat::mc  "A little error has occured"] [msgcat::mc  "Error: %s " \
 					"<b>$result<b>"  ]
 				ns_log Error "Error url [ns_conn url] $options $result "
@@ -281,8 +283,8 @@ nx::Class create Controller {
 	}
 
 	:method forceMultiLingual {} {
-		foreach refVar {urlv _urlLang url} { upvar $refVar $refVar }
-	#TODO make setting forceMultilingual, if it's true then redirect to multilingual page:)
+		foreach refVar {urlv _urlLang url} { :upvar $refVar $refVar }
+		#TODO make setting forceMultilingual, if it's true then redirect to multilingual page:)
 		set forceMultilingual 1
 		if {$_urlLang eq "na" && $forceMultilingual && $urlv ne "index.adp"} {
 			set query ""
@@ -319,55 +321,9 @@ nx::Class create Controller {
 		set ok 0
 		set verifyrbac 0
 
-		#Role Based Access Control
-	# database = sql database
-	# file = flat file (where is it located..?)
-	# none/off/no = not enabled
-		if {[dict exists $access rbac]} {
-			set rbacvalue [string trim [dict get $access rbac]]
-			#TODO differentiate between flat file and/or db.. first db
-			switch $rbacvalue {
-				database { set verifyrbac 1 }
-				file { set verifyrbac 1}
-				default { set verifyrbac 0 }
-			}
-		} 
-		if {$verifyrbac} {
-			set ok	[my verifyRoles $action]
-		} else {
-		#TODO allow/deny.. for now everything that's not in the list isn't allowed
-		#TODO extendable selection from database..
-			if {[dict exists $access views $action allow]} {
-				set view [dict get $access views $action allow]
+		:preActionRbacType
+		:preActionVerifyAccess
 
-				if {[dict exists $view users]} {
-					set users [dict get $view users]	
-					foreach u $users {
-						switch $u {
-							* { set ok 1; break }
-							@ { set ok  [my verifyAuthenticated] ; break }
-							default { if {[set ok [my verifyUser $u]]} { break } }
-						}
-					}
-				}
-				#Roles are verified after the users, since it may well be possibile that 
-				#the user isn't logged in:) 
-				#If roles exist, reset OK to 0 (untill validated!)
-				#TODO Roles from database, save them in session..? or cache them
-				##TODO move them to different function..
-				if {[dict exists $access views $action roles]} {
-					set ok 0
-					set roles [dict get $access views $action roles]	
-					foreach r $roles {
-					#verify if user has this role..
-						if {[set ok [my verifyRole $r]]} { break }	
-					}
-					#Not authorized, show error for the moment
-					#redirect to login later :)
-				}
-			}
-		}
-			#	puts "OK is $ok access is $access action $action get view [dict get $access views $action]"
 		if {!$ok} { 
 		#FOr login we just redirect him, if unauthorized or no rule exists.. or just the view has no settings.. tell him
 			my errorPage [msgcat::mc t:unauthorized] [msgcat::mc  p:unauthorized]
@@ -378,13 +334,79 @@ nx::Class create Controller {
 		return 1	
 	}
 
+	#Role Based Access Control
+	:method preActionRbacType {} {
+		:upvar access access verifyrbac verifyrbac 
+		if {[dict exists $access rbac]} {
+			set rbacvalue [string trim [dict get $access rbac]]
+			#TODO differentiate between flat file and/or db.. first db
+			switch $rbacvalue {
+				database { set verifyrbac 1 }
+				file { set verifyrbac 1}
+				default { set verifyrbac 0 }
+			}
+		} 
+		
+	}	
+	
+	#Default is to deny everything that's not in thelist
+	# User type verification
+	#	* means everyone 
+	#	@ means logged in/authenticated users
+	#	anything else (default) means we verify the user 
+
+	:method preActionVerifyAccess {} {
+		foreach refVar {verifyrbac action access ok} { :upvar $refVar $refVar }
+		if {$verifyrbac} {
+			set ok	[my verifyRoles $action]
+		} else {
+			if {[dict exists $access views $action allow]} {
+				set view [dict get $access views $action allow]
+
+				:preActionVerifyUserAccess
+				:preActionVerifyRoleAccess
+			}
+		}
+	}
+	
+	:method preActionVerifyUserAccess {} {
+		foreach refVar {view ok} { :upvar $refVar $refVar }
+
+		if {[dict exists $view users]} {
+			set users [dict get $view users]	
+			foreach u $users {
+				switch $u {
+					* { set ok 1; break }
+					@ { set ok  [my verifyAuthenticated] ; break }
+					default { if {[set ok [my verifyUser $u]]} { break } }
+				}
+			}
+		}
+	}
+
+	#Roles are verified after the users, since it may well be possibile that 
+	#	the user isn't logged in:) 
+	#	If roles exist, reset OK to 0 (untill validated!)
+	:method preActionVerifyRoleAccess {} {
+		foreach refVar {access action} { :upvar $refVar $refVar }
+
+		if {[dict exists $access views $action roles]} {
+			set ok 0
+			set roles [dict get $access views $action roles]	
+			foreach r $roles {
+				#verify if user has this role..
+				if {[set ok [my verifyRole $r]]} { break }	
+			}
+		}
+	}
+
 	:public	method postAction {} {
 	#actions to do after the action finished..	
 	}
 
 	:public method urlKeys {url} {
 		foreach {k v} [join [split $url /]] {
-			upvar $k $k
+			:upvar $k $k
 			set $k $v
 		}
 	}
@@ -393,27 +415,44 @@ nx::Class create Controller {
 	#	RBAC Roles
 	#####################
 
-	:public	method getModule {} {
-		#Gets the module needed for RBAC
-		set module ""
-		#	puts "Role Controller is adp info [ns_adp_info]"
-		set v [split [ns_adp_info] /]
-		if {[set loc [lsearch -nocase $v modules]] != -1} {
-			set module [string tolower [lindex $v $loc+1]]
-		}
-		return $module
-	}
-
+	#Searching in the database for roles and verifying if they exist 
+	#for the current rbac, or a "rbac" chosen by the developer
+	# if usertype = authenticated and access = 0
+	# 	show you're not allowed..
+	# else if access => 1  allowed
 	:public method loadRoles {rbac {returnLogin 1}} {
-		#Searching in the database for roles and verifying if they exist 
-		#for the current rbac, or a "rbac" chosen by the user
 		set r [RoleItem new]
 		set access 0
 		#Cache time 10 minutes.. not too much can change in that time for the roles and/or auth stuff..
 		set time 600
-		#Search for the "id" of the current module.controller.view 
-		#	set action_id [dict get [$r search -where [list name $rbac ] "id" ] values]
-		#puts "Roles $rbac"
+		set usertype guest ; #Default UserType
+
+		:loadRolesData 
+		:loadRolesGenealogy
+		:loadRolesVerifyAuthenticatedRbac
+
+		#Get RBAC for authenticated and/or guests.. and verify it	
+		#set authguestvalues [dbi_rows -db [$r db get]  -bind $pr_stmt $select_recursive_rbac ]
+		foreach $rbacGenealogyColumns $rbacGenealogyValues {
+			if {$parent_name == $usertype} { incr access 1 ; break}
+		}	
+
+		#If usertype = guest and access = 0 #Redirect to login page
+		if {$usertype =="guest" && $access == 0} {
+			if {$returnLogin} {
+				my returnLogin
+			}
+		} 
+
+		return $access
+	}
+	
+		
+	#Search for the "id" of the current module.controller.view 
+	# Load the guest and authenticated id (can be different in each application!)
+	:method loadRolesData {} {
+		foreach refVar {data guestid authid rbac time action_id r} { :upvar $refVar $refVar }
+
 		set data [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.action_id.$rbac  { 
 			$r search -where [list name $rbac ] "id"  
 		}]
@@ -423,23 +462,21 @@ nx::Class create Controller {
 		set authid [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.authid  { 
 			dict get  [$r search -where [list name "authenticated" ] "id" ] values
 		}]
-		#easier to do $r findByCond [list name "authenticated]
-		#$r get id
-		#return 1
+
 		if {$data == ""} { 
-		#TODO what happens when nothing exists in DB for this view?
-		#Go along and see if other accessRules exist? or forbid the client?
-			puts "/!\\ WARNING /!\\ : No RBAC data found for \"$rbac\"!"
-			#Allow client
-			return 0
+		#No data? Disallow!
+			ns_log Warning "/!\\ WARNING /!\\ : No RBAC data found for \"$rbac\"!"
+			return -level 2 0
 		} else {
 			set action_id [dict get $data values]
-		#	puts "LoadRoles  $rbac data $action_id"
 		}
+		puts "Done in function loadRolesData"
+	} 
 
-		#TODO CACHE
-		#Search all the possible descendants/parents of this current child
-		# within the RBAC
+	#Search all the possible descendants/parents of this current child # within the RBAC
+	:method loadRolesGenealogy {} {
+		foreach refVar {action_id r  cache time rbacGenealogyColumns rbacGenealogyValues} { :upvar $refVar $refVar }
+
 		set select_recursive_rbac		{
 			WITH RECURSIVE nodes(parent_id,parent_name,child_id,child_name,path,depth) AS (
 			SELECT ric.parent_id, r1.name,
@@ -464,63 +501,51 @@ nx::Class create Controller {
 		#Contains ALL parent/children history
 		#even authenticated / guest ones!
 		set cache [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.recursive.$action_id  { 
-			lappend return [dbi_rows -db [$r db get] -columns reccolumns -bind $pr_stmt $select_recursive_rbac ]
-			lappend return $reccolumns
+			lappend return [dbi_rows -db [$r db get] -columns rbacGenealogyColumns -bind $pr_stmt $select_recursive_rbac ]
+			lappend return $rbacGenealogyColumns
 			return $return 
 		}]
-			lassign  $cache  recvalues reccolumns
-					
-			
-		unset pr_stmt
+
+		lassign  $cache  rbacGenealogyValues rbacGenealogyColumns
+
+		puts "Done in function loadRolesGenealogy"
+	}
+
+	:method loadRolesVerifyAuthenticatedRbac {} {
+		foreach refVar {action_id access usertype rbacGenealogyColumns rbacGenealogyValues} { :upvar $refVar $refVar }
 
 		#Select all the role assignments an user has
-		#
 		if {[ns_session contains userid]} {
-			set userid [ns_session get userid] 
-		#	dict set pr_stmt action_id $authid 
-
-			set sql_select "
-			SELECT ri.id,ri.name
-			FROM role_assignment ra, role_item ri
-			WHERE ra.item_id=ri.id 
-			AND user_id=:user_id"
-			dict set pr_stmt user_id $userid 
-			set uservalues  [dbi_rows -db [$r db get] -columns usercolumns -bind $pr_stmt $sql_select ]
+			set uservalues	[:loadRolesForUser [ns_session get userid]]
 
 			#Verify roles for logged in user
 			if {[lsearch $uservalues $action_id] != -1} { incr access 1 }
-			foreach $reccolumns $recvalues {
+			foreach $rbacGenealogyColumns $rbacGenealogyValues {
 				if {[lsearch $uservalues $parent_id] != -1} { incr access 1 }
 			}
 
 			#View if user has "superadmin" powers, give him 1
-
 			#	if {[lsearch $uservalues "superadmin"] != -1} { incr access 1 ; puts "Whoa, we've got a superadmin! with values \n $uservalues\n" }
-			
-			 set usertype authenticated
-		} else {
-			set usertype guest
+			set usertype authenticated
 
-		#	dict set pr_stmt action_id $guestid 
-		}
-		#Get RBAC for authenticated and/or guests.. and verify it	
-		#set authguestvalues [dbi_rows -db [$r db get]  -bind $pr_stmt $select_recursive_rbac ]
-		foreach $reccolumns $recvalues {
-			if {$parent_name == $usertype} { incr access 1 ; break}
-		}	
-
-		
-		#If usertype = guest and access = 0
-		#Redirect to login page
-		if {$usertype =="guest" && $access == 0} {
-			if {$returnLogin} {
-				my returnLogin
-			}
+			puts "Done in function loadRolesVerifyAuthenticatedRbac currently authenticated access is $access"
 		} 
-		#if usertype = authenticated and access = 0
-		# show you're not allowed..
-		# else if access => 1  allowed
-		return $access
+
+			puts "Done in function loadRolesVerifyAuthenticatedRbac currently GUEST access is $access"
+	}
+
+	:method loadRolesForUser {userid} {
+		:upvar 2 r r
+		set sql_select "
+			SELECT ri.id,ri.name
+			FROM role_assignment ra, role_item ri
+			WHERE ra.item_id=ri.id 
+			AND user_id=:user_id"
+		dict set pr_stmt user_id $userid 
+		set uservalues  [dbi_rows -db [$r db get] -columns usercolumns -bind $pr_stmt $sql_select ]
+		return $uservalues
+
+		puts "Done in function loadRolesForUser uservalues $uservalues"
 	}
 
 	#	Verify All Roles
@@ -535,24 +560,17 @@ nx::Class create Controller {
 
 		set roles [my loadRoles $rbac]
 		return $roles
-		if {$roles == 0} {
-
-		}
 	}
 
-
-	:public method verifyRole {rolename} {
 	#Verify the role, while doing that see if the user is logged in..
 	#if not then redirect to the login page
 	# first verifies if role is function, runs it.. then continues
+	#Verify first if there exists a function with this name
+	:public method verifyRole {rolename} {
 		if {[ns_session contains userid]} {
 
-		#	puts "hey there $rolename"
-		#Verify first if there exists a function with this name
-		#set function role[string totitle $rolename]
-		set function $rolename
+			set function $rolename
 			if {[lsearch [: info lookup methods ] $function ] != -1} {
-			#if {[lsearch [info class methods [self class]] $function ] != -1} 
 				return [my $function]
 			} 
 			return [my loadRoles $rolename]
@@ -561,6 +579,18 @@ nx::Class create Controller {
 			return [my returnLogin]	
 		}
 	}
+
+	:public	method getModule {} {
+		#Gets the module needed for RBAC
+		set module ""
+		#	puts "Role Controller is adp info [ns_adp_info]"
+		set v [split [ns_adp_info] /]
+		if {[set loc [lsearch -nocase $v modules]] != -1} {
+			set module [string tolower [lindex $v $loc+1]]
+		}
+		return $module
+	}
+
 
 	:public	method hasRole {rolename} {
 		return [my loadRoles $rolename 0]
@@ -588,12 +618,10 @@ nx::Class create Controller {
 				return 1
 			}
 		}
-		#	my errorPage "You aren't authorized to view this page" "Sorry, you can't view this page. Not authorized. "
 		return 0
 	}
 
 	:public method verifyAuthenticated {{-redirnotlogged ""} {-redirlogged ""} } {
-		#	puts "Hey verify auth  what's up for [ns_session get username]"
 		if {[ns_session contains userid]} {
 		#Update the session with every verification..
 			if {$redirlogged != "" } {
@@ -666,7 +694,8 @@ nx::Class create Controller {
 
 		return $link	
 	}
-   #//Admin role!
+
+   #//Admin role example!
    if {0} {
    method admin {} {
    #Example how to set advanced roles..
@@ -675,8 +704,8 @@ nx::Class create Controller {
 	   } else { return  0}
    }	
    }
-   #todo special function 
-   ##TODO special font.. and other types..
+
+   #TODO in different class?
    :public method actionCaptcha {} {
 	   my captcha "" 
    }
@@ -739,27 +768,18 @@ nx::Class create Controller {
 	   if {$type == "calc"} {	set text [humanTest] } else { 
 		   set textSession [generateCode 5 2] 
 		   set text [split $textSession ""]
-		 #  set text $textSession
-		   #	Session::cset humanTestAnswer $text
-		   #		Session::commit
+
 	   }
 
 	   ns_session put humanTest $textSession
 	   #$img text $textColor $font $font_size [rnd -10 0] [expr {round($width*0.5 - ([string length $text]*$font_size*0.7)/2)} ]   [expr {round($height/2 + $font_size/2)} ]   $text
 	   $img text $textColor $font $font_size [rndDouble -0.2 0.2] [expr {round($width*0.5 - ([string length $text]*$font_size*0.6)/2)} ]   [expr {round($height/2 + $font_size/2)} ]   $text
 
-	   # set HTTP header to "image/jpeg" instead of "text/html"
-	   #  web::response -set Content-Type image/jpeg
-
-	   #	set file [open $image w]
-	   # because we return a img, change to binary again
-	   #   fconfigure $file -translation binary -encoding binary
-
-	   # output
-	   #  puts $file [$img jpeg_data 90]
 	   ns_return -binary 200 image/jpeg [$img jpeg_data 90]
    }
 
+	#General  Delete method 
+	# We don't really delete the field, we just save it in the database
 	:public method actionDelete {} {
 		set id [ns_queryget id ]
 		#TODO if not via POST..  give 400 error "invalid request"
@@ -785,7 +805,8 @@ nx::Class create Controller {
 		}
 		#TODO show page that you've deleted this..
 	}
-
+	
+	#We restore the data from the database (if accidentally deleted)
 	:public method actionRestore {} {
 		set model [Post new]
 		set id [ns_queryget id ]
