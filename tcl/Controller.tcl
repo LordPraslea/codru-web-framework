@@ -59,7 +59,7 @@ nx::Class create Controller {
 	}
 
 	:method generateBhtml {} {
-		upvar 2 bhtml bhtml genbhtml genbhtml
+		upvar 1 bhtml bhtml genbhtml genbhtml
 		if {$genbhtml} {
 			set bhtml [bhtml new ]
 		}
@@ -71,7 +71,7 @@ nx::Class create Controller {
 	# then look in the general module views for generator
 	# If all else fails, use layout.adp
 	:method renderLayout {} {
-		upvar page page
+		foreach refVar {page pageinfo bhtml} { upvar $refVar $refVar }
 		set currentFile [file dir [lindex [ns_adp_info] 0]]
 		set newLayoutFile [file join $currentFile ../views/${:layout}.adp] 
 
@@ -125,7 +125,7 @@ nx::Class create Controller {
 		if {[string match *[ns_conn location]* [ns_set get $n Referer]]} {
 			set link [ns_set get $n Referer]
 		} else { set link [ns_conn location] }
-		set goback [$bhtml link  "[$bhtml fa fa-arrow-circle-left fa-2x] Or you can also go back from where you came from?" $link]
+		set goback [$bhtml link -simple 1 "[$bhtml fa fa-arrow-circle-left fa-2x] Or you can also go back from where you came from?" $link]
 
 		set jumbotron [$bhtml jumbotron [msgcat::mc t:404notfound] [msgcat::mc p:404notfound  [concat $extra <p> $goback </p>]]] 
 		#"Couldn't find the thing you were searching for. %s"
@@ -281,6 +281,7 @@ nx::Class create Controller {
 	}
 
 	:method forceMultiLingual {} {
+		foreach refVar {urlv _urlLang url} { upvar $refVar $refVar }
 	#TODO make setting forceMultilingual, if it's true then redirect to multilingual page:)
 		set forceMultilingual 1
 		if {$_urlLang eq "na" && $forceMultilingual && $urlv ne "index.adp"} {
