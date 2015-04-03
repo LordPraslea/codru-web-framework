@@ -5,29 +5,8 @@
 #	 LostMVC version 1.0	 -	 http://lostmvc.unitedbrainpower.com
 #    Copyright (C) 2014 Clinciu Andrei George <info@andreiclinciu.net>
 #    Copyright (C) 2014 United Brain Power <info@unitedbrainpower.com>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#	Licensing according to GPL 3.0
 
-#TODO GENERATE
-#  MODEL class..easy..:)
-#	VIEWS in views/{modelName}/file
-# 		view index create update delete admin, 
-#  Controller based on these views in controllers/controllerName.tcl
-#
-# All based on MODEL
-# Regenerate this each time, or generate it once..(runonce)
-#
 
 #Form handling.. with bootstrap
 # this generates a form where you can append things to
@@ -35,7 +14,6 @@
 # verifying if model data is.. all right
 # Give possibility to create the fields manually but also to generate it automatically
 #
-# Make a FORM that's not based on a model?
 nx::Class create Form {
 #	variable group 
 	:variable beforeForm ""
@@ -65,6 +43,7 @@ nx::Class create Form {
 	:public method alert {args} {
 		append :${:form} [${:bhtml} alert {*}$args]
 	}
+
 	:public method select {{-selected ""} -- name selectdata} {
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
@@ -80,30 +59,23 @@ nx::Class create Form {
 		append :${:form} $select
 	}
 
-	:public method input {{-fa ""} {-type "text"} {-size ""} {-options ""} --  name  {tags ""}} {
+	
 	#	validate type between input textarea ckedior
-	#	 variable form group formdata
-#regexp {^(input|textarea|ckeditor)$}
-##TODO CHANGE THIS
+	#regexp {^(input|textarea|ckeditor)$}
+	:public method input {{-fa ""} {-type "text"} {-size ""} {-options ""} --  name  {tags ""}} {
 	
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
 		set data [my getData $name $id]
-		if {$type == "textarea"} {
-			set input [${:bhtml} textarea -placeholder $itemname -id $id  $id   $data]	
+		if {[string match *$type* "textarea ckeditor markdown datepicker"]} {
+			set input [${:bhtml} $type -placeholder $itemname -id $id  $id   $data]	
 		} elseif {$type  =="select2"} {
 			set input [${:bhtml} select2 -placeholder $itemname -id $id -options $options  $id   $data $tags]	
-		} elseif {$type == "ckeditor"} {
-			set input [${:bhtml} ckeditor -placeholder $itemname -id $id  $id   $data ]
-		} elseif {$type == "markdown"} {
-			set input [${:bhtml} markdown -placeholder $itemname -id $id  $id   $data ]
-		}  elseif {$type == "datepicker"} {
-			set input [${:bhtml} datepicker -placeholder $itemname -id $id  $id   $data ]
 		} else {
 			if {$fa != ""} {
-			set input [${:bhtml} button -fa $fa -type $type -placeholder $itemname -id $id -name $id $data]
+				set input [${:bhtml} button -fa $fa -type $type -placeholder $itemname -id $id -name $id $data]
 			} else {
-			set input [${:bhtml} input -type $type -placeholder $itemname -id $id $id $data]
+				set input [${:bhtml} input -type $type -placeholder $itemname -id $id $id $data]
 			}
 		}
 		
@@ -117,22 +89,21 @@ nx::Class create Form {
 		append :${:form} $input
 	}
 
-#TODO integrate this in input method
+	#TODO label 
 	:public method checkbox {name} {
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
 		set data [my getData $name $id]
 
-
 		set input [${:bhtml} checkbox -id $id $id $itemname]
 		append :${:form} $input
 	}
-
+	
+	#TODO label + multi
 	:public method radio {name value} {
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
 		set data [my getData  $name $id]
-
 
 		set input [${:bhtml} radio -id $id $id $value $value]
 		append :${:form} $input
@@ -152,9 +123,8 @@ nx::Class create Form {
 		append :${:form} $toggle
 	}
 
-	:public method submit {args}  {
+	:public method submit {{-fa ""}  -- text {type xsubmit} {class "" }}  {
 
-		ns_parseargs {{-fa ""}  -- text {type xsubmit} {class "" }} $args
 		#NOD.js has problems if the name is submit, so renamed to xsubmit
 		if {$fa == ""} {
 			set input [${:bhtml} input  -class [list btn btn-primary {*}$class ]  -type submit $type $text]
@@ -169,10 +139,7 @@ nx::Class create Form {
 		append :${:form} $input 
 	}
 
-	:public method label {args} {
-	ns_parseargs {{-fa ""} --  name  {size ""}} $args
-
-	#	 variable form group formdata
+	:public method label {{-fa ""} --  name  {size ""}} {
 		if {${:formType} == "horizontal"} { 
 			set class "col-sm-${:labelSize}" 
 		} elseif {${:formType} == "inline"} { set class "sr-only" 
@@ -204,8 +171,8 @@ nx::Class create Form {
 		return $data
 	
 	}
-	:public method captcha {} {
 
+	:public method captcha {} {
 		set field captcha
 
 		my beginGroup 
@@ -216,8 +183,8 @@ nx::Class create Form {
 		my errorMsg $field
 		my endGroup $field 
 	}
+	
 	:public method errorMsg {name} {
-	#	 variable form group formdata
 		set thiserror ""
 		foreach err [${:model} getErrorsFor $name] {
 			lappend thiserror $err 	
@@ -230,6 +197,7 @@ nx::Class create Form {
 			append :${:form} 	$errorlabel
 		}
 	}
+
 	#This is output outside of the "form" so the size doesn't affect this one..
 	:public method allErrors {} {
 		#	set keys [dict keys [dict get $attributes errors]]
@@ -249,10 +217,9 @@ nx::Class create Form {
 	#	Appended to the "group" instead of form
 	#	OR when using beginGroup.. just generate everything for this value..?
 	:public method beginGroup {{name ""}} {
-	# variable form group formdata
 		set :form group
-
 	}
+
 	#	reappend everything back to form, 
 	#	end the grouping
 	:public method endGroup {{name ""}} {
@@ -271,13 +238,11 @@ nx::Class create Form {
 
 	#endform just return the form
 	:public method endForm {args} {
-	#	set allArgs $args $form	
-	#	variable formdata	
 		return "${:beforeForm} [${:bhtml} form {*}$args ${:formdata}]"
 	}
+
 	:public method putsModel {} {
 		return [${:model} search *]
 	}
 }
 
-#puts "Loading generator"

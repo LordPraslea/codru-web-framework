@@ -14,6 +14,7 @@
 #    GNU General Public License for more details.
 #
 #    You should have received a copy of the GNU General Public License
+namespace eval ::lostmvc {
 proc Captcha {type {image "img.jpg"}}  {
 	package require tclgd
 	set font [ns_server pagedir]/fonts/FreeSans.ttf
@@ -88,7 +89,8 @@ proc getHost {} {
 proc getConfigName {} {
 	return	[join [split [getHost] .] _]
 }
-#If you really want to generate names.. look into /modules/School/Data
+#Name generation utilities in config/lista_nume.tcl
+#If you really want to generate names.. look into lista_nume.tcl
 proc generateName {} {
 	#Generate random names that look plausible..
 	set length [rnd 3 12]
@@ -125,11 +127,7 @@ proc generateName {} {
 	
 }
 
-proc t {string t} {
-	#ns_parseargs {string {}}
-	#Language translation
-	return []
-}
+
 proc humanTest {} {
 	set type [rnd 1 3]
 	set nr1 [rnd 0 13]
@@ -262,7 +260,6 @@ proc safequeryget {varname datatype {defaultval ""}} {
 		return ""	
 }
 
-proc ns_get {name} {
 #Extracts the GET value of the QUERY using ns_queryget results
 #in either GET if it's GET or POST if it's a POST not both..
 #which complicates when you want to send a specific form
@@ -270,11 +267,14 @@ proc ns_get {name} {
 #by just adding a hidden field to to that FORM with the ID
 # - name name of the GET parameter
 #
+proc ns_get {name} {
+
 	set q [split [ns_conn query] "&="]
 	if {[dict exists $q $name]} {
 		return [dict get $q $name]
 	} else { return "" }
 }
+
 proc send_mail_dev {to from subject body {Bcc ""} {cc ""}} {
 package require mime 
 package require base64
@@ -498,4 +498,6 @@ proc tcl2json value {
     set mapped [subst -novariables [regsub -all {[][\u0000-\u001f\\""]} \
 	$value {[format "\\\\u%04x" [scan {& } %c]]}]]
     return "\"$mapped\""
+}
+namespace export *
 }
