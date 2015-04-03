@@ -1,7 +1,7 @@
 ##########################################
 # Bootstrap and jQuery plugin's
 ##########################################
-#	 LostMVC version 1.0	 -	 http://lostmvc.unitedbrainpower.com
+#	 LostMVC -	 http://lostmvc.unitedbrainpower.com
 #    Copyright (C) 2014 Clinciu Andrei George <info@andreiclinciu.net>
 #    Copyright (C) 2014 United Brain Power <info@unitedbrainpower.com>
 #
@@ -23,29 +23,21 @@
 # url: http://casperin.github.io/nod/
 ##########################################
 
-#::Model public method nodjsRules {bhtml} 
+
+#NodJs plugin for Model using javascript verification  before submitting
 ::Model  public method nodjsRules {bhtml} {
-	
-#TODO fix model and then fix this:)
 	if {![$bhtml existsPlugin nodjs]} {
 			$bhtml addPlugin nodjs { js "/js/nod.js" js-min "/js/nod.min.js"  }
 	}
-	#TODO
-#	if {![dict exists  ]}
-#	nodjs { js "./js/nod.js"}
-#variable table
 #This is the same as the validate.. but we create JavaScript rules for NOD
 	foreach column [dict keys [dict get ${:attributes} sqlcolumns]] {
 	#	set columnerrors ""; set errors "1"
 		if {![dict exists ${:attributes} sqlcolumns $column validation]} { continue }
 		foreach {valid rule} [dict get ${:attributes} sqlcolumns $column validation] {
 			append metrics  [my nodjsValidate $valid $rule $column]
-		#	if {$err != 0} { puts "current err is $err";	lappend columnerrors $err	}
 		}
-	#	if {[join $columnerrors] != ""} {
-	#		dict set attributes errors $column $columnerrors
-	#	}
 	}
+	#NodJS was built primarily for bootstrap 2.x, this modifications make it function in 3.x
 	set metrics "var metrics = \[ \n $metrics \n ];"
 	set options {
 	 var options = {
@@ -59,12 +51,10 @@
 	}
 	set initNod [format {$('#%s').nod(metrics,options);} [string tolower [dict get ${:attributes} table]]]
 	$bhtml js "$options \n $metrics  \n $initNod"
-
 }
 
 #TODO FIX THIS!
 #rule is not working as expected
-#::Model public method nodjsValidate {valid validation column} 
 ::Model  public method  nodjsValidate {valid validation column} {
 	 set column_name [my getAlias $column]
 	 if {[dict exists $validation rule]} {
