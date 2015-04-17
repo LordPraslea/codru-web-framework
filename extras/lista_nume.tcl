@@ -45170,11 +45170,5 @@ proc genName {} {
 			return  "SC $companie $sufix SRL"
 	}
 }
-#Generation of 700 examples
-if {0} {
-	for {set i 1} { $i < 700} {incr i} {
-			puts "[namegen::genRealFirstname]  [namegen::genRealLastname]  adriana.mardan@transiris.com \"[namegen::genCompanie]\""
-	}
-}
 
 
