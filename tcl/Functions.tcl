@@ -502,7 +502,5 @@ namespace eval lostmvc {
 		return "\"$mapped\""
 }
 namespace export *
-namexpace export -clear lremove
 }
-namespace import -force ::lostmvc::*
-puts "Generating code [generateCode 7]"
+namespace import -force lostmvc::*
