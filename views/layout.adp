@@ -25,8 +25,12 @@ foreach {key val} $pageinfo {
 
 
 		<title><%= $title %></title>
-
-		<%= [$bhtml includePlugins] %>
+	<% $bhtml addPlugin fontawesome { 
+				css  "/css/font-awesome.css"
+				css-min  "/css/font-awesome.min.css"
+			}
+			%>
+		<%= [$bhtml includeCssPlugins] %>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -34,7 +38,7 @@ foreach {key val} $pageinfo {
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
         <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-
+<noscript><style> .jsonly { display: none } </style></noscript>
 </head>
 
 <body>
@@ -125,6 +129,7 @@ ns_puts {
    
 
 <%= [$bhtml components] %>
+<%= [$bhtml includeJsPlugins] %>
 <%= [$bhtml putScripts] %>
 </body>
 
