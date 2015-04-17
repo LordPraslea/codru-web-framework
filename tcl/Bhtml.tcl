@@ -18,15 +18,11 @@
 
 nx::Class create bhtml {
 
-	:variable enableCdn true ;#true
-	:variable fontAwesomeCss true ;#true
-	:variable minifyCss true ;#true 
-
-
 	#Global variable containing all scripts
 	:variable scripts
 	#Global variable containing all components..
 
+	:variable computedPlugins 0
 	:variable components 
 
  	:variable plugins  
@@ -66,7 +62,8 @@ nx::Class create bhtml {
 # == Include Plugins
 #	This generates the JavaScript Script and CSS link HTML tags.
 	
-	:public method includePlugins {} {
+	:method computePlugins {} {
+		if {${:computedPlugins}} { return "" }
 		set :cssinclude ""
 		set :jsinclude ""
 		set :includeMinified 1
@@ -84,8 +81,18 @@ nx::Class create bhtml {
 				:switchPluginType $type $file
 			}
 		}
-	#puts "All all keys are [dict keys $plugins]  javascript included is $jsinclude"	
-		return "${:cssinclude} ${:jsinclude}"
+	#	return "${:cssinclude} ${:jsinclude}"
+		set :computedPlugins 1
+	}
+
+	:public method includeCssPlugins {} {
+		:computePlugins
+		return ${:cssinclude}
+	}
+
+	:public method includeJsPlugins {} {
+		:computePlugins
+		return ${:jsinclude}
 	}
 	
 	:method switchPluginType {{-includeMinified 1} -- type file} {
@@ -265,7 +272,7 @@ nx::Class create bhtml {
 							  {-p ""} {-listOptions ""}  -- args} {
 		set list $args
 		#Show only if show is positive
-		if {!$show} { continue }
+		if {!$show} { return -code continue }
 
 		if {$dropdown} {
 			dict lappend listOptions class dropdown
@@ -708,8 +715,8 @@ nx::Class create bhtml {
 	# Fontawesome integration is very simple 
 	##########################################
 	:public method fa {args} {
-		if {![dict exists ${:plugins} fontawesome]} {
-			dict set :plugins fontawesome { 
+		if {![my existsPlugin fontawesome]} {
+			:addPlugin fontawesome { 
 				css  "/css/font-awesome.css"
 				css-min  "/css/font-awesome.min.css"
 			}
@@ -755,7 +762,7 @@ nx::Class create bhtml {
 		if {$id != ""} { dict set htmlOptions id $id }
 
 		if {$fa !=""} {
-			set fa [my fa {*}$fa]
+			set fa [:fa {*}$fa]
 		}
 		return [my htmltag -htmlOptions $htmlOptions button "$fa $data" ]
 	}
@@ -794,7 +801,7 @@ nx::Class create bhtml {
 		if {$tooltip != ""} { foreach {opt val} [my tooltip $tooltip] { dict lappend htmlOptions $opt $val } }
 		if {$id != ""} { dict set htmlOptions id $id  }
 		if {$title != ""} { dict set htmlOptions title $title  }
-		if {$fa != ""} { set text "[my fa {*}$fa] $text" }
+		if {$fa != ""} { set text "[:fa {*}$fa] $text" }
 
 		if {$type != ""} { dict lappend htmlOptions class [my returnType "btn" $type]  };
 
