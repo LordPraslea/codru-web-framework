@@ -62,12 +62,13 @@ nx::Class create Form {
 	
 	#	validate type between input textarea ckedior
 	#regexp {^(input|textarea|ckeditor)$}
-	:public method input {{-fa ""} {-type "text"} {-size ""} {-options ""} --  name  {tags ""}} {
+	:public method input {{-fa ""} {-type "input"} {-size ""} {-options ""} --  name  {tags ""}} {
 	
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
 		set data [my getData $name $id]
-		if {[string match *$type* "textarea ckeditor markdown datepicker"]} {
+
+		if {[lsearch  "textarea ckeditor markdown datepicker" $type] != -1} {
 			set input [${:bhtml} $type -placeholder $itemname -id $id  $id   $data]	
 		} elseif {$type  =="select2"} {
 			set input [${:bhtml} select2 -placeholder $itemname -id $id -options $options  $id   $data $tags]	
