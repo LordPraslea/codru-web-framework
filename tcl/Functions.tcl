@@ -345,7 +345,7 @@ namespace eval lostmvc {
 			}
 			return $time
 		}
-		proc howlongago {time} {
+	proc howlongago {time} {
 		# Returns the difference between $time and now in vague terms
 		set diff [expr {[clock seconds] - $time}]
 		# What units are we dealing with (don't care about leap years -
@@ -374,9 +374,9 @@ namespace eval lostmvc {
 		if {$num == 2} { return [mc {a couple of %1$s ago} $unit] }
 		if {$num > 2 && $num < 5} { return [mc {a few %1$s ago} $unit] }
 		return [mc {%1$s %2$s ago} $num $unit]
-		}
-		#LREMOVE
-		if {[info command lremove] == ""} {
+	}
+	#LREMOVE
+	if {[info command lremove] == ""} {
 		proc lremove {args} {
 			if {[llength $args] < 2} {
 				puts stderr {Wrong # args: should be "lremove ?-all? list pattern"}
@@ -400,107 +400,107 @@ namespace eval lostmvc {
 			}
 			return $list
 		}
-		}
+	}
 		############################
 		# Dictionary Pretty PRINT!
 		############################
-		proc dict_format {dict} { 
-			dictformat_rec $dict "" "\t" 
-		} 
+	proc dict_format {dict} { 
+		dictformat_rec $dict "" "\t" 
+	} 
 
 
-		proc isdict {v} { 
-			string match "value is a dict *" [::tcl::unsupported::representation $v] 
-		} 
+	proc isdict {v} { 
+		string match "value is a dict *" [::tcl::unsupported::representation $v] 
+	} 
 
-		proc lasubdict {dictname key subkey value} {
-			upvar 1 $dictname dictvar
-			dict set dictvar $key $subkey "[if {[dict exists $dictvar $key $subkey]} { dict get $dictvar $key $subkey }] $value"
+	proc lasubdict {dictname key subkey value} {
+		upvar 1 $dictname dictvar
+		dict set dictvar $key $subkey "[if {[dict exists $dictvar $key $subkey]} { dict get $dictvar $key $subkey }] $value"
+	}
+	#Thanks to http://wiki.tcl.tk/17680
+	proc dict'sort {dict args} {
+		set res {}
+		foreach key [lsort {*}$args [dict keys $dict]] {
+			dict set res $key [dict get $dict $key] 
 		}
-		#Thanks to http://wiki.tcl.tk/17680
-		proc dict'sort {dict args} {
-			set res {}
-			foreach key [lsort {*}$args [dict keys $dict]] {
-				dict set res $key [dict get $dict $key] 
+		set res
+	}
+
+	## helper function - do the real work recursively 
+	# use accumulator for indentation 
+	proc dictformat_rec {dict indent indentstring} {
+	# unpack this dimension 
+		dict for {key value} $dict { 
+			if {[isdict $value]} { 
+			#append result "$indent[list $key]\n$indent\{\n" 
+				append result "$indent[list $key] \{\n" 
+				append result "[dictformat_rec $value "$indentstring$indent" $indentstring]\n" 
+				append result "$indent\}\n" 
+			} else { 
+				append result "$indent[list $key] [list $value]\n" 
 			}
-			set res
 		}
 
-		## helper function - do the real work recursively 
-		# use accumulator for indentation 
-		proc dictformat_rec {dict indent indentstring} {
-		# unpack this dimension 
-			dict for {key value} $dict { 
-				if {[isdict $value]} { 
-				#append result "$indent[list $key]\n$indent\{\n" 
-					append result "$indent[list $key] \{\n" 
-					append result "[dictformat_rec $value "$indentstring$indent" $indentstring]\n" 
-					append result "$indent\}\n" 
-				} else { 
-					append result "$indent[list $key] [list $value]\n" 
-				}
-			}
-
-			return $result 
-		}
+		return $result 
+	}
 
 		#always place this at bottom because of VIM things.. put it as last function 
 		#Generates a JSON from a TCL dictionary
 		#Ripped from: http://rosettacode.org/wiki/JSON#Tcl
-		proc tcl2json value {
-		# Guess the type of the value; deep *UNSUPPORTED* magic!
-		regexp {^value is a (.*?) with a refcount} \
+	proc tcl2json value {
+	# Guess the type of the value; deep *UNSUPPORTED* magic!
+	regexp {^value is a (.*?) with a refcount} \
 		[::tcl::unsupported::representation $value] -> type
 
-			switch $type {
-				string {
-				# Skip to the mapping code at the bottom
-				}
-				dict {
-					set result "{"
-					set pfx ""
-					dict for {k v} $value {
-						append result $pfx [tcl2json $k] ": " [tcl2json $v]
-						set pfx ", "
-					}
-					return [append result "}"]
-				}
-				list {
-					set result "\["
-					set pfx ""
-					foreach v $value {
-						append result $pfx [tcl2json $v]
-						set pfx ", "
-					}
-					return [append result "\]"]
-				}
-				int - double {
-					return [expr {$value}]
-				}
-				booleanString {
-					return [expr {$value ? "true" : "false"}]
-				}
-				default {
-				# Some other type; do some guessing...
-				if {$value eq "null"} {
-				# Tcl has *no* null value at all; empty strings are semantically
-				# different and absent variables aren't values. So cheat!
-				return $value
-				} elseif {[string is integer -strict $value]} {
-				return [expr {$value}]
-				} elseif {[string is double -strict $value]} {
-					return [expr {$value}]
-				} elseif {[string is boolean -strict $value]} {
-					return [expr {$value ? "true" : "false"}]
-				}
-			}
+	switch $type {
+		string {
+		# Skip to the mapping code at the bottom
 		}
+		dict {
+			set result "{"
+			set pfx ""
+			dict for {k v} $value {
+				append result $pfx [tcl2json $k] ": " [tcl2json $v]
+				set pfx ", "
+			}
+			return [append result "}"]
+		}
+		list {
+			set result "\["
+			set pfx ""
+			foreach v $value {
+				append result $pfx [tcl2json $v]
+				set pfx ", "
+			}
+			return [append result "\]"]
+		}
+		int - double {
+			return [expr {$value}]
+		}
+		booleanString {
+			return [expr {$value ? "true" : "false"}]
+		}
+		default {
+		# Some other type; do some guessing...
+		if {$value eq "null"} {
+		# Tcl has *no* null value at all; empty strings are semantically
+		# different and absent variables aren't values. So cheat!
+			return $value
+		} elseif {[string is integer -strict $value]} {
+			return [expr {$value}]
+		} elseif {[string is double -strict $value]} {
+			return [expr {$value}]
+		} elseif {[string is boolean -strict $value]} {
+			return [expr {$value ? "true" : "false"}]
+		}
+		}
+	}
 
-		# For simplicity, all "bad" characters are mapped to \u... substitutions
-		set mapped [subst -novariables [regsub -all {[][\u0000-\u001f\\""]} \
+	# For simplicity, all "bad" characters are mapped to \u... substitutions
+	set mapped [subst -novariables [regsub -all {[][\u0000-\u001f\\""]} \
 		$value {[format "\\\\u%04x" [scan {& } %c]]}]]
-		return "\"$mapped\""
-}
+	return "\"$mapped\"" ;#"
+	}
 namespace export *
 }
 namespace import -force lostmvc::*

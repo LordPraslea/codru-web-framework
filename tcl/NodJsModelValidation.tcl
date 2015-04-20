@@ -1,6 +1,8 @@
 ##########################################
-#NodJs plugin for Model using javascript verification  before submitting
+# Nod jQuery validation for Model (verification before submitting)
+# url: http://casperin.github.io/nod/
 ##########################################
+#
 nx::Class create NodJsModelValidation {  
 	:public method nodjsRules {bhtml} {
 		if {![$bhtml existsPlugin nodjs]} {

@@ -17,39 +17,19 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-##########################################
-# Nod jQuery validation
-# url: http://casperin.github.io/nod/
-##########################################
-
-
-
-
 #
+
+#TODO view/edit data via json if javascript is on, simple if not..
+#TODO  bulk aactions.. 
 #
-#
-#TODO [GRID VIEW] 
-#TODO via json if javascript is on, simple if not..
-# bulk aactions.. 
-#before table.. pagination that handles pages
-#thead contains
-#	Header names that are links and osrtable
-#	filter search field
-#each column contains the value..
-# ....there is also an extra column EDIT/ADMIN:
-# 		View Info / Delete / Update
-#
-#table footer contains or after table
-#	select how many per page.. etc
-#	pagination
-#	
 #TODO OPTIONS CAN BE GIVEN INTO A DICT?
 #TODO very important: VERIFY DATA AND DON'T GIVE IT TO DB IF NOT CORRECT
-#VERIFY if column exists, verify if integer... etc
 #Give DICT with settings for each column..
+#
+#Be sure the ID/PK is the first selected, always
 ##WARNING makeAllLinks is incompatible with admin! (suite yourself!)
 #When selecting always get the primary key..? but show it only if needed
+#Set hideFirstColumn = 1 if you need to hide the primary key
 ::bhtml   public method gridView {{-toSelect *} {-class ""}   {-perpage 10} {-page 1} {-sort id} {-defSort asc} {-admin 0} {-search 0}
 			   {-makeAllLinks 0} {-hideFirstColumn 0} {-specialFunctions ""} {-allowedSort ""} {-rowId 0}
 								  {-cache 0} {-externalData 0} {-extraData ""} {-extraUrlVars ""} -- model {others ""}} {
