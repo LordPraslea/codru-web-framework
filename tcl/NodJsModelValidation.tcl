@@ -3,6 +3,8 @@
 # url: http://casperin.github.io/nod/
 ##########################################
 #
+#
+	#TODO upgrade this to the new nodjs version 
 nx::Class create NodJsModelValidation {  
 	:public method nodjsRules {bhtml} {
 		if {![$bhtml existsPlugin nodjs]} {
@@ -32,8 +34,6 @@ nx::Class create NodJsModelValidation {
 		$bhtml js "$options \n $metrics  \n $initNod"
 	}
 
-	#TODO FIX THIS!
-	#rule is not working as expected
 	:public method  nodjsValidate {valid validation column} {
 		set column_name [my getAlias $column]
 		if {[dict exists $validation rule]} {
