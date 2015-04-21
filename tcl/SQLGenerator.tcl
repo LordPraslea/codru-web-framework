@@ -3,29 +3,48 @@
 #################################	
 
 nx::Class create SQLGenerator {
-
-	#TODO Relations between tables
-	##TODO things like
-	#belongs_to 	foreign_key fk_id other_table other_table_id  
-	#has_one
-	#has_many       this_id 	other_table	other_table_id
-	#many_many 		
+	
+	#	belongs_to 	foreign_key fk_id other_table other_table_id  
+	#	has_one		one-to-one
+	#	has_many       this_id 	other_table	other_table_id 
+	#	many_many 		
 	#stat(istical)
-	##TODO more complex relations.. to select for every other thing.. like "search" but more advanced..
-	#TODO FORCE and cache..
+	
+	# Relations selection.. 
+	# #TODO MULTI PK
 	:public method relations {relation {id {}}} {
-		if {![dict exists ${:attributes} relations $relation]}  { # puts "Relation doesn't exist $relation";
-			return "" }
-			#NEVER use the following, it will cache only one data.. never recalculating, it's better to 
-		#	if {[dict exists ${:attributes} relations $relation value]} { return [dict get ${:attributes} relations $relation value] }
-		set table [my getTable]
+		if {![dict exists ${:attributes} relations $relation]}  {
+			# puts "Relation doesn't exist $relation";
+			return ""
+		}
+		set table [:getTable]
+		#Sets all the relation variables 
 		foreach {k v} [dict get ${:attributes} relations $relation] { set $k $v }	
 		foreach value $fk_value {
 			append select  ${fk_table}.$value
 		}
+		
+		:relationsMultipleOrSimple
 
-		#TODO select from current table and also from many_table like form fk_extra
-		#In case you need to select an extra field from the foreign_key table
+		:relationsExtraColumn
+
+		#puts "SQL for relation is $sql_select"
+		if  {$id == ""} {
+			dict set pr_stmt column [my get $column]
+		} else { dict set pr_stmt column $id }
+
+		my sqlstats $sql_select
+		set values  [dbi_rows -db ${:db} -columns columns -bind $pr_stmt $sql_select ]
+		dict set :attributes relations $relation value $values
+
+		return $values
+	}
+	
+	#This function allows you to specify standard select data for relations
+	#using the fk_extra { column value } option in a model
+	:method relationsExtraColumn {} {
+		foreach refVar {relation fk_extra fk_table sql_select} { :upvar $refVar $refVar }
+
 		set where_extra ""
 		if {[dict exists ${:attributes} relations $relation fk_extra]} {
 			foreach {column value} $fk_extra {
@@ -33,8 +52,13 @@ nx::Class create SQLGenerator {
 			}
 		}
 
-		if {[dict exists ${:attributes} relations $relation many_table]} {
+		append sql_select $where_extra
+	}
+	
+	:method relationsMultipleOrSimple {} {
+		:upvar relation relation sql_select sql_select 
 
+		if {[dict exists ${:attributes} relations $relation many_table]} {
 			set sql_select "SELECT $select
 			FROM $fk_table,$many_table,$table
 			WHERE $many_table.$many_column = $table.$column
@@ -46,29 +70,12 @@ nx::Class create SQLGenerator {
 			WHERE 	 $fk_table.$fk_column = $table.$column
 			AND $table.$column = :column"
 		}
-		append sql_select $where_extra
-		#puts "SQL for relation is $sql_select"
-		if  {$id == ""} {
-			dict set pr_stmt column [my get $column]
-		} else { dict set pr_stmt column $id }
-		#	ns_puts "Ok relation $sql_select $pr_stmt .. $column should be [my get $column] and id is $id <br>"
-		my sqlstats $sql_select
-		set values  [dbi_rows -db ${:db} -columns columns -bind $pr_stmt $sql_select ]
-		dict set attributes relations $relation value $values
-		return $values
-		if {0} {
-			lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_table}.${fk_value}
-			FROM $fk_table,$many_table,$table
-			WHERE $many_table.$many_column = $table.$column
-			AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts"
-		}	
-}
+	}
 
 
+	# This function searches by condition..
+	#TODO fix relations so we can search multiple
 	:public method findByCond {{-numericStmt 0} {-relations 0} {-save 1} conditions } {
-		# This function searches by condition..
-		#TODO fix relations so we can search multiple
-		#
 		set first 0
 		set table [dict get ${:attributes} table]
 		set pr_stmt ""
@@ -118,9 +125,8 @@ nx::Class create SQLGenerator {
 		return $result
 	}
 
-
-	:public method findByPk {{-relations 0} -- id {save 1}} {
-		#TODO handle and find if multiple primary keys..
+	#TODO make multiple primary keys
+	:public method findByPk {{-relations 0} {-save 1} -- id } {
 		#Givnig ARGS.. dict with key value (name of pk, value of pk)
 		set table [dict get ${:attributes} table]
 		dict set pr_stmt id $id
