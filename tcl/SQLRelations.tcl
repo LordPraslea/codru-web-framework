@@ -2,15 +2,181 @@
 #  SQL Relations (between tables)
 #################################	
 
-nx::Class create SQLRelations {
 #	belongs_to 	foreign_key fk_id other_table other_table_id  
 #	has_one		one-to-one
 #	has_many       this_id 	other_table	other_table_id 
 #	many_many 		
 #stat(istical)
 
-# Relations selection.. 
-# #TODO MULTI PK
+nx::Class create SQLRelations {
+
+	:property -accessor public table:required
+	:property model:object,type=Model
+	:property {criteria:object,type=SQLCriteria ""}
+
+
+	:property {statementCount 0}
+
+	:method init {} {
+
+	}
+
+	:public method getToSelect {} {
+		return ${:toSelect}
+	}
+
+	:public method getFrom {} {
+		return ${:from}
+	}
+
+	:public method getCriteria {} {
+		return ${:criteria}
+	}
+
+
+	# Computes relations when selecting multiple databases
+	:public method computeRelations {toSelect } {
+		set from ""
+		set newSelect ""
+		if {${:criteria} ==""} {
+			set :criteria [SQLCriteria new -table ${:table}]
+		}
+
+		if {$toSelect  == "*"} {
+			set relSelect [$model getRelationsKeys]
+			set colSelect [$model getColumnsKeys]
+			set toSelect [concat $colSelect $relSelect]
+		}
+
+		foreach ts $toSelect {
+			if {[$model existsRelation $ts]} {
+				:generateRelationDataFor $ts
+			} else if {[$model existsColumn $ts]} {
+				lappend newSelect "$table.$ts"
+			} else {
+			#Special not mentioned relation we add it as it is
+
+			}
+		}
+		set :from $from
+		set :toSelect $newSelect
+		set :criteria $criteria
+
+		return [dict create where_sql $where_sql toSelect $newSelect  first $first from $from]
+	}
+	if {0} {
+		tags {column id
+		fk_table tags
+		fk_column id 
+		fk_value tag
+		many_table blog_tags 
+		many_column post_id
+		many_fk_column tag_id 
+		}
+		date 	{column id fk_table lucrare_date fk_column lucrare_id 
+		 fk_value data fk_function "substr(:fk_value,0,1000)" fk_extra { type  lucrare}  	}
+	}
+	#relations
+	# name { 
+	#		fk_table "foreign key table name"
+	#		fk_column "foreign key column to select and work with"
+	#		fk_value "OPTIONAL what value to show eventually"
+	#		fk_function "OPTIONAL a function you want to run "
+		#		fk_extra "OPTIONAL {column value } will produce column = value "
+		# Many to many relationships tags (id,name) -> blog_tags (tag_id,post_id) <- posts (id)
+		#		many_table "the table "
+		#		many_column "the colum associated with this model's ID"
+		#		many_fk_column "the column associated with the foreign key ID"
+		#		
+		#		column <-> many_column
+		#		fk_column <-> many_fk_column
+	# }
+	:public method generateRelationDataFor {ts} {
+		upvar cnewSelect newSelect from from
+		set many_table ""
+		foreach {k v} [$model getRelations $ts] { set $k $v }	
+
+		if {$many_table!=""} {
+			:computeMultiTables
+
+		}
+		#An extra verification to be sure we don't include the same table 2 times if it #has relationships to itself 
+		if {[lsearch $from $fk_table ] == -1}	{
+			if {$fk_table != $table} {
+				append from " , $fk_table"
+			}
+		}
+		:computeForeignKeyValue
+
+		${:criteria} addRelation -table $table -fk_table $fk_table  $column $fk_column 
+
+		#TODO select from current table and also from many_table like form fk_extra
+		#In case you need to select an extra field from the foreign_key table
+		if {[dict exists ${:attributes} relations $ts fk_extra]} {
+			foreach {column value} $fk_extra {
+				${:criteria} addRelation -table $fk_table $column '$value' 
+			}
+		}
+	}
+
+	:method computeMultiTables {} {
+	#	lappend newSelect $ts
+	#	append form ", ..."
+	#
+	#Whenever you want many-to-many ... just select the current ID!
+	#TODO this should work for multi keys..
+		if {0} {
+			set pks [dict get ${:attributes} primarykey]
+			if {[llength $pks] == 1} {
+
+				puts "llength is 1 for $pks"
+				lappend newSelect "$table.id as $ts"
+			} else {	
+				set c 0
+				foreach pk $pks {
+					#	append ok_pk  "($table.id as $ts"
+
+					append pk_col_value  [expr {$c==0? "" : " || ' ' || "}] $pk
+					incr c
+				}
+				lappend newsSelect "$pk_col_value as $ts"
+			}
+		} else {
+			lappend newSelect "$table.id as $ts"
+		}
+		continue 
+		#This will never run..
+		lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_table}.${fk_value}
+		FROM $fk_table,$many_table,$table
+		WHERE $many_table.$many_column = $table.$column
+		AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts"
+	}	
+
+	#Computes the foreign key value in fk_value
+	#(if you want something else than fk_column)
+	:method computeForeignKeyValue {} {
+		foreach refVar {fk_value fk_table fk_function newSelect} { :upvar $refVar $refVar }
+
+		#Concatenate multiple values
+		if {[llength $fk_value] > 1} {
+			set fk_col_value ""
+			set c 0
+			foreach v $fk_value {
+				append fk_col_value  [expr {$c==0? "" : " || ' ' || "}] ${fk_table}.${v}
+				incr c
+			}
+		} else {
+		#If a fk_function exists, currently works with 1 fk_value
+			if {[info exists fk_function]} {
+				set fk_col_value [string map ":fk_value ${fk_table}.${fk_value}" $fk_function]
+			}  else {		set fk_col_value ${fk_table}.${fk_value} }
+		}
+		lappend newSelect "$fk_col_value as $ts"	
+	}
+
+
+	# Relations selection.. 
+	# #TODO MULTI PK
 	:public method relations {relation {id {}}} {
 		if {![dict exists ${:attributes} relations $relation]}  {
 		# puts "Relation doesn't exist $relation";
@@ -70,126 +236,4 @@ nx::Class create SQLRelations {
 			AND $table.$column = :column"
 		}
 	}
-
-	:public method computeRelations {toSelect table first} {
-	# Computes relations when selecting multiple databases
-		set first 0
-		set from ""
-		set pr_stmt ""
-		set newSelect ""
-		set where_sql ""
-		if {$toSelect  == "*"} {
-			set relSelect [dict keys [dict get ${:attributes} relations]]
-			set colSelect [dict keys [dict get ${:attributes} sqlcolumns]]
-			set toSelect [concat $colSelect $relSelect]
-
-			#	set toSelect "${table}.*" 
-
-		}
-
-		foreach ts $toSelect {
-			if {[dict exists ${:attributes} relations $ts]} {
-				set many_table ""
-				foreach {k v} [dict get ${:attributes} relations $ts] { set $k $v }	
-
-				if {$many_table!=""} {
-				#	lappend newSelect $ts
-				#	append form ", ..."
-				#
-				#Whenever you want many-to-many ... just select the current ID!
-				#TODO this should work for multi keys..
-					if {0} {
-						set pks [dict get ${:attributes} primarykey]
-						if {[llength $pks] == 1} {
-
-							puts "llength is 1 for $pks"
-							lappend newSelect "$table.id as $ts"
-						} else {	
-							set c 0
-							foreach pk $pks {
-								#	append ok_pk  "($table.id as $ts"
-
-								append pk_col_value  [expr {$c==0? "" : " || ' ' || "}] $pk
-								incr c
-							}
-							lappend newsSelect "$pk_col_value as $ts"
-						}
-					} else {
-						lappend newSelect "$table.id as $ts"
-					}
-					continue 
-					#This will never run..
-					lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_table}.${fk_value}
-					FROM $fk_table,$many_table,$table
-					WHERE $many_table.$many_column = $table.$column
-					AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts"
-
-				}
-				if {[lsearch $from $fk_table ] == -1}	{
-				#An extra verification to be sure we don't include the same table 2 times if it 
-				#has relationships to itself 
-					if {$fk_table != $table} {
-						append from " , $fk_table"
-					}
-				}
-				#TODO this is postgresql only? 
-				#Concatenate multiple the columns in fk_value
-				#
-				#Mapping type 
-				#Currently mapping ONE TO ONE and one-to-many/many-to-one but not at the same time..
-				# one-to-many User has multiple telephone nr's (tables User(id), UserPhones(user_id, telephone)
-				#TODO many-to-many User has hobbies (tables User (id), Hobbies (id,name), UserHobbies (user_id,hobby_id)
-				#	tags {column id
-				#		fk_table tags fk_column id  fk_value tag
-					#		many_table goldbag_tags many_column goldbag_id many_fk_column tag_id  }
-					#		column <-> many_column
-					#		fk_column <-> many_fk_column
-				if {[llength $fk_value] > 1} {
-				#	set fk_col_value "concat("
-					set fk_col_value ""
-					set c 0
-					foreach v $fk_value {
-					#append fk_col_value  [expr {$first==0? "" : ","}]${fk_table}.${fk_value}
-						append fk_col_value  [expr {$c==0? "" : " || ' ' || "}] ${fk_table}.${v}
-						incr c
-					}
-					#	append fk_col_value ")"
-				} else {
-				#If a fk_function exists..
-					if {[info exists fk_function]} {
-						set fk_col_value [string map ":fk_value ${fk_table}.${fk_value}" $fk_function]
-
-					}  else {		set fk_col_value ${fk_table}.${fk_value} }
-
-				}
-				#		puts "fk_col_value $fk_col_value"
-				lappend newSelect "$fk_col_value as $ts"	
-
-				#	lappend newSelect "${fk_table}.${fk_value} as $ts"	
-				set what [expr {$first==0? "" : " AND"}]
-				append where_sql "$what ${table}.${column}=${fk_table}.${fk_column}"
-				incr first
-
-				#TODO select from current table and also from many_table like form fk_extra
-				#In case you need to select an extra field from the foreign_key table
-				set where_extra ""
-				if {[dict exists ${:attributes} relations $ts fk_extra]} {
-					foreach {column value} $fk_extra {
-						append where_extra " AND $fk_table.$column = '$value'"
-					}
-				}
-				append where_sql $where_extra
-
-
-
-			} else {
-				lappend newSelect "$table.$ts"
-			}
-		}
-		#	puts [dict create where_sql $where_sql toSelect $newSelect  first $first from $from]
-
-		#	puts "Compute relations has tables $from"
-		return [dict create where_sql $where_sql toSelect $newSelect  first $first from $from]
-	}
-
 }
