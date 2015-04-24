@@ -534,8 +534,6 @@ nx::Class create Controller -superclass [list AuthorizationRbac] {
 		set id [ns_queryget id ]
 		#TODO if not via POST..  give 400 error "invalid request"
 		
-	#TODO do intermediate step CONFIRMING the deletion..:D	
-	#TODO or make undo button.. 
 		#set model [my loadModel $id]
 		if {[set model [my loadModel $id]] ==0} { return }
 
