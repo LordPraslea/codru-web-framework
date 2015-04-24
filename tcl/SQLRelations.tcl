@@ -13,12 +13,13 @@ nx::Class create SQLRelations {
 	:property -accessor public table:required
 	:property model:object,type=Model
 	:property {criteria:object,type=SQLCriteria ""}
+	:propety select
 
 
 	:property {statementCount 0}
 
 	:method init {} {
-
+		:computeRelations ${:select}
 	}
 
 	:public method getToSelect {} {
@@ -62,8 +63,9 @@ nx::Class create SQLRelations {
 		set :toSelect $newSelect
 		set :criteria $criteria
 
-		return [dict create where_sql $where_sql toSelect $newSelect  first $first from $from]
+		#return [dict create where_sql $where_sql toSelect $newSelect  first $first from $from]
 	}
+
 	if {0} {
 		tags {column id
 		fk_table tags
@@ -91,6 +93,7 @@ nx::Class create SQLRelations {
 		#		column <-> many_column
 		#		fk_column <-> many_fk_column
 	# }
+	#
 	:public method generateRelationDataFor {ts} {
 		upvar cnewSelect newSelect from from
 		set many_table ""
@@ -174,7 +177,8 @@ nx::Class create SQLRelations {
 		lappend newSelect "$fk_col_value as $ts"	
 	}
 
-
+		
+	#TODO REFACTOR
 	# Relations selection.. 
 	# #TODO MULTI PK
 	:public method relations {relation {id {}}} {
