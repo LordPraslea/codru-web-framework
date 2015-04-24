@@ -2,24 +2,13 @@
 # Model Database File 
 ##########################################
 
-# Classes to use
+::nx::Slot method type=choice {name value arg} {
+  if {$value ni [split $arg |]} {
+    error "Value '$value' of parameter $name not in permissible values $arg"
+  }
+}
 
-#Model -superclass DatabaseModel
-
-#DatabaseModel
-
-#SQLGenerator
-#	SQLGeneratorPostgreSQL
-#	SQLGeneratorSQLite
-
-#ModelValidation
-#	NodJsModelValidation
-
-#TagModelManagement
-
-
-
-nx::Class create Model -superclass [list SQLGenerator ModelValidation NodJsModelValidation RbacModel] {
+nx::Class create Model -superclass [list  SQLSelect SQLInsert SQLUpdate SQLRecycle ModelValidation NodJsModelValidation RbacModel TagModelManagement] {
 
 	:property -accessor public attributes  ; #Attribute dict/list/array  name  value
 	:property  -accessor public  alias   ;#Alias for query
@@ -101,6 +90,31 @@ nx::Class create Model -superclass [list SQLGenerator ModelValidation NodJsModel
 			return [mc [dict get ${:alias} $name]]
 		} else { return $name }
 	}
+	:public method getTable {} {
+		return [dict get ${:attributes} table]
+	}
+
+
+	#SQL Stats command knowing what SQL was written for this page..
+	:public method sqlstats {sql} {
+		dict incr :sqlstats count
+		dict lappend :sqlstats sql $sql
+	}
+
+	
+	:public method getColumnsKeys {} {
+		return [dict keys [dict get ${:attributes} sqlcolumns]] 
+	}
+
+	:public method getRelationsKeys {} {
+		return [dict keys [dict get ${:attributes} relations]] 
+	}
+
+	:public method getRelations {relation} {
+		return [dict get ${:attributes} relations $relation]	
+	}
+
+	##################Errors
 	:public method addError {name error} {
 		dict lappend :attributes errors $name [list $error]
 	}
@@ -110,39 +124,27 @@ nx::Class create Model -superclass [list SQLGenerator ModelValidation NodJsModel
 		} else { return "" }
 
 	}
-	:public method getTable {} {
-		return [dict get ${:attributes} table]
-	}
+	:public method getErrors {} {
+		# Return all the errors for all the attributes in the form
+		set toreturn ""
 
-	#SQL Stats command knowing what SQL was written for this page..
-	:public method sqlstats {sql} {
-		dict incr :sqlstats count
-		dict lappend :sqlstats sql $sql
-	}
-
-	#Unset a variable (so it will not be saved)
-	:public method unset {name} {
-		if {[dict exists ${:attributes} sqlcolumns $name value]} {
-			dict unset :attributes sqlcolumns $name value
+		if {[dict exists ${:attributes} errors ]} {
+			foreach {key values} [dict get ${:attributes} errors] {
+				foreach val $values {
+					lappend toreturn $val
+				}
+			}
 		}
+		return $toreturn
+
 	}
 
-	:public method exists {name} {
-		# Verify if the name exists  otherwise if it's a relation or not
-		return [expr {[dict exists ${:attributes} sqlcolumns $name] ? 1 : [dict exists ${:attributes} relations $name]}]
-	}
-	:public method setScenario {name} {
-		set :scenario $name
-	}
-	:public method getScenario {} {
-		return ${:scenario}
-	}
 
 	#This function is ran to generate a scenarios variable that contains all scenario's
 	#se we don't load all the columns anymore and know exactly which to use.
 	#It easily works with multiple scenarios
 	:public method genScenarios {} {
-		foreach key [dict keys [dict get ${:attributes} sqlcolumns]] {
+		foreach key  [:getColumnsKeys]  {
 			if {[dict exists ${:attributes} sqlcolumns $key unsafe]} {
 				if {[dict exists ${:attributes} sqlcolumns $key unsafe on]} {
 					set unsafe_scenarios [dict get ${:attributes} sqlcolumns $key unsafe on]
@@ -177,6 +179,13 @@ nx::Class create Model -superclass [list SQLGenerator ModelValidation NodJsModel
 		#Return all the keys that can be used in this scenario 
 		return [dict get ${:attributes} scenarios]
 	}
+	:public method setScenario {name} {
+		set :scenario $name
+	}
+	:public method getScenario {} {
+		return ${:scenario}
+	}
+
 
 	#then just put those for that scenario!
 	#futile to get them all.. just for "the fun of it"
@@ -218,20 +227,7 @@ nx::Class create Model -superclass [list SQLGenerator ModelValidation NodJsModel
 	}
 	
 
-	:public method getErrors {} {
-		# Return all the errors for all the attributes in the form
-		set toreturn ""
 
-		if {[dict exists ${:attributes} errors ]} {
-			foreach {key values} [dict get ${:attributes} errors] {
-				foreach val $values {
-					lappend toreturn $val
-				}
-			}
-		}
-		return $toreturn
-
-	}
 	
 	#Cache duration - dependency - time
 	##At the moment we use naviserver function for caching.. maybe implement a psuedo class if the
@@ -287,9 +283,49 @@ nx::Class create Model -superclass [list SQLGenerator ModelValidation NodJsModel
 		}  elseif {[dict exists ${:attributes} relations $name value]} {
 			return [dict get ${:attributes} relations $name value]
 		}
+	}
 
-		#Returns empty if nothing found..
-		#return "&nbsp;"
+	#Unset a variable (so it will not be saved)
+	:public method unset {name} {
+		if {[dict exists ${:attributes} sqlcolumns $name value]} {
+			dict unset :attributes sqlcolumns $name value
+		}
+	}
+
+	:public method exists {name} {
+		# Verify if the name exists  otherwise if it's a relation or not
+		return [expr {[:existsColumn $name] ? 1 : [existsRelation $name]}]
+	}
+
+	:public method existsRelation {name} {
+		return	[dict exists ${:attributes} relations $name]
+	}
+
+	:public method existsColumn {name} {
+		return	[dict exists ${:attributes} sqlcolumns  $name]
+	}
+
+	
+	# Validate the model, if everything is OK, it usually returns 1.. otherwise the list of errors:)
+	# If 1 and newRecord 1 it inserts, if 1 and newRecord 0 it updates
+	#[llength [my validate]]>1p
+	# 
+
+	:public method save {} {
+
+		if {[my validate] !=0} {
+			return 0
+		} 
+
+		#TODO beforeSave
+		# TODO if insert/update returns 0, generate an error
+		if {${:newRecord}} {
+			return [:insert]
+		} else {
+			return [:update]
+		}
+		#TODO afterSave
+		return 1
 	}
 
 
