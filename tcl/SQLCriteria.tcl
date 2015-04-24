@@ -2,16 +2,12 @@
 # SQL  Criteria/Where generator
 #################################	
 
-nx::Class create SQLCriteria {	
+nx::Class create SQLCriteria -mixin [list SQLCommands] {	
 
 	:property -accessor public {table ""}
 
-	#Statement Type 
-	#	Used for collision avoidance with prepared statements
-	# numeric = column name + statementCount (default)
-	# random = column name + random code for each column
-	:property {statementType:choice,arg=default|numeric|random numeric}
-	:variable statementCount 0
+#	:property {statementType:choice,arg=default|numeric|random numeric}
+#	:variable statementCount 0
 	:property {where ""}
 
 	:method init {} {
@@ -28,8 +24,6 @@ nx::Class create SQLCriteria {
 		}
 	}
 	
-	#cond = operator not condition..
-	#TODO condition, operator should be FIXED with the type attribute
 	:public method add {{-fun default} {-cond "AND"} {-op =} column {value ""}} {
 		set method [string tolower $fun]
 		set cond [string toupper $cond]
@@ -40,6 +34,12 @@ nx::Class create SQLCriteria {
 		:$method -cond $cond -op $op  $column $value
 	#	incr :statementCount
 	}
+
+	:public method addUpdateCriteria {column value} {
+		:default -op = -cond ", " $column $value
+	}
+
+	:public alias addUpdate [:info method handle addUpdateCriteria]
 	
 	#AND / OR supported .. 
 	#TODO AND NOT etc
@@ -72,33 +72,6 @@ nx::Class create SQLCriteria {
 		#	incr :statementCount
 	}
 	
-	#TODO upvar condition ?:)
-	:method getCondition {cond} {
-		return [expr {${:statementCount} == 0 ? "" : " $cond"}]
-	}
-	
-	:method genStatement {{-type:choice,arg=numeric|random|default default} column {value ""}} {
-		set	statement $column  
-
-
-		if {$type == "default"} {
-			set type ${:statementType}	
-		}
-		switch -- $type {
-			numeric { 	set	statement [format "%s_%s" $column ${:statementCount}] }
-			random { 	set	statement [format "%s_%s" $column [generateCode 2 3] ] }
-		}
-		
-		if {[dict exists ${:pr_stmt} $column]} {
-			puts "$column Exists, thuis generating "
-		}
-
-		if {$value != ""} { dict set :pr_stmt $statement $value }
-		incr :statementCount
-		return $statement
-	}
-
-	:public alias genStmt [:info method handle genStatement]
 
 	#in multiple..
 	:method in {-cond -op column values} {
