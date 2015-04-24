@@ -22,7 +22,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="NaviServer"
 NAME=nsd
 DAEMON=/opt/ns/bin/$NAME
-DAEMON_ARGS="-w -u www-data -g www-data  -t /opt/ns/conf/ubp-config.tcl"
+DAEMON_ARGS="-w -u naviserver -g naviserver  -t /opt/ns/conf/lostmvc-config.tcl"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
