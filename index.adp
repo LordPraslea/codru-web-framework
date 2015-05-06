@@ -10,7 +10,7 @@ $bhtml addPlugin mycover {
 
 append page "<h1>LostMVC</h1>"
 append page {
-Welcome to LostMVC!
+	Welcome to LostMVC!
 }
 ns_adp_include -cache 100 ./views/layout.adp -bhtml $bhtml -title $title -keywords  $keywords  $page  
 %>

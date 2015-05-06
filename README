@@ -1,0 +1,12 @@
+10-03-2015 - Refactoring and adding Tests for BHTML
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+One year has passed since first inception of bhtml, it's time for testcases.
+TDD will have to be implemented. A big refactoring will follow.
+
+
+20-01-2015 - Upgrade from version 0.3 to 0.5 Changes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Upgrade from TclOO to NextScripting NX
+Changing classes, updating ns_parseargs to method arguments.. (where possible)
+Constructors changed for init and using properties
+
