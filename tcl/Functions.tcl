@@ -84,7 +84,7 @@ namespace eval lostmvc {
 
 	}
 	proc getHost {} {
-		return [lindex [join [split [ns_conn location] /]] 2]
+		return [lindex [split [ns_conn location] /] 2]
 	}
 	proc getConfigName {} {
 		return	[join [split [getHost] .] _]
