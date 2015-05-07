@@ -4,7 +4,8 @@
 
 
 
-nx::Class create Model -superclass [list  SQLSelect SQLInsert SQLUpdate SQLRecycle ModelValidation NodJsModelValidation RbacModel TagModelManagement] {
+nx::Class create Model -mixin [list NodJsModelValidation ModelRelations ] \
+	-superclass [list  SQLSelect SQLInsert SQLUpdate SQLRecycle ModelValidation RbacModel TagModelManagement]  {
 
 	:property -accessor public attributes  ; #Attribute dict/list/array  name  value
 	:property  -accessor public  alias   ;#Alias for query
