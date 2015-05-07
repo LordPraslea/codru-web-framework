@@ -2,7 +2,7 @@
 # SQL Recycle (Delete + Restore) 
 #################################	
 
-nx::Class create SQLInsert -mixin [list SQLCommands]  {
+nx::Class create SQLRecycle -mixin [list SQLCommands]  {
 #
 	# This function selects the data that has to be deleted
 	# Saves it using the RecycleBin mechanism, then deletes it
@@ -10,27 +10,38 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 	#
 	#TODO view if limit empty and if only a number, view if offset is a number..
 	#
-	:public method delete {{-in 0} {-recycle 1} } {
+	:public method delete { {-recycle 1}  } {
 		set pr_stmt ""
-		set table [dict get ${:attributes} table]
-		set whereCriteria [SQLCriteria new -table $table]
+		if {$table == ""} { 		set table [dict get ${:attributes} table] }
+		set deleteCriteria [SQLCriteria new -table $table]
 
 		set recycleID	[:recycleBin 1]
 
 		#COMPUTE ALL PRIMARY KEYS
 		foreach id [dict get ${:attributes} primarykey] {
-			$whereCriteria add $id [:get $id]	
+			$deleteCriteria add $id [:get $id]	
 		}
 
-		set where_sql [$whereCriteria getCriteriaSQL]
-		set pr_stmt [dict merge $pr_stmt [$whereCriteria getPreparedStatements]]
-
-		set sql "DELETE FROM $table WHERE $where_sql"
-		set status [dbi_dml -db ${:db} -bind $pr_stmt $sql]
+		set status [:runDeleteSQL $table $deleteCriteria]
 	
 		if {$recycle} {
 			return $recycleID 
 		}
+		return $status
+	}
+	
+	#Warning, this deletes things from table based on deleteCriteria for good! no recycling!
+	:public method deleteOther {{-table } {-deleteCriteria:object,type=SQLCriteria}} {
+		return [:runDeleteSQL $table $deleteCriteria]
+	
+	}
+
+	:method runDeleteSQL {table deleteCriteria} {
+		set where_sql [$deleteCriteria getCriteriaSQL]
+		set pr_stmt [dict merge $pr_stmt [$deleteCriteria getPreparedStatements]]
+
+		set sql "DELETE FROM $table WHERE $where_sql"
+		set status [dbi_dml -db ${:db} -bind $pr_stmt $sql]
 		return $status
 	}
 
