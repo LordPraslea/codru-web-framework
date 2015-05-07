@@ -38,7 +38,16 @@ foreach {key val} $pageinfo {
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
         <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
-<noscript><style> .jsonly { display: none } </style></noscript>
+<noscript><style>
+	.jsonly { display: none }
+	.dropdown:hover .dropdown-menu {
+		display: block;
+	}
+	.dropup:hover .dropdown-menu {
+		display: block;
+	}
+		
+</style></noscript>
 </head>
 
 <body>
@@ -118,7 +127,7 @@ ns_puts {
 				<%= [$bhtml nav -tabs 0 -class "col-xs-offset-4" $data] %> 
 				<%= [$bhtml a -fa fa-file-text "Terms of Use" ] %> -
 				<%= [$bhtml a -fa fa-lock "Privacy Policy" ] %> -
-					<%=  [$bhtml a -fa [list fa-lg fa-globe]  [concat [mc "Language "] [$controller getLanguage]] [$controller  getUrl  -controller user lang] ]  %> 
+				<% ns_adp_puts  [$controller generateLanguageLinks $bhtml] %> 
                     <p class="copyright text-muted small">Copyright &copy; United Brain Power 2014-2015. All Rights Reserved</p>
                 </div>
             </div>
