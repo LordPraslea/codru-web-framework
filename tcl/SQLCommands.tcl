@@ -7,6 +7,11 @@
 # 		SQLRecycle (Delete, Restore RecycleBin)
 # 		SQLCriteria ?
 #################################	
+::nx::Slot method type=choice {name value arg} {
+  if {$value ni [split $arg |]} {
+    error "Value '$value' of parameter $name not in permissible values $arg"
+  }
+}
 
 nx::Class create SQLCommands   {
 
@@ -14,7 +19,8 @@ nx::Class create SQLCommands   {
 #	Used for collision avoidance with prepared statements
 # numeric = column name + statementCount (default)
 # random = column name + random code for each column
-	:property {statementType:choice,arg=default|numeric|random numeric}
+	#:property {statementType:choice,arg=default|numeric|random numeric}
+	:property {statementType numeric}
 	:variable statementCount 0
 
 	:method getSeparator {cond} {
@@ -22,12 +28,13 @@ nx::Class create SQLCommands   {
 		incr :columnCount
 		return $condition
 	}
+
 	#TODO upvar condition ?:)
 	:method getCondition {cond} {
 		return [expr {${:statementCount} == 0 ? "" : " $cond"}]
 	}
-
-	:method genStatement {{-type:choice,arg=numeric|random|default default} column {value ""}} {
+ #TODO {-type:choice,arg=numeric|random|default default}
+	:method genStatement {{-type default} column {value ""}} {
 		set	statement $column  
 
 		if {$type == "default"} {
@@ -47,7 +54,11 @@ nx::Class create SQLCommands   {
 		return $statement
 	}
 
-	:public alias genStmt [:info method handle genStatement]
+	:method genStmt {args} {
+		return [:genStatement {*}$args]
+	}
+
+	#:public alias genStmt [:info method handle genStatement]
 
 
 }
