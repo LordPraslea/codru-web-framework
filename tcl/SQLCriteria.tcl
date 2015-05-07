@@ -5,6 +5,7 @@
 nx::Class create SQLCriteria -mixin [list SQLCommands] {	
 
 	:property -accessor public {table ""}
+	:property model:object,type=Model
 
 #	:property {statementType:choice,arg=default|numeric|random numeric}
 #	:variable statementCount 0
@@ -16,7 +17,7 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 		#Used for in conditional operators
 
 		if {${:table} ==""} {
-			set table [dict get ${:attributes} table]
+			set :table [${:model} getTable]
 		}
 
 		if {${:where} != ""} {
@@ -39,7 +40,11 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 		:default -op = -cond ", " $column $value
 	}
 
-	:public alias addUpdate [:info method handle addUpdateCriteria]
+	:public method addUpdate {column value} {
+		:default -op = -cond ", " $column $value
+	}
+
+	#:public alias addUpdate [:info method handle addUpdateCriteria]
 	
 	#AND / OR supported .. 
 	#TODO AND NOT etc
@@ -51,7 +56,7 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 	}
 	
 	#Generates relationships (no statements added, so it's safe to just return the sql)
-	:public method addRelation { -cond  -op  {-table ""} {-fk_table ""} column fk_column } {
+	:public method addRelation { {-cond "AND"} {-op =}  {-table ""} {-fk_table ""} column fk_column } {
 		set condition [:getCondition $cond]
 
 		if {$table != ""} {
@@ -75,17 +80,16 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 
 	#in multiple..
 	:method in {-cond -op column values} {
-		set fi 1
+		set :columnCount 0
 		set in_statement ""
-		#TODO in_statement could be simple values 
+		set condition [:getCondition  AND]
+
 		foreach value $values {
-			set operator [expr {$fi==1? "" : ","}]
+			set operator [:getSeparator ","]
 			set statement [:genStatement -type numeric $column $value]
 			append in_statement $operator :$statement 
-			incr fi
 		}	
 
-		set condition [:getCondition  AND]
 
 		append :where_sql "$condition ${:table}.$column IN ($in_statement) "
 	}
