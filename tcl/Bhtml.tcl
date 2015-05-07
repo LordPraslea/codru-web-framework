@@ -471,7 +471,7 @@ nx::Class create bhtml {
 	}
 
 	:method perItemTableData {} {
-		:upvar data data length length
+		foreach refVar {data length tdOptions } { :upvar $refVar $refVar }
 	#Just a big list of data, manualy split rows
 		set count 1; set row ""
 		foreach item $data {
@@ -889,14 +889,15 @@ nx::Class create bhtml {
 		#Lazy loader for images
 		if {$lazy} {
 			:imgIncludeLazyJs
-			dict lappend htmlOptions class lazy
 			dict set htmlOptions data-src $src
+			set htmlOptionsNonLazy $htmlOptions
 
-			set htmlOptionsLazy $htmlOptions
-			dict lappend htmlOptionsLazy class jsonly
-			dict set htmlOptionsLazy src $src
+			dict set htmlOptionsNonLazy src $src
+
+			dict lappend htmlOptions class jsonly
+			dict lappend htmlOptions class lazy
 			#Provide noscript equivalent
-			append img [:tag noscript [my htmltag -htmlOptions $htmlOptionsLazy -closingTag 0 img  ] ]
+			append img [:tag noscript [my htmltag -htmlOptions $htmlOptionsNonLazy -closingTag 0 img  ] ]
 		} else {
 			dict set htmlOptions src $src
 		}
@@ -1076,8 +1077,6 @@ nx::Class create bhtml {
 		if {$size == 1} { dict lappend htmlOptions class "pagination-lg" }
 
 		# more first and last
-		#	set first {-url 1 "&laquo;" "#" }
-		#	set last {-url 1 "&raquo;" "#" }
 
 		set pagination [linsert $data 0 $first]
 		lappend pagination $last
