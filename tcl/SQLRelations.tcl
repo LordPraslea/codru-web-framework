@@ -10,16 +10,21 @@
 
 nx::Class create SQLRelations {
 
-	:property -accessor public table:required
+	:property -accessor public table
 	:property model:object,type=Model
-	:property {criteria:object,type=SQLCriteria ""}
-	:propety select
+	:property criteria:object,type=SQLCriteria 
+	:property select
 
 
 	:property {statementCount 0}
 
 	:method init {} {
-		:computeRelations ${:select}
+		if {[info exists :select]} {
+			:computeRelations ${:select}
+		}
+		 if {![info exists :table]} {
+		 	set :table [${:model} getTable ]
+		 }
 	}
 
 	:public method getToSelect {} {
@@ -44,16 +49,16 @@ nx::Class create SQLRelations {
 		}
 
 		if {$toSelect  == "*"} {
-			set relSelect [$model getRelationsKeys]
-			set colSelect [$model getColumnsKeys]
+			set relSelect [${:model} getRelationsKeys]
+			set colSelect [${:model} getColumnsKeys]
 			set toSelect [concat $colSelect $relSelect]
 		}
 
 		foreach ts $toSelect {
-			if {[$model existsRelation $ts]} {
+			if {[${:model} existsRelation $ts]} {
 				:generateRelationDataFor $ts
-			} else if {[$model existsColumn $ts]} {
-				lappend newSelect "$table.$ts"
+			} elseif {[${:model} existsColumn $ts]} {
+				lappend newSelect "${:table}.$ts"
 			} else {
 			#Special not mentioned relation we add it as it is
 
@@ -61,7 +66,6 @@ nx::Class create SQLRelations {
 		}
 		set :from $from
 		set :toSelect $newSelect
-		set :criteria $criteria
 
 		#return [dict create where_sql $where_sql toSelect $newSelect  first $first from $from]
 	}
@@ -95,49 +99,49 @@ nx::Class create SQLRelations {
 	# }
 	#
 	:public method generateRelationDataFor {ts} {
-		upvar cnewSelect newSelect from from
+		upvar newSelect newSelect from from
 		set many_table ""
-		foreach {k v} [$model getRelations $ts] { set $k $v }	
+		foreach {k v} [${:model} getRelations $ts] { set $k $v }	
 
 		if {$many_table!=""} {
-			:computeMultiTables
+			:computeMultiTables $ts
 
 		}
 		#An extra verification to be sure we don't include the same table 2 times if it #has relationships to itself 
 		if {[lsearch $from $fk_table ] == -1}	{
-			if {$fk_table != $table} {
+			if {$fk_table != ${:table}} {
 				append from " , $fk_table"
 			}
 		}
-		:computeForeignKeyValue
+		:computeForeignKeyValue $ts
 
-		${:criteria} addRelation -table $table -fk_table $fk_table  $column $fk_column 
+		${:criteria} addRelation -table ${:table} -fk_table $fk_table  $column $fk_column 
 
 		#TODO select from current table and also from many_table like form fk_extra
 		#In case you need to select an extra field from the foreign_key table
-		if {[dict exists ${:attributes} relations $ts fk_extra]} {
+		if {[dict exists [${:model} getAttributes] relations $ts fk_extra]} {
 			foreach {column value} $fk_extra {
 				${:criteria} addRelation -table $fk_table $column '$value' 
 			}
 		}
 	}
 
-	:method computeMultiTables {} {
+	:method computeMultiTables {ts} {
 	#	lappend newSelect $ts
 	#	append form ", ..."
 	#
 	#Whenever you want many-to-many ... just select the current ID!
 	#TODO this should work for multi keys..
 		if {0} {
-			set pks [dict get ${:attributes} primarykey]
+			set pks [dict get [${:model} getAttributes] primarykey]
 			if {[llength $pks] == 1} {
 
 				puts "llength is 1 for $pks"
-				lappend newSelect "$table.id as $ts"
+				lappend newSelect "${:table}.id as $ts"
 			} else {	
 				set c 0
 				foreach pk $pks {
-					#	append ok_pk  "($table.id as $ts"
+					#	append ok_pk  "(${:table}.id as $ts"
 
 					append pk_col_value  [expr {$c==0? "" : " || ' ' || "}] $pk
 					incr c
@@ -145,19 +149,20 @@ nx::Class create SQLRelations {
 				lappend newsSelect "$pk_col_value as $ts"
 			}
 		} else {
-			lappend newSelect "$table.id as $ts"
+			lappend newSelect "${:table}.id as $ts"
 		}
-		continue 
+		#This returns 2 functions higher (from the days there was 1 unrefactored function)
+		return -level 2	-code continue 
 		#This will never run..
 		lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_table}.${fk_value}
-		FROM $fk_table,$many_table,$table
-		WHERE $many_table.$many_column = $table.$column
+		FROM $fk_table,$many_table,${:table}
+		WHERE $many_table.$many_column = ${:table}.$column
 		AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts"
 	}	
 
 	#Computes the foreign key value in fk_value
 	#(if you want something else than fk_column)
-	:method computeForeignKeyValue {} {
+	:method computeForeignKeyValue {ts} {
 		foreach refVar {fk_value fk_table fk_function newSelect} { :upvar $refVar $refVar }
 
 		#Concatenate multiple values
@@ -178,66 +183,4 @@ nx::Class create SQLRelations {
 	}
 
 		
-	#TODO REFACTOR
-	# Relations selection.. 
-	# #TODO MULTI PK
-	:public method relations {relation {id {}}} {
-		if {![dict exists ${:attributes} relations $relation]}  {
-		# puts "Relation doesn't exist $relation";
-			return ""
-		}
-		set table [:getTable]
-		#Sets all the relation variables 
-		foreach {k v} [dict get ${:attributes} relations $relation] { set $k $v }	
-		foreach value $fk_value {
-			append select  ${fk_table}.$value
-		}
-
-		:relationsMultipleOrSimple
-
-		:relationsExtraColumn
-
-		#puts "SQL for relation is $sql_select"
-		if  {$id == ""} {
-			dict set pr_stmt column [my get $column]
-		} else { dict set pr_stmt column $id }
-
-		my sqlstats $sql_select
-		set values  [dbi_rows -db ${:db} -columns columns -bind $pr_stmt $sql_select ]
-		dict set :attributes relations $relation value $values
-
-		return $values
-	}
-
-	#This function allows you to specify standard select data for relations
-	#using the fk_extra { column value } option in a model
-	:method relationsExtraColumn {} {
-		foreach refVar {relation fk_extra fk_table sql_select} { :upvar $refVar $refVar }
-
-		set where_extra ""
-		if {[dict exists ${:attributes} relations $relation fk_extra]} {
-			foreach {column value} $fk_extra {
-				append where_extra " AND $fk_table.$column = '$value'"
-			}
-		}
-
-		append sql_select $where_extra
-	}
-
-	:method relationsMultipleOrSimple {} {
-		:upvar relation relation sql_select sql_select 
-
-		if {[dict exists ${:attributes} relations $relation many_table]} {
-			set sql_select "SELECT $select
-			FROM $fk_table,$many_table,$table
-			WHERE $many_table.$many_column = $table.$column
-			AND $fk_table.$fk_column = $many_table.$many_fk_column
-			AND $table.$column = :column"
-		} else {
-			set sql_select "SELECT $select 
-			FROM $fk_table,$table
-			WHERE 	 $fk_table.$fk_column = $table.$column
-			AND $table.$column = :column"
-		}
-	}
 }
