@@ -73,11 +73,17 @@ nx::Class create LostShell {
 # === makeDoc creating documentation
 #
 
-	:public  method makeDoc {args} {
-		puts "Making documentation  $args [info script]"
+	:public  method makeDoc {{-tcl 1} file} {
+		puts "Making documentation  $file [info script]"
 		puts [array get env ]
-		exec source-doc-beautifier.tcl $args
-		exec asciidoc -f [file dir [info script]]/asciidoc.conf -b html5 -a tabsize=4 -a icons -a toc2 [regsub {\.tcl} $args .txt]
+		if {$tcl} {
+			exec  >&@stdout source-doc-beautifier.tcl $file
+			exec  >&@stdout asciidoc -f [file dir [info script]]/asciidoc.conf -b html5 -a tabsize=4 -a icons -a toc2 [regsub {\.tcl} $file .txt]
+		} else {
+			#don't forget to do apt-get install source-highlight
+			exec  >&@stdout asciidoc -b html5 -a tabsize=4 -a icons -a toc2 [regsub {\.tcl} $file .txt]
+		}
+		
 	#	exec asciidoc  [regsub {.tcl} $args .txt]
 	}
 	
@@ -193,26 +199,35 @@ nx::Class create LostShell {
 		return $password
 	}
 	
+	:public method terminal:confirmPassword {promptString} {
+		set password "pass" ; set confirmPassword "pass2"
+		while {$password != $confirmPassword} {
+			set password [:terminal:password:get $promptString ]
+			set confirmPassword [:terminal:password:get "Confirm password"]
+		}
+		return $password
+	}
+
 	#DEFAULT is to return Y/N
 	#If you change options to other letters/numbers remember to catch the output
 	# Y/N are boolean values so you can treat them as such
 	:method terminal:confirm:continue {{-default y} {-options {y "confirm" n "cancel" } } message} {
 		set default [string toupper $default]
 
-		if {[info exists :acceptAllDefault]} {
-			if {${:acceptAllDefault}} {
-				return $default
+			if {[info exists :acceptAllDefault]} {
+				if {${:acceptAllDefault}} {
+					return $default
+				}
 			}
-		}
 
-			set defaultmsg ""
+		set defaultmsg ""
 			foreach {nr optionText} $options {
 				append defaultmsg "\n\t${nr}. $optionText "
-				if {$default == [string toupper $nr]} { append defaultmsg (default) }
+					if {$default == [string toupper $nr]} { append defaultmsg (default) }
 
 			}
 
-			set confirm [:terminal:confirm:outputMsg $message $defaultmsg]
+		set confirm [:terminal:confirm:outputMsg $message $defaultmsg]
 
 			foreach {nr optionText} $options {
 				if {$confirm == [string toupper $nr]} {
