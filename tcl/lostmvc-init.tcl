@@ -22,7 +22,7 @@ set cacheTime 180
 
 set framework_dir "lostmvc"
 #TODO Fix loading of server models/controllers only when needed
-foreach pkg {TclOO nx sha256 msgcat tclgd base64 json} {
+foreach pkg {TclOO nx  nx::serializer msgcat tclgd base64 json} {
 	package require $pkg
 }
 msgcat::mcload [ns_server pagedir]/lang
