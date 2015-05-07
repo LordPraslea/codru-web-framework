@@ -10,8 +10,8 @@ nx::Class create SQLUpdate -mixin [list SQLCommands]  {
 	:public method update {} {
 		:updateSQL model
 	}
-
-	:method updateSQL {type:choice,arg=model|multi model} {
+#TODO 	{type:choice,arg=model|multi model}
+	:method updateSQL {type model} {
 		set table [dict get ${:attributes} table]
 		set :pr_stmt [dict create]	
 
@@ -60,7 +60,7 @@ nx::Class create SQLUpdate -mixin [list SQLCommands]  {
 		}
 	}
 
-	:public method updateMultipleRows {updateCriteria:Object,type=SQLCriteria whereCriteria:Object,type=SQLCriteria} {
+	:public method updateMultipleRows {updateCriteria:object,type=SQLCriteria whereCriteria:object,type=SQLCriteria} {
 		set :updateCriteria $updateCriteria
 		set :whereCriteria $whereCriteria
 		:updateSQL multi
