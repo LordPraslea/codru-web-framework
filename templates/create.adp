@@ -20,10 +20,7 @@ ns_puts [string map " %modelname  $modelname %controller [string tolower $modeln
 			{-url 1 {[mc %modelname]}  /%controller/index }
 			{-active 1 $title  }
 	"
-dict set pageinfo menu "
-	{  -url 1   {[mc List] [mc %modelname]} [my getUrl index]}
-	{  -url 1 -show 0   {[mc Admin] [mc %modelname]} [my getUrl admin]}
-"
+dict set pageinfo menu " "
 }] 
 #Include MENU for buttons.. etc
 #
