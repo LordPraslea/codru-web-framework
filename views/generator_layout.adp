@@ -18,7 +18,7 @@ ns_parseargs { {-title ""} {-keywords ""} {-author ""} {-description ""} {-bhtml
 
 		<title><%= $title %></title>
 
-		<%= [$bhtml includePlugins] %>
+		<%= [$bhtml includeCssPlugins] %>
 
 		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 		<!--[if lt IE 9]>
@@ -55,6 +55,7 @@ ns_puts $page ;# [ns_adp_argv 0] ;# $page
 %>
 </div>
 <%= [$bhtml components] %>
+<%= [$bhtml includeJsPlugins] %>
 <%= [$bhtml putScripts] %>
 	</body>
 </html>
