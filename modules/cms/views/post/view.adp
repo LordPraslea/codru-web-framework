@@ -4,6 +4,7 @@
 #TODO make one view for cms and blog post.. just use the $model get cms variable to know how to differentiate..
 
 set title [$model get title]
+$model bhtml $bhtml
 
 dict set pageinfo title "United Brain Power - $title"
 
@@ -14,13 +15,8 @@ dict set pageinfo title "United Brain Power - $title"
 	} ]  
 	set id [$model get id]
 dict set pageinfo menu "
-	{  -url 1   {[mc List] [mc Post]} [my getUrl index]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Create] [mc Post]} [my getUrl -controller site create]}
-	{  -url 1 -show [my hasRole adminPost] {[mc Update] [mc Post]} [my getUrl -controller site update [list id $id]]}
-	{  -url 1 -show [my hasRole adminPost] {[mc Delete] [mc Post]} [my getUrl -controller site delete [list id $id]]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Admin] [mc Post]} [my getUrl -controller site admin]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Admin] [mc Comments]} [my getUrl -controller comment index]}
-
+	{  -url 1 -show [my hasRole adminPost] {[mc Update] [mc Post]} [my getUrl -controller cms update [list id $id]]}
+	{  -url 1 -show [my hasRole adminPost] {[mc Delete] [mc Post]} [my getUrl -controller cms delete [list id $id]]}
 "
 
 dict set pageinfo sidebar  [ns_adp_parse -file sidebar.adp   $model $bhtml]

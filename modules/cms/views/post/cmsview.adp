@@ -15,12 +15,8 @@ dict set pageinfo title "$title - United Brain Power"
 	set id [$model get id]
 
 dict set pageinfo menu "
-	{  -url 1  {[mc List] [mc Post]} [my getUrl -controller cms  index]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Create] [mc Post]} [my getUrl -controller cms create]}
 	{  -url 1 -show [my hasRole adminPost] {[mc Update] [mc Post]} [my getUrl -controller cms update [list id $id]]}
 	{  -url 1 -show [my hasRole adminPost] {[mc Delete] [mc Post]} [my getUrl -controller cms delete [list id $id]]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Admin] [mc Post]} [my getUrl -controller cms admin]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Admin] [mc Comments]} [my getUrl -controller comment index]}
 "
 
 #dict set pageinfo sidebar  [ns_adp_parse -file sidebar.adp   $model $bhtml]
@@ -43,7 +39,7 @@ set status [$model get status]
 if {$status == 2 && ![my verifyAuth]} {
 
 #ns_puts [$bhtml htmltag h1 $title]
- append article [$bhtml tag h2 [mc "This blog post is accesible only to registered users. Please %s to view it." [$bhtml link  [mc {log in}]  [my getUrl -controller user login] ]]
+ append article [$bhtml tag h2 [mc "This blog post is accesible only to registered users. Please %s to view it." [$bhtml link  [mc {log in}]  [my getUrl -controller user login] ]]]
 } else { 
 $bhtml syntaxHighlighter 
 $bhtml  addPlugin tclbrush {

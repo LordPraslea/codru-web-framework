@@ -100,12 +100,12 @@ nx::Class create Comment -superclass Model {
 
 :public	method genComments {post_id} {
 		set postcomments ""
-		lappend where [list post_id $post_id] [list status 1] 
-		# ns_puts "[$model relations comments]"
+		set c [SQLCriteria new -model [self]]
+		$c add post_id $post_id
+		$c add status 1
 		# TODO reply self referencing relation fix it..
-		set comments [my search -where $where -relations 1   [list id  post comment creation_at user status ]]
+		set comments [my search -criteria $c -relations 1   [list id  post comment creation_at user status ]]
 		if {$comments  == ""} { return "" }
-		#set comments [my search -where $where  -relations 1 *]
 		set bhtml [ bhtml new]
 		foreach [dict get $comments columns] [dict get $comments values] {
 			append postcomments  [$bhtml tag -htmlOptions [list name comment-$id] a]

@@ -179,11 +179,7 @@ nx::Class create Post -superclass Model {
 	}
 
 	:public method showTags {} {
-	#	puts "shchow thags ${:bhtml} is bhtml"
-	#	set tags [GoldbagTags new]	
-	#	set search [$tags search -where [list scoala_id $scoala_id] -relations 1 "nume specializare id" ]
-	#	set bhtml [bhtml new]
-	 	set tags [my relations tags ]
+	 	set tags [:relations tags ]
 		set newtags ""
 		foreach tag $tags {
 			#append newtags $tag " "
@@ -200,10 +196,11 @@ nx::Class create Post -superclass Model {
 		set latestposts ""	
 		set allowedStatus [list 1 3 4 5]
 		if {[ns_session contains userid]} { lappend allowedStatus 2 }
-		lappend where [list -cond IN status $allowedStatus]
-		lappend where [list -eq <= public_at [getTimestamp] ]
-		lappend where [list cms 0 ]
-		set posts [my search -limit $total -orderType desc -order public_at -where $where "id title slug public_at"]	
+		set criteria [SQLCriteria new -model [self]]
+		$criteria add -fun in status $allowedStatus
+		$criteria add -op <= public_at [getTimestamp] 
+		$criteria add cms 0 
+		set posts [my search -limit $total -orderType desc -order public_at -criteria $criteria "id title slug public_at"]	
 	#	set bhtml [my bhtml]
 		foreach [dict get $posts columns] [dict get $posts values] {
 			set time [howlongago [clock scan $public_at]]

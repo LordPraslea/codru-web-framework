@@ -23,7 +23,9 @@ ns_puts [$bhtml htmltag h1 $title]
 	}
 
 set toSelect "id title  creation_at author language status cms"
-ns_puts [$bhtml gridView -search 1 -admin 1 -hideFirstColumn 1  -specialFunctions [list post showHtml status status] -toSelect $toSelect $model [list -relations 1] ]
+set gridView [GridView new -searchBar 1 -admin 1 -hideFirstColumn 1 -bhtml $bhtml -rowId 1  \
+	-specialFunctions [list post showHtml status status] -toSelect $toSelect -model $model -searchOptions [list -relations 1] ]
+ns_puts [$gridView getGridView]
 %>
 
 

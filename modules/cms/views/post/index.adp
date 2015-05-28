@@ -13,12 +13,7 @@ dict set pageinfo title $title
 			{-url 1  {[mc Blog]} /blog/ }
 		"
 
-dict set pageinfo menu "
-		{ }
-	{  -url 1 -show [my hasRole adminPost]  {[mc Create] [mc Post]} [my getUrl create]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Admin] [mc Post]} [my getUrl -controller cms admin]}
-	{  -url 1 -show [my hasRole adminPost]   {[mc Admin] [mc Comments]} [my getUrl -controller comment index]}
-"
+dict set pageinfo menu " "
 
 dict set pageinfo sidebar  [ns_adp_parse -file sidebar.adp   $model $bhtml]
 dict set pageinfo author "United Brain Power"
@@ -31,16 +26,16 @@ ns_puts [$bhtml htmltag h1 $title]
 ns_puts <hr>
 #ns_puts [$bhtml gridView -toSelect "id title slug post author author_id creation_at" $model [list -relations 1] ]
 set toSelect "id title slug post author author_id creation_at public_at status reading_time"
-#set where [list -cond AND status 1]
-#set where ""
+set c [SQLCriteria new -model $model]
 set allowedStatus [list 1 3 4 5]
 if {[my verifyAuth]} { lappend allowedStatus 2}
-lappend where [list -cond IN status $allowedStatus]
-lappend where [list -eq <= public_at [getTimestamp] ]
-lappend where [list cms 0 ]
-lappend options -relations 1 -where $where
-ns_puts [$bhtml listView  -perpage 5 -sort public_at -sort_type desc \
-	-toSelect $toSelect  _view $model $options ]
+$c add -fun IN status $allowedStatus
+$c add -op <= public_at [getTimestamp] 
+$c add cms 0 
+lappend options -relations 1 -criteria $c
+set listview [ListView new  -perpage 5 -sort public_at -sort_type desc \
+	-toSelect $toSelect  -view _view -bhtml $bhtml -model $model -searchOptions $options ]
+ns_puts [$listview getListView]
 %>
 
 

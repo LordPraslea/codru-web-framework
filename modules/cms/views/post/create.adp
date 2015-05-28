@@ -10,10 +10,7 @@ dict set pageinfo title $title
 			{-url 1 {[mc Blog]}  /blog/index }
 			{-active 1 $title  }
 	"
-dict set pageinfo menu "
-	{  -url 1   {[mc List] [mc Blog Posts]} [my getUrl index]}
-	{  -url 1 -show 0   {[mc Admin] [mc Post]} [my getUrl admin]}
-"
+dict set pageinfo menu " "
 
 ns_puts [$bhtml htmltag h1 $title]
 ns_puts [ns_adp_parse -file form.adp ]

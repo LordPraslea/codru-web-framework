@@ -17,16 +17,19 @@ dict set pageinfo menu "
 
 
 ns_puts [$bhtml tag h1 "Comments requiring approval"]
-set where [list status 0]
-ns_puts [$bhtml gridView -admin 1 -hideFirstColumn 1 -specialFunctions "status genStatus" \
+set criteria [SQLCriteria new -model $model]
+$criteria add status 0
+set gridView [GridView new  -admin 1 -hideFirstColumn 1 -specialFunctions "status genStatus" \
 	-toSelect [list id reply_to post  comment creation_at user status ] \
-		$model   [list -relations 1 -where $where] ]
+	-model	$model  -bhtml $bhtml -searchOptions [list -relations 1 -criteria $criteria] ]
+ns_puts [$gridView getGridView]
 
 	ns_puts [$bhtml tag h1 "All comments!"]
-ns_puts [$bhtml gridView -admin 1 -hideFirstColumn 1 -specialFunctions "status genStatus" \
+set gridView [GridView new -admin 1 -hideFirstColumn 1 -specialFunctions "status genStatus" \
 	-toSelect [list id reply_to post  comment creation_at user status ] \
-		$model   [list -relations 1  ]] 
+	-bhtml $bhtml -model	$model  -searchOptions [list -relations 1  ]] 
 
+ns_puts [$gridView getGridView]
 %>
 
 

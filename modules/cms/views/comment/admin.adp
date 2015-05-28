@@ -22,8 +22,8 @@ ns_puts [$bhtml htmltag h1 $title]
 	if {[info exists infoalert]} {
 		ns_puts [$bhtml alert {*}$infoalert]
 	}
-
-ns_puts [$bhtml gridView -search 1 -admin 1 $model ]
+set gridView [GridView new -search 1 -admin 1 -model $model -bhtml $bhtml ]
+ns_puts [$gridView getGridView]
 %>
 
 

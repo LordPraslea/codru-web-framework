@@ -60,6 +60,12 @@ nx::Class create ContactUs -superclass Model {
 						captcha { on  { all } }
 					}
 				}
+				interested_in { validation { string { on all } } save no }
+				find_us {  validation { string { on all } } save no checkbox yes }
+				budget {  validation { string { on all } } save no }
+				newsletter {  validation { string { on all } } save no }
+				scope-of-project {  validation { string  { on all } } save no }
+				time {  validation { string { on all } } save no }
 
 			}
 			relations {
@@ -75,7 +81,13 @@ nx::Class create ContactUs -superclass Model {
 			email E-mail
 			ip Ip
 			sent_at {Sent at}
-			message Message
+			message "Message"
+			interested_in "Interested in"
+			find_us "Find us"
+			newsletter "Newsletter"
+			budget budget
+			scope-of-project scope-of-project
+			time time
 
  }
 		next 

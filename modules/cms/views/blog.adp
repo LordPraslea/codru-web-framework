@@ -8,10 +8,25 @@ div.col-xs-9 h1 {
     margin-top: 0;
 }
 	</style>
- <div class="col-lg-4 pull-right">
+ <div class="col-lg-4 pull-right col-xs-6">
 }
 
 if {[dict exists $pageinfo menu]} {
+#$controller verifyAuth
+ dict set pageinfo menu	"	 
+	{  -url 1 -active [$controller isActiveLink blog/index] {[mc {All Blog Posts}]} [$controller getUrl -controller blog index ]}
+	{  -url 1 -active [$controller isActiveLink blog/create] 
+		-show [$controller hasRole adminPost]   {[mc {Create Blog Post}]} [$controller getUrl -controller blog create]}
+
+	{  -url 1  -active [$controller isActiveLink blog/admin] 
+		-show [$controller hasRole adminPost]   {[mc {Blog Admin}]} [$controller getUrl -controller blog admin]}
+	{  -url 1  -active [$controller isActiveLink comment/admin] 
+		-show [$controller hasRole adminPost]   {[mc {Comments Admin}]} [$controller getUrl -controller comment index]}
+
+
+	[dict get $pageinfo menu]
+"
+
 append newpage  [$bhtml nav -tabs 0 -class "pull-righty nav-stacked" -style "max-width: 200px;;" [dict get $pageinfo menu]]
 }
 if {[dict exists $pageinfo sidebar]} {
@@ -19,7 +34,7 @@ if {[dict exists $pageinfo sidebar]} {
 append newpage  [dict get $pageinfo sidebar]
 }
 
-append newpage {</div> <div class="col-lg-8">}
+append newpage {</div> <div class="col-lg-8 col-xs-16">}
 append newpage $page
 
 append newpage {</div>}
