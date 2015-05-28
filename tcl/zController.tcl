@@ -152,10 +152,8 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 
 	:method loadConfigFile {} {
 		set config	[ns_cache_eval -timeout 5 -expires 100 lostmvc config.[getConfigName]  { 
-			set f [open	 [ns_pagepath]/tcl/config.tcl r]
-			set filedata [read $f]
-			close $f
-			return $filedata
+			ns_adp_parse	-file  [ns_pagepath]/tcl/config.adp 
+			return $config
 		}]
 		return $config
 	}
@@ -351,6 +349,20 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 		return 0
 	}
 
+	#TODO make global variable in controller 
+	#currentView and verify against that one
+	#Used to know which link to use
+	:public method isActiveLink {link} {
+		set url [ns_conn url]
+		set urlv [ns_conn urlv]
+
+		if {[string match -nocase *$link* $url]} {
+			return 1
+		}
+		return 0
+	}
+	
+
 	:public method getUrl {{-controller ""} {-c ""}  {-url 1} {-lang ""} -- action {query ""}} {
 		if {$c ne ""} { set controller $c }
 
@@ -403,7 +415,26 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 
 	   set background [$img allocate_color [rnd 200 255]  [rnd 200 255]  [rnd 200 255]  ] ; #background color
 
-	   #Lines
+		:drawCaptchaImage $img
+
+	   #Text
+	   set r [rnd 0 200] ; set b [rnd 0 200] ; set g [rnd 0 200]
+	   set textColor [$img allocate_color 0 0 0]
+
+	   $img set_anti_aliased $textColor
+	   if {$type == "calc"} {	set text [humanTest] } else { 
+		   set textSession [generateCode 5 2] 
+		   set text [split $textSession ""]
+	   }
+
+	   ns_session put humanTest $textSession
+	   $img text $textColor $font $font_size [rndDouble -0.2 0.2] [expr {round($width*0.5 - ([string length $text]*$font_size*0.6)/2)} ]   [expr {round($height/2 + $font_size/2)} ]   $text
+
+	   ns_return -binary 200 image/jpeg [$img jpeg_data 90]
+   }
+   
+   :method drawCaptchaImage { img } {
+	   foreach refVar {width height font_size l} { :upvar $refVar $refVar }
 	   set rl [rnd 0 200] ; set bl [rnd 0 200] ; set gl [rnd 0 200]
 	   set lineColor [$img allocate_color  100 200 220]
 	   for {set i 0} {$i<0} {incr i} {
@@ -424,43 +455,10 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 
 		   set lineColor  [$img allocate_color  [rnd 50 255]  [rnd 50 255]  [rnd 50 255] ]
 		   $img set_anti_aliased $lineColor
-		   set what [rnd 0 1]
 
 		   $img  filled_ellipse  $x1 $y1 $dheight $dwidth $lineColor	
-		   if {$what ==1} {
-
-		   #	$img  filled_ellipse  $x1 $y1 $dheight $dwidth $lineColor	
-		   } elseif {$what == 0} {
-
-		   #	$img  filled_rectangle  $x1 $y1 $dheight $dwidth $lineColor	
-		   #$img  filled_ellipse  $x1 $y1 $dheight $dwidth $lineColor	
-
-		   #$img set_thickness [rnd 3 10]
-		   #$img line  $x1 $y1 $x2 $y2 $lineColor 
-
-		   #	incr minwidth 20	
-		   }
 		   #	$img deallocate_color $lineColor
 	   }
-
-	   #Text
-	   set r [rnd 0 200] ; set b [rnd 0 200] ; set g [rnd 0 200]
-	   #set textColor [$img allocate_color $r $b $g]
-	   #set textColor [$img allocate_color 255 255 255]
-	   set textColor [$img allocate_color 0 0 0]
-
-	   $img set_anti_aliased $textColor
-	   if {$type == "calc"} {	set text [humanTest] } else { 
-		   set textSession [generateCode 5 2] 
-		   set text [split $textSession ""]
-
-	   }
-
-	   ns_session put humanTest $textSession
-	   #$img text $textColor $font $font_size [rnd -10 0] [expr {round($width*0.5 - ([string length $text]*$font_size*0.7)/2)} ]   [expr {round($height/2 + $font_size/2)} ]   $text
-	   $img text $textColor $font $font_size [rndDouble -0.2 0.2] [expr {round($width*0.5 - ([string length $text]*$font_size*0.6)/2)} ]   [expr {round($height/2 + $font_size/2)} ]   $text
-
-	   ns_return -binary 200 image/jpeg [$img jpeg_data 90]
    }
 
 	#General  Delete method 
@@ -507,5 +505,14 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 			my render index model $model infoalert $infoalert	
 		}
 	}
+
+	:public method getDataFromTemplate {templateFileName templateHolder  } {
+		set file [open [ns_server pagedir]/$templateFileName r]
+		set template_data [read $file]
+		set template_data [string map $templateHolder $template_data ]
+		close $file
+		return $template_data
+	}
+	
 }
 	
