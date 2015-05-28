@@ -17,44 +17,51 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # Cache how long?
-#puts "\n=-=-=-=-=-=-=-=-=-\n Loading the LostMVC INIT file!  \n=-=-=-=-=-=-=-=-=-\n "
 set cacheTime 180
 
-set framework_dir "lostmvc"
-#TODO Fix loading of server models/controllers only when needed
 foreach pkg {TclOO nx  nx::serializer msgcat tclgd base64 json} {
 	package require $pkg
 }
 msgcat::mcload [ns_server pagedir]/lang
 namespace import msgcat::mc
 
-
 #Cache creation
 ns_runonce {
 	ns_cache_create -timeout 7 -expires 3600  lostmvc [expr 20*1024*1024]
 }
-#Load Config
+if {0} {
+#NaviServer loads this file init.tcl first
+#Then it proceeds to all other files from this folder sorted
+#However we need to load all other files before Controller and Model
+#In the past we did this by renaming Model and Controller to xController xModel .. 
+#Not an obvious choice.. now it's better this way, in the future maybe subdevide to subfolders
+#Load All files except the ones specified in loadLater
+set loadLater "Model.tcl Controller.tcl"
+#Exclude this file and config.tcl
+set excludeFiles "init.tcl config.tcl"
 
-
-#Source all other things
-set libraries {config.tcl Functions.tcl  Model.tcl Bhtml.tcl Plugins.tcl Form.tcl Controller.tcl Loader.tcl config.tcl } ;# {../archives/ruff/ruff.tcl} 
-foreach lib $libraries {
-#ns_adp_include -tcl -cache $cacheTime  database.tcl 
-#
-#	ns_adp_include -tcl -cache $cacheTime   $lib 
-#	ns_adp_include -tcl  $lib 
+set lostmvcDir [file dirname [info script]]
+set files [lsort  [glob -nocomplain -dir  $lostmvcDir *.tcl]]
+#puts "\nAll Files $files \n"
+foreach file $files {
+	if {[file tail $file] in $excludeFiles} { continue }
+	if {[file tail $file] ni   $loadLater} { source $file }
 }
+foreach file $loadLater {
+	source $lostmvcDir/$file
+}
+
+}
+
+#Register GENERATOR 
+foreach method {GET POST} {
+	ns_register_adp $method /lostmvcgenerator [ns_config ns/parameters tcllibrary]/lostmvc/generator.adp
+} 	
+
 #Custom pages
 ns_adp_ctl detailerror on ;#off
 ns_adp_ctl displayerror on ;#off
 #ns_adp_ctl stricterror true
 #ns_adp_ctl errorpage ../error.adp
 
-#ns_register_adp GET /user/* /var/www/localhost/lostmvc/user.adp
-#ns_register_adp GET /user/* [ns_server pagedir]/lostmvc/user.adp
-
-#ns_adp_include -tcl  -cache 0001  nssession.tcl 
-
-
-#puts "Finished loading all files! "
 
