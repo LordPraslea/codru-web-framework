@@ -91,22 +91,28 @@ nx::Class create Form {
 	}
 
 	#TODO label 
-	:public method checkbox {name} {
+	:public method checkbox {name args} {
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
 		set data [my getData $name $id]
+		if {$args == ""} {
+			set args [list $data $itemname]
+		}
 
-		set input [${:bhtml} checkbox -id $id $id $itemname]
+		set input [${:bhtml} checkbox -id $id $id {*}$args]
 		append :${:form} $input
 	}
 	
 	#TODO label + multi
-	:public method radio {name value} {
+	:public method radio {name args} {
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
 		set data [my getData  $name $id]
+		if {$args == ""} {
+			set args [list $data $itemname]
+		}
 
-		set input [${:bhtml} radio -id $id $id $value $value]
+		set input [${:bhtml} radio -id $id $id {*}$args]
 		append :${:form} $input
 	}
 
@@ -140,10 +146,14 @@ nx::Class create Form {
 		append :${:form} $input 
 	}
 
-	:public method label {{-fa ""} --  name  {size ""}} {
+	:public method label {{-showInline 0} {-fa ""} --  name  {size ""}} {
 		if {${:formType} == "horizontal"} { 
 			set class "col-sm-${:labelSize}" 
-		} elseif {${:formType} == "inline"} { set class "sr-only" 
+		} elseif {${:formType} == "inline"} { 
+			set class ""
+			if {!$showInline} {
+				set class "sr-only"
+			}
 		} else { set class "" }
 		if {$size != ""} {
 			set class $size
@@ -173,7 +183,15 @@ nx::Class create Form {
 	
 	}
 
-	:public method captcha {} {
+	:public method captcha {{type image}} {
+			switch $type {
+				image { :captchaImage  }
+				css { :captchaCss }
+				default { :captchaImage }
+			}
+	}
+
+	:method captchaImage {} {
 		set field captcha
 
 		my beginGroup 
@@ -181,8 +199,20 @@ nx::Class create Form {
 		my add [${:bhtml} img /user/captcha]
 		my add [mc "Enter the text in the image you see below"]
 		my input  $field 
+
 		my errorMsg $field
 		my endGroup $field 
+	}
+
+	:method captchaCss {} {
+		set field nameDetails
+
+		my beginGroup 
+		my label $field
+		my add [mc "If you see this field, do not enter any name. Just leave it be"]
+		my add [${:bhtml} input -type input -placeholder "enter your name" -id nameDetails name ]
+		my errorMsg $field
+		my endGroup -class "sr-only" $field 
 	}
 	
 	:public method errorMsg {name} {
@@ -223,7 +253,7 @@ nx::Class create Form {
 
 	#	reappend everything back to form, 
 	#	end the grouping
-	:public method endGroup {{name ""}} {
+	:public method endGroup {{-class ""} {name ""}} {
 	# variable form group formdata
 		if {[${:model} getErrorsFor $name] != ""} {
 			set type error
@@ -232,7 +262,8 @@ nx::Class create Form {
 	#	puts "endGroup type $type and group stuff $group"
 		#append ${:form} [${:bhtml} formGroup -type $type $group]
 		if {$type != ""} { set type [${:bhtml} returnType "has" $type]}	
-		append :${:form} [${:bhtml} htmltag -htmlOptions [list class [list form-group $type] ] div ${:group}]
+
+		append :${:form} [${:bhtml} htmltag -htmlOptions [list class "form-group $type $class" ] div ${:group}]
 		set :group ""
 		#puts "ending group! $form"
 	}
