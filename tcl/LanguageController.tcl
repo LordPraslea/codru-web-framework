@@ -59,14 +59,17 @@ nx::Class create LanguageController {
 	:method forceMultiLingual {} {
 		foreach refVar {urlv _urlLang url} { :upvar $refVar $refVar }
 		#TODO make setting forceMultilingual, if it's true then redirect to multilingual page:)
-		set forceMultilingual 1
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
+
+		set forceMultilingual [dict get $config forceMultilingual]
 		if {$_urlLang eq "na" && $forceMultilingual && $urlv ne "index.adp"} {
 			set query ""
 			if {[ns_conn query] != ""} {
 				set query ?[ns_conn query]
 			}
+		#Don't force language redirect unless needed..
+		#
 			set redirecturl [ns_conn location]/${:lang}$url$query
-		#	puts "Forcing multilingual redirect to $redirecturl url $url"
 			ns_returnredirect $redirecturl 
 		}
 	}
