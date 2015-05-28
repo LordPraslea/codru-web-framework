@@ -15,7 +15,7 @@ set field user_id
 
 set field item_id
  set data [$model search -table role_item  "name id"]
- puts "Data for search is $data"
+ #puts "Data for search is $data"
 
 	$f beginGroup 
 	$f label $field 

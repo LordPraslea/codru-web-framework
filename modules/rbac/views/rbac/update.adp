@@ -1,25 +1,29 @@
 
-
 <%
+
+#Include page title
 dict set pageinfo title "[mc Updating] [mc RoleItem] with id [$model get id]"
-<br><pre>
-missing close-brace
-    while executing
-&#34;ns_puts [string map &#34;%modelname $modelname %controller [string tolower $modelname]&#34;  {&#34;
-    at line 14 of adp file &#34;/opt/ns/www/localhost/lostmvc/templates/update.adp&#34;
-    included from adp file &#34;/opt/ns/www/localhost/lostmvc/generator.adp&#34;
-    while processing connection #205:
-        POST /lostmvc/generator.adp?a=crud HTTP/1.1
-        Host: localhost
-        User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0
-        Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-        Accept-Language: en-US,en;q=0.5
-        Accept-Encoding: gzip, deflate
-        Referer: http://localhost/lostmvc/generator.adp?a=crud
-        Cookie: session_id=&#34;8DA78F8B646867066259BE1864AAE95394133728&#34;
-        Connection: keep-alive
-        Content-Type: application/x-www-form-urlencoded
-        Content-Length: 101
-<br></pre>
+#Breadcrumbs include
+		dict set pageinfo breadcrumb " 
+			{-url 1 {[mc Home]} {#}}
+
+			{-url 1 {[mc {RBAC}]} /rbac/}
+			{-url 1 {[mc {Role Item}]} /roleitem/index}
+			{-active 1 [dict get $pageinfo title]\}
+		"  
+
+	set id [$model get id]
+	set modelname "Role Item"
+dict set pageinfo menu "
+	{  -url 1   {[mc List] [mc $modelname]} [my getUrl index]}
+	{  -url 1   {[mc Create] [mc $modelname]} [my getUrl create]}
+	{  -url 1   {[mc Delete] [mc $modelname]} [my getUrl delete [list id $id]]}
+	{  -url 1 -show 0   {[mc Admin] [mc $modelname]} [my getUrl admin]}
+"
 
 
+ns_puts [$bhtml htmltag h1 "[dict get $pageinfo title]"]
+#Eventually pass the $model ?
+ns_puts [ns_adp_parse -file form.adp ]
+
+%>

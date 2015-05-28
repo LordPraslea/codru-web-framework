@@ -8,7 +8,7 @@ nx::Class create RoleassignmentController -superclass Controller {
 	:method init {} {
 		#set attributes { %s }  
 		#next $attributes $alias
-		set :layout column2
+		set :layout rbaclayout
 		#my	setLayout layout
 	}
 
@@ -43,12 +43,12 @@ nx::Class create RoleassignmentController -superclass Controller {
 
 	#method could have arguments as GET/POST 
 	:public method actionView {} {
-		set id [ns_queryget id 1 ]
+		foreach {key} {item_id user_id} { set $key [ns_escapehtml [ns_get $key ]]  }
 
-		if {[set model [my loadModel $id]] ==0} { return }
+		if {[set model [my loadModel $item_id $user_id]] ==0} { return }
 		my render view model $model 
 	}
-	
+
 	#TODO if PK same when creating new, view if not unique constraing..
 	:public method actionCreate {} {
 		set model [RoleAssignment new]
@@ -77,25 +77,23 @@ nx::Class create RoleassignmentController -superclass Controller {
 
 	}
 
-	#ruff
-	#or arguments id? to be included for actionUpdate	
 	:public method actionUpdate {} {
-		set id [ns_get id ]
-		if {[set model [my loadModel $id]] ==0} { return }
-		#For when you want ajax/javascript validation.. (ajax validation not working atm)
-		#$model nodjsRules $bhtml
-		if {[ns_conn method] == "POST"} {
+		foreach {key} {item_id user_id} { set $key [ns_escapehtml [ns_get $key ]]  }
+		if {[set model [my loadModel $item_id $user_id]] ==0} { return }
+		if {[ns_conn  method] == "POST"} {
 			set queryattributes [$model getQueryAttributes POST ]
-		#	set errors [$model validate]
-		#	puts "errors are $errors"
-			#If it's ok to save it.. redirect to new 
-			if {[$model save]} {
-				my redirect view id $id
+			set updateCriteria [SQLCriteria new -model $model]
+			$updateCriteria addUpdateCriteria  item_id [$model get item_id]
+			$updateCriteria addUpdateCriteria user_id [$model get user_id]
+			set whereCriteria [SQLCriteria new -model $model]
+			$whereCriteria add -includeTable 0 user_id	 $user_id
+			$whereCriteria add -includeTable 0 item_id $item_id
+
+			if {[$model updateMultipleRows $updateCriteria $whereCriteria]} {
+				my redirect view user_id [$model get user_id] item_id [$model get item_id]
 				return 1
 			}
 		}
-	#	puts "Generating the update thingie.."
-		#using ns_adp_parse AND ns_adp_include
 		my render update model $model
 
 	} 
@@ -133,41 +131,25 @@ nx::Class create RoleassignmentController -superclass Controller {
 		my render admin model $model 
 	}
 
-#TODO find the best way to just stop execution without doing things like
-#return -level 100 or ns_adp_return which gives error..
-	:public method loadModel {id} {
+	:public method loadModel {item_id user_id} {
 		set model [RoleAssignment new]
-	
-		#If id is empty (but query string contains data and it's a POST)
-		#get the name of the classKey
-		if {$id == ""} { set id [ns_queryget [$model classKey id]] }
-		if {![string is double $id] && 0} {   
-			my notFound <br>[msgcat::mc "Tried to search for id %d but just couldn't find it!" $id]
-			return 0
-		}
 		$model setScenario "search"
-		$model set id $id 
-		if {[set validation [$model validate id]] != 0} { 	my notFound  [msgcat::mc "Not validating, sorry! %s" $validation]; return 0 }
-		if {[$model findByPk $id] == 0} {
-			#verify if model is not null eg if it exists
-			#	if null throw exception which means generate an  404 error
-			my notFound <br>[msgcat::mc "Tried to search for id %d but just couldn't find it!" $id]
-			return 0
-		#	return $model
-		#	ns_adp_close ;#this closes the adp connection but the functions keep on going!
-		} else {  	return $model; }
-	
-	} 
+		if {![string is double $item_id] || ![string is double $user_id] } {
 
-	:public method performAjaxValidation {model} {
-		if {0} {
-			if(isset($_POST['ajax']) && $_POST['ajax']==='posts-form')
-			{
-				echo CActiveForm::validate($model);
-				Yii::app()->end();
-			}
+			set result [$model searchByName $item_id $user_id]
+		} else {
+			set result [$model findByPk -relations 1 [list $item_id $user_id] ] 
 		}
-	}
+
+	#	$model set id $id 
+	#	if {[set validation [$model validate id]] != 0} { 	my notFound  [msgcat::mc "Not validating, sorry! %s" $validation]; return 0 }
+
+
+		if {$result == 0} {
+			my notFound <br>[msgcat::mc "Tried to search for item_id %s and user_id %s but just couldn't find it!" $item_id $user_id ]
+			return 0
+		} else {  	return $model; }
+	} 
 	
 }
 

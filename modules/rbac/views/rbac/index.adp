@@ -1,42 +1,39 @@
-
 <%
-
 set title [mc "RBAC - Role Based Access Control Admin"]
 
 dict set pageinfo title $title 
 
 	dict set pageinfo breadcrumb "
-			{-url 1 {[mc Home]} #}
+			{-url 1 {[mc Home]} /}
 			{-url 1 {[mc RBAC]} /rbac/}
 			{-active 1 $title }
 		"
 
-dict set pageinfo menu "
-	{  -url 1   {[mc Create] [mc {Role Item}]} [my getUrl -controller roleitem create]}
-	{  -url 1   {[mc Create] [mc {Role Item Child}]} [my getUrl -controller roleitemchild create]}
-	{  -url 1   {[mc {Assign Role}]} [my getUrl -controller roleassignment create]}
-	{  -url 1 -show 0   {[mc Admin] [mc RoleItem]} [my getUrl admin]}
-"
+dict set pageinfo menu " "
 
 ns_puts [$bhtml htmltag h1 $title]
 
 set h1 [$bhtml htmltag h1 "Role Items"]
-set data [$bhtml gridView -specialFunctions "type getType" $model   ]
-
+set gridView [GridView new -makeAllLinks 1 -hideFirstColumn 1 -specialFunctions "type getType" \
+		-model $model -bhtml $bhtml  -toSelect "id name description type "  ]
+set data [$gridView getGridView]
 set panel [$bhtml panel  -h $h1 $data]
 
 ns_puts "<div class='col-lg-12'>$panel</div>"
 set h1 [$bhtml htmltag h1 "Role Item Children"]
 set ricmodel [RoleItemChild new]
-set data [$bhtml gridView -sort "parent_id" -externalData [$ricmodel getItems] $ricmodel]
+set gridView [GridView new  -sort "parent_id" -specialFunctions "options makeViewLink "  \
+	-externalData [$ricmodel getItems] -model $ricmodel -bhtml $bhtml]
+set data [$gridView getGridView]
 set panel [$bhtml panel  -h $h1 $data]
-ns_puts "<div class='col-lg-6'>$panel</div>"
+ns_puts "<div class='col-lg-10'>$panel</div>"
 
 set h1 [$bhtml htmltag h1 "Role Assignments"]
 set ramodel [RoleAssignment new]
-set data [$bhtml gridView -sort user_id -toSelect "user item" $ramodel  [list -relations 1]  ]
+set gridView [GridView new -sort user_id -toSelect "user item options"  -specialFunctions "options makeViewLink " -model $ramodel \
+	-searchOptions [list -relations 1] -bhtml $bhtml  ]
+set data [$gridView getGridView]
 set panel [$bhtml panel  -h $h1 $data]
-ns_puts "<div class='col-lg-6'>$panel</div>"
+ns_puts "<div class='col-lg-10'>$panel</div>"
 %>
-
 

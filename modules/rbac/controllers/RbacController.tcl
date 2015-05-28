@@ -8,7 +8,7 @@ nx::Class create RbacController -superclass Controller {
 	:method init {} {
 		#set attributes { %s }  
 		#next $attributes $alias
-		set :layout column2
+		set :layout rbaclayout
 		#my	setLayout layout
 	}
 
@@ -182,7 +182,8 @@ nx::Class create RbacController -superclass Controller {
 #TODO find the best way to just stop execution without doing things like
 #return -level 100 or ns_adp_return which gives error..
 	:public method loadModel {id} {
-		set model [RoleAssignment new]
+		set model [RoleItem new]
+		#set model [RoleAssignment new]
 	
 		#If id is empty (but query string contains data and it's a POST)
 		#get the name of the classKey

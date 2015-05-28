@@ -1,28 +1,27 @@
 
 
 <%
-
-set title [mc "Index of %s" [mc RoleItemChild]]
+	set child_id [$model get child_id]
+	set parent_id [$model get parent_id]
+set title [mc "RoleItemChild "]
 
 dict set pageinfo title $title
 
 		dict set pageinfo breadcrumb [subst {
-			{-url 1 {[mc Home]} "#"}
+			{-url 1 {[mc Home]} "/"}
+			{-url 1 {[mc RBAC]} "/rbac/"}
 			{-url 1 {[mc RoleItemChild]} /roleitemchild/index}
 			{-active 1 "$title"}
 	} ]  
-	set id [$model get id]
+d]
 dict set pageinfo menu "
-	{  -url 1   {[mc List] [mc RoleItemChild]} [my getUrl index]}
-	{  -url 1   {[mc Create] [mc RoleItemChild]} [my getUrl create]}
-	{  -url 1   {[mc Update] [mc RoleItemChild]} [my getUrl update [list id $id]]}
-	{  -url 1   {[mc Delete] [mc RoleItemChild]} [my getUrl delete [list id $id]]}
-	{  -url 1 -show 1   {[mc Admin] [mc RoleItemChild]} [my getUrl admin]}
+	{  -url 1   {[mc {Delete Role Item Child }]} [my getUrl delete [list child_id $child_id parent_id $parent_id]]}
+	{  -url 1   {[mc {Update Role Item Child }]} [my getUrl update [list child_id $child_id parent_id $parent_id]]}
 "
 
 ns_puts [$bhtml htmltag h1 $title]
 
-	ns_puts [$bhtml detailView $model  {parent_id child_id}]
+	ns_puts [$bhtml detailView $model  {parent child}]
 
 %>
 
