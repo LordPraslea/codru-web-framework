@@ -3,80 +3,74 @@
 #################################	
 nx::Class create TagModelManagement {
 
+	#Adds tags to the specified table
 	:public method addTags {{-interTbl } {-tagsTbl tags} {-interId  } --  tags} {
-		# Adds tags to the table specified
-	#	set tags [my get tags]
 		set this_id [:get id]
 		set db [:db get]
-		#set old tags.. if any..?
-		#update them?
-		set ltags [split $tags ","]
-		#Find if tags exist in tags column
-	#	puts "Tags gathered $ltags"
-		set first 0
-		set where_sql ""
-		foreach {tag} $ltags {
-			#Only do it if the key exists,
-			#TODO remove this or figure this out for multi joined sql's
-			set what [expr {$first==0? "" : "OR"}]
-			dict set pr_stmt $first $tag
-			append where_sql "$what tag = :$first "
-			incr first
-		}
-			
-		#search only if where_sql is something.. otherwise go further:) 
-		#This means that no tags where selected
-		if {$where_sql != ""} {
-			set sql_select "SELECT tag,id FROM $tagsTbl WHERE $where_sql"
-			set values  [dbi_rows -db ${:db} -columns columns -bind $pr_stmt $sql_select ]
-		#	puts "Values $values"
-		}
-		set pr_stmt ""
-	#	set values [my search -where  ]	
-		#We have a list with existent tags..
-		#For each exitent tag view if it's already linked to the esm
-		#otherwise.. add it
-		set ids ""
-		set existingids ""
-		set existingtags ""
+		set whereCriteria [SQLCriteria new -table $tagsTbl]
+		set :tagsList [split $tags ","]
+	
 
-		#TODO these could be put into 1 big insert and 2 big select's..
-		foreach tag $ltags {
-			#if tag is not in values.. then it means it's a fresh tag for our tags list
-			#we ADD it!
-		#	puts "Ohoooo ok $tag"
-		#	#$tag ni $values  => is case sensitive:( 
+		#Find if tags exist in tags column
+		foreach {tag} ${:tagsList} {
+			$whereCriteria add -cond OR tag $tag 
+		}
+
+		set data [:search -table $tagsTbl -criteria $whereCriteria [list tag id]]
+		set values [dict get $data values]
+
+		:addTagsList 
+		:addInterTableTags 
+
+		return true
+	}
+
+	#TODO REWRITE TO USE INSERT FUNCTION! 
+	:method addTagsList {} {
+		foreach refVar {values tagsTbl interId interTbl this_id} { :upvar $refVar $refVar }
+		set :addedTagList ""
+		set :existingids ""
+		set :existingtags ""
+		set pr_stmt ""
+		
+		set whereCriteria [SQLCriteria new -table $tagsTbl]
+		
+		foreach tag ${:tagsList} {
+			#if tag is not in values.. then it means it's a fresh tag for our tags list #we ADD it!
 			if {[lsearch -nocase  $values $tag] == -1} {
 				unset pr_stmt
 				dict set pr_stmt tag $tag
 				set sql "INSERT INTO $tagsTbl (tag) VALUES (:tag) RETURNING id"
 				set id  [dbi_0or1row -db ${:db} -array mytag -bind $pr_stmt $sql] 
-			#	puts "Added tag $tag with id $mytag(id)"
-				lappend ids $mytag(id)
+				lappend :addedTagList $mytag(id)
 			} else {
 				#This tag exists in values, verifying if it's linked..
 				##Get the right position
 				set id [lindex $values [lsearch -nocase $values $tag]+1]
 				dict set pr_stmt tag_id  $id		
 				dict set pr_stmt $interId $this_id
-				set sql_select "SELECT * FROM $interTbl WHERE tag_id = :tag_id AND $interId = :$interId "
-			#	puts "\nSQL Select $sql_select with $pr_stmt\n"
-				set linkedid  [dbi_0or1row -db ${:db}  -bind $pr_stmt $sql_select ]
-				if {$linkedid} {			
-					lappend existingids $id
-					lappend existingtags $tag $id
-				}
-				lappend ids $id
 
-			#	puts "Selecting $tag with $id .. is this linked? $linkedid "
+				set sql_select "SELECT * FROM $interTbl WHERE tag_id = :tag_id AND $interId = :$interId "
+				set linkedid  [dbi_0or1row -db ${:db}  -bind $pr_stmt $sql_select ]
+				
+				if {$linkedid} {			
+					lappend :existingids $id
+					lappend :existingtags $tag $id
+				}
+				lappend :addedTagList $id
+
 			}
 
 		}
-		
+	}
+
+	:method addInterTableTags {} {
+
+		foreach refVar {values tagsTbl interId interTbl this_id} { :upvar $refVar $refVar }
 		#TODO 1 big insert..
-		foreach id $ids {
+		foreach id ${:addedTagList} {
 			#verify if this id isn't in existingids, if it isn't add it..
-			if {$id ni $existingtags} {
+			if {$id ni ${:existingtags}} {
 				set pr_stmt ""
 				dict set pr_stmt $interId $this_id
 				dict set pr_stmt tag_id $id
@@ -86,7 +80,6 @@ nx::Class create TagModelManagement {
 				set id  [dbi_dml -db ${:db} -bind $pr_stmt $sql] 
 			}
 		}
-		return true
 	}
 
 	#TODO this will need to be rewritten to fit relations with model
@@ -119,13 +112,16 @@ nx::Class create TagModelManagement {
 		}	
 		#Only delete if there are tags removed..
 		if {$deleteTags != ""} {
-			set idTags [my search -table $tagsTbl  -where [list "-cond IN tag [list $deleteTags]"] id]
+			set criteria [SQLCriteria new -table $tagsTbl]
+			$criteria add -fun in tag  $deleteTags
+			set idTags [my search -table $tagsTbl  -criteria $criteria  id]
 			if {$idTags ==""} { return "Empty" }
 			# puts "Nothing to delete.. because deleteTags $deleteTags couldn't find anything"; 
 		#	puts "Found and will delete idTags [dict get $idTags values]"
-			lappend selection [list  -cond IN tag_id [dict get $idTags values]]
-			lappend selection [list $interId [my get id]]
-			my delete -table $interTbl $selection
+			set deleteCriteria [SQLCriteria new -table $interTbl]
+			$deleteCriteria add -fun  IN tag_id [dict get $idTags values]
+			$deleteCriteria add $interId [:get id]
+			my deleteOther -table $interTbl -deleteCriteria  $deleteCriteria
 		} 
 	}
 
