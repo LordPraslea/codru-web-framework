@@ -127,3 +127,5 @@ test bhtml-2.5 {Blockquote in reverse} -setup {
 
 #Tables tests
 
+
+cleanupTests

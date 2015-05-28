@@ -1,0 +1,29 @@
+package require tcltest 2.2
+namespace import -force ::tcltest::*
+
+eval ::tcltest::configure $argv
+
+#Testing sql criteria
+#
+test sqlcriteria-1.1 {Object type} -setup {
+
+} -body {
+
+} -cleanup {
+
+} -result { }
+
+
+set c [SQLCriteria new -table users]
+$c add username andrei
+$c add password supercool
+$c add -fun in level {1 2 3 4 5}
+$c add -fun between money {1000 10000}
+set c2 [SQLCriteria new -table users]
+$c2 add city brasov
+$c2 add -cond OR city bucuresti
+$c subcriteria $c2
+$c getCriteriaSQL
+
+
+cleanupTests
