@@ -3,6 +3,7 @@
 # 	giving a "view" location and make a list from it:)
 # 	or select a "view" from a detailview.. or something similair..
 ##########################################
+##TODO CACHE!
 nx::Class create ListView -superclass [list bhtml] {
 	:property bhtml:object,type=bhtml
 	:property {perpage 10}
@@ -11,6 +12,8 @@ nx::Class create ListView -superclass [list bhtml] {
 	:property {sort_type asc}
 
 	:property {extraUrlVars ""} 
+	#TODO NOT IMPLEMENTED YET, make it easier so you don't need to do -searchOptions [list -relations 1]
+	
 
 	:property {relations 0}
 	:property {toSelect *} 
@@ -21,13 +24,11 @@ nx::Class create ListView -superclass [list bhtml] {
 	:property model:required
 	:property {searchOptions ""}
 
-
-
+	:property {externalData 0} 
 
 
 	:method init {} {
 		set :table [${:model} getTable]
-		set bhtml [self ]
 
 		set :pr_stmt ""
 		set :where_sql ""
@@ -36,15 +37,22 @@ nx::Class create ListView -superclass [list bhtml] {
 		if {[ns_queryexists ${:table}_perpage]} { set :perpage [ns_queryget ${:table}_perpage 10] }
 		set ${:table}_sort ${:sort}
 
-		:listViewGetFromDatabase
-
-		:pageVerifications	
-
-		:listViewSearch
 		#-extraUrlVars $extraUrlVars
 		set extraData ""
 
 	}	
+
+	:method processExternalData {} {
+
+		if {${:externalData} != 0} {
+			foreach {k v} ${:externalData} { set :$k $v }
+			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} ${:sql_size}
+			set :size $size
+			if {$size == 0} { return -level 2 [my htmltag div [msgcat::mc  "No data has been found, try adding something!" ]] }	
+
+			lappend :searchOptions -selectSql [list ${:sql_select}  ${:pr_stmt}]
+		}
+	}
 
 	:method pageVerifications {  } {
 
@@ -59,17 +67,20 @@ nx::Class create ListView -superclass [list bhtml] {
 	}
 
 	:method listViewGetFromDatabase {args} {
-		set where_loc [lsearch ${:searchOptions} -criteria]
 
-		if {$where_loc != -1} {
-			set criteria [lindex ${:searchOptions} $where_loc+1]
-			append :where_sql "WHERE "  [$criteria getCriteriaSQL]
-			set :pr_stmt [dict merge ${:pr_stmt} [$criteria getPreparedStatements ]]
+		if {${:externalData} == 0} {
+			set where_loc [lsearch ${:searchOptions} -criteria]
+
+			if {$where_loc != -1} {
+				set criteria [lindex ${:searchOptions} $where_loc+1]
+				append :where_sql "WHERE "  [$criteria getCriteriaSQL]
+				set :pr_stmt [dict merge ${:pr_stmt} [$criteria getPreparedStatements ]]
+			}
+
+			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} "SELECT count(*) as size FROM ${:table}  ${:where_sql};"
+			if {$size == 0} { return -level 2 [my htmltag div [msgcat::mc  "No data has been found, try adding something!" ]] }	
+			set :size $size
 		}
-
-		dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} "SELECT count(*) as size FROM ${:table}  ${:where_sql};"
-		if {$size == 0} { return [my htmltag div [msgcat::mc  "No data has been found, try adding something!" ]] }	
-		set :size $size
 
 	}
 	:method listViewSearch {  } {
@@ -77,7 +88,7 @@ nx::Class create ListView -superclass [list bhtml] {
 
 		set data [${:model} search {*}[concat ${:searchOptions}] ${:toSelect} ]
 
-		if {$data == ""} { return [mc "No data has been found, try adding something!"]}
+		if {$data == ""} { return -level 2 [mc "No data has been found, try adding something!"]}
 
 		set columns [dict get $data columns]
 		foreach	$columns [dict get $data values]   {
@@ -117,7 +128,13 @@ nx::Class create ListView -superclass [list bhtml] {
 	}
 
 	:public method getListView {args} {
-		#method body
+		:processExternalData
+
+		:listViewGetFromDatabase
+
+		:pageVerifications	
+
+		:listViewSearch
 		return [:generateListViewWithPagination]
 	}
 	
