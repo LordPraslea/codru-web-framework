@@ -11,9 +11,8 @@ nx::Class create SQLRecycle -mixin [list SQLCommands]  {
 	#TODO view if limit empty and if only a number, view if offset is a number..
 	#
 	:public method delete { {-recycle 1}  } {
-		set pr_stmt ""
-		if {$table == ""} { 		set table [dict get ${:attributes} table] }
-		set deleteCriteria [SQLCriteria new -table $table]
+		set table [dict get ${:attributes} table] 
+		set deleteCriteria [SQLCriteria new -table ${table}]
 
 		set recycleID	[:recycleBin 1]
 
@@ -38,7 +37,7 @@ nx::Class create SQLRecycle -mixin [list SQLCommands]  {
 
 	:method runDeleteSQL {table deleteCriteria} {
 		set where_sql [$deleteCriteria getCriteriaSQL]
-		set pr_stmt [dict merge $pr_stmt [$deleteCriteria getPreparedStatements]]
+		set pr_stmt [$deleteCriteria getPreparedStatements]
 
 		set sql "DELETE FROM $table WHERE $where_sql"
 		set status [dbi_dml -db ${:db} -bind $pr_stmt $sql]
@@ -47,6 +46,7 @@ nx::Class create SQLRecycle -mixin [list SQLCommands]  {
 
 	#TODO save foreign keys... delete them also
 	:method recycleBin {recycle} {
+		:upvar table table
 		if {$recycle} {
 			set recycled ""	
 			foreach key	[:getColumnsKeys]  {
