@@ -1,11 +1,5 @@
 #Model
-nx::Class create User -superclass Model {
-	
-	#Constructor is usefull..
-	#however for models it's hard when creating an automatic subclass
-	#Either create constructor and put all data in it in subclasses.. and use next
-	# OR make no constructor and just use methods for attributes, alias.. etc
-	# see how this works out
+nx::Class create User -superclass [list Model] {
 	
 	:method init {} {
 		if {0} {
@@ -97,8 +91,9 @@ nx::Class create User -superclass Model {
 				}
 				captcha {
 					validation {
-						captcha { on  {register reset login } }
+						captcha { on  {register reset login } rule  css-login    }
 					}
+					save false
 				}
 				longlogin {
 					validation {
@@ -121,6 +116,9 @@ nx::Class create User -superclass Model {
 					validation {
 						text { on  {profile  } }
 					}
+				}
+				telephone {
+					unsafe { on all }
 				}
 
 			}
@@ -148,16 +146,28 @@ nx::Class create User -superclass Model {
 	}
 
 	:public method loadUserProfile { } {
-		variable attributes
-		variable alias
 		set extrafields ""
 			set pt [ProfileType new]
-			set ptv [$pt search   ]
-			#set ptv [$pt search  [list id name] ]
+			set ptvalues [$pt search   ]
 			set up [UserProfile new]
-			foreach [dict get $ptv columns] [dict get $ptv values] {
-				#validation
-				 set fieldname [join [string tolower $name] _]
+
+			:setupValidationForUserProfile $ptvalues
+
+			#TODO FINISH THIS
+			set upvalues [$up search -numericStmt 1 -where [list user_id [ns_session get userid]  ]]
+			if {$upvalues != ""} {
+				foreach [dict get $upvalues columns] [dict get $upvalues values] {
+					set fieldname [lindex $extrafields [lsearch $extrafields $profile_id]+1]
+					dict set :attributes sqlcolumns $fieldname value $profile_value		
+				}
+			}
+	}
+
+	#columns id type name required
+	:method setupValidationForUserProfile {profileTypeValues} {
+			foreach [dict get $profileTypeValues columns] [dict get $profileTypeValues values] {
+				#setup validation
+				set fieldname [join [string tolower $name] _]
 				dict set :attributes sqlcolumns $fieldname "  validation { $type { on { profileupdate } } }  " 
 				dict set :attributes sqlcolumns $fieldname id $id
 				dict set  :alias $fieldname $name
@@ -165,133 +175,134 @@ nx::Class create User -superclass Model {
 				lappend extrafields $id $fieldname
 				lappend ptids $id
 			}
-			dict set attributes extrafields $extrafields
-			#TODO FINISH THIS
-			set upv [$up search -numericStmt 1 -where [list user_id [ns_session get userid]  ]]
-		#	puts "profile type $ptv \nextra [dict get ${:attributes} extrafields] \n\n\n alias : [dict get $alias]"
-		#	puts "$ptv and new upv $upv"
-			if {$upv != ""} {
-				foreach [dict get $upv columns] [dict get $upv values] {
-					set fieldname [lindex $extrafields [lsearch $extrafields $profile_id]+1]
-					dict set :attributes sqlcolumns $fieldname value $profile_value		
-				}
-			}
+			dict set :attributes extrafields $extrafields
 	}
+
 	:public method saveUserProfile {} {
-		 foreach {id field} [dict get ${:attributes} extrafields] {
-			 set up [UserProfile new]
-		 	set value [my get $field]
+		foreach {id field} [dict get ${:attributes} extrafields] {
+			set up [UserProfile new]
+			set value [my get $field]
 			$up set profile_id $id profile_value $value user_id [ns_session get userid]
 			# We try to update it, if it doesn't work/exist we insert it
 			if {![$up update]} {
 				$up insert
-			#	puts "Inserting $id"
-			} else {
-			#	puts "Updating $id"
-			}
-
-		 }
-		 return 1
+			}	
+		}
+		return 1
 	}
-
+	
+	#Validation Method
 	:public method changepassword {extra column value} {
 		#Verify if the column is unique
 		if { [my getScenario] ni [dict get $extra on] } { return 0 }
 		set column_name [my getAlias $column]
-
 		set password [ns_sha1 [my get current_password]]
-	#	my set password $password
+
 		set u [User new]
-		if {[$u findByCond [list  "password $password" "id [ns_session get userid]" ] ]} {
+		set criteria [SQLCriteria new -model $u]
+		$criteria add password $password
+		$criteria add id [ns_session get userid]
+
+		if {[$u findByCond $criteria ]} {
 			 if {$password  != [$u get password]} {
 				 return [msgcat::mc 	{Your current password isn't correct, try again.}	 $column_name $value] 
 			 }
-		
 		} else {
 				 return [msgcat::mc 	{Your current password isn't correct, try again.}	 $column_name $value] 
 		}
 		return 0
-
 	}
 
+	#
+	# == Login handling
+	#
 	:public method login {} {
 		if {[:validate] == 0} {
-		 	set user_password [ns_sha1 [my get password]]	
-			#you can either save the object with all details.. OR just select them..
-			if {![:findByCond -save 1 [list username [my get username]] ]} {
-				#set column_name [my getAlias $column]
-				:addError username [msgcat::mc "This username doesn't exist"]
-			#	puts "This username doesn't exist.."
-				return 0
-			} 
+			set :user_password [ns_sha1 [my get password]]	
+			:loginVerifyUsername
+			:loginVerifyTemporaryBlocked	
+			:loginVerifyPassword 
 
-			#Next, verify if you're not "temporarily blocked"
-		if {[clock scan  [getTimestamp]] < [clock scan [my get temp_login_block_until]]} {
-			:addError password [msgcat::mc "This account is still temporarily blocked untill %s
-				because someone tried too many wrong passwords.." [my get temp_login_block_until]]
+			:loginVerifyStatus 	
+			:loginHandleLongLogin
+			:loginSaveSession
 
-			return 0
-		}
-			#TODO SHA1 or SHA2
-			#sha2::sha256 
-			#ns_sha1
-			if {![string match $user_password [my get password]]} {
-				:addError password [msgcat::mc "The password you entered is incorrect"]
-				# limit 5 wrong passwords per 1-3 hours by blocking ip/user login and sending e-mail to inform user..
-				set login_attempts [my get login_attempts]
-				incr login_attempts
-				:set login_attempts $login_attempts 
-				puts "Login attempts $login_attempts"
-				if {$login_attempts >=5} { 
-					:set temp_login_block_until [getTimestamp [clock add [clock seconds] 3 hours]]
-					:addError password [msgcat::mc "Nice going Sherlock, you've just temporarily blocked
-					your account for 3 hours because you entered too many wrong passwords.."]
-					#TODO send e-mail to inform user, with a link to "unblock" if it was him who did this!
-				}
-				:unset password
-				:update
-				return 0
-			}
-			#TODO verify if activated.. if not.. redirect to login.. ask to wait for email
-			#alternatively you can log him in automatically.. and make it more user friendly
-			#asking him to activate within 24/48 hours or he won't be able to login:)
-		#TODO modify user last login time..
-	 	if {[:get status] == 0} {
-			:addError username [msgcat::mc "You can't login because you're banned! If you think this is a mistake, contact us."]
-			return 0
-		}	elseif {[my get status] == 1} {
-			:addError username [msgcat::mc "You need to first activate your account before you login."]
-			return 0
-		}		
-
-		set longlogin [:get longlogin]
-		if {$longlogin != ""} {
-		#	puts "Session with longlogin $longlogin"
-			ns_session put longlogin true 
-		}
-		:unset longlogin
-		ns_session put userid [my get id]
-		ns_session put username [my get username] 
-		ns_session put user_type [my get user_type] 
-		#Update the last login time
-		#TODO in future add login IP to another table..
-		:set last_login_at [getTimestamp]
-		:set login_attempts 0
-
-		#$model set login_ip [ns_conn peeraddr] 
-		:setScenario loginsave
-		:save
-		return 1
-		#TODO redirection done in controller..:D
-		#redirect to right page, either returnUrl or returnto session..
-		#if both empty... return to view the normal page
-		#		set returnto [ns_session get returnto]
-		#if returning to returnto empty returnto
-		# ns_returnredirect [ns_session get returnto [ns_conn location]]
-		# 
+			#$model set login_ip [ns_conn peeraddr] 
+			:setScenario loginsave
+			:save
+			return 1
 		}
 		return 0
 	}
+
+	:method loginVerifyUsername {} {
+		set criteria [SQLCriteria new -model [self]]
+		$criteria add username [:get username]
+		if {![:findByCond -save 1 $criteria ]} {
+			:addError username [msgcat::mc "This username doesn't exist"]
+			return -level 2 0
+		} 
+	}
+
+	#Next, verify if you're not "temporarily blocked"
+	:method loginVerifyTemporaryBlocked {  } {
+		if {[clock scan  [getTimestamp]] < [scanTz [:get temp_login_block_until]]} {
+			:addError password [msgcat::mc "This account is still temporarily blocked untill %s
+			because someone tried too many wrong passwords.." [my get temp_login_block_until]]
+			return -level 2 0
+		}
+
+	}
+
+	:method loginVerifyPassword {  } {
+		if {![string match ${:user_password} [:get password]]} {
+			:addError password [msgcat::mc "The password you entered is incorrect"]
+			# limit 5 wrong passwords per 1-3 hours by blocking ip/user login and sending e-mail to inform user..
+			set login_attempts [my get login_attempts]
+			incr login_attempts
+			:set login_attempts $login_attempts 
+			
+			if {$login_attempts >=5} { 
+				:set temp_login_block_until [getTimestampTz [clock add [clock seconds] 3 hours]]
+				:addError password [msgcat::mc "Nice going Sherlock, you've just temporarily blocked
+				your account for 3 hours because you entered too many wrong passwords.."]
+				#TODO send e-mail to inform user, with a link to "unblock" if it was him who did this!
+			}
+			:unset password ;#Unset password that we just got form findByCond
+			:update
+			return -level 2 0
+		}
+	}
+
+	:method loginVerifyStatus {  } {
+		if {[:get status] == 0} {
+			:addError username [msgcat::mc "You can't login because you're banned! If you think this is a mistake, contact us."]
+			return -level 2 0
+		}	elseif {[my get status] == 1} {
+			:addError username [msgcat::mc "You need to first activate your account before you login."]
+			return -level 2 0
+		}		
+	}
+	:method loginHandleLongLogin {  } {
+		set longlogin [:get longlogin]
+		if {$longlogin != ""} {
+			ns_session put longlogin true 
+		}
+		:unset longlogin
+	}
+
+	:method loginSaveSession {  } {
+			ns_session put userid [my get id]
+			ns_session put username [my get username] 
+			ns_session put user_type [my get user_type] 
+
+			#Update the last login time
+			#TODO in future add login IP to another table..
+			:set last_login_at [getTimestamp]
+			:set login_attempts 0
+	}
+
+
 
 	:public method register {} {
 	
