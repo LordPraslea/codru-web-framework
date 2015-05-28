@@ -49,6 +49,7 @@ nx::Class create ModelValidation {
 				set currentColumnError [my switchValid $valid $extra $column]
 				if {$currentColumnError != 0} { lappend columnerrors $currentColumnError 	}
 			}
+			
 			if {[join $columnerrors] != ""} {
 				dict set :attributes errors $column $columnerrors
 			}
@@ -57,17 +58,17 @@ nx::Class create ModelValidation {
 
 	#This function validates the attributes before saving in the database
 	:public method switchValid {valid extra column} {
-		set column_name [my getAlias $column]
+		set :column_name [my getAlias $column]
 		if {![dict exists ${:attributes} sqlcolumns $column value]}  { return "$column has no value set"  }
 		set value [dict get ${:attributes} sqlcolumns $column value]
 		if {[dict exists $extra message]} {
 			set message [dict get $extra message]
 		}
 		if {[dict exists $extra rule]} {
-			set rule [dict get $extra  rule]
+			set :rule [dict get $extra  rule]
 		}
 		
-		if {[set r [:$valid $extra $column $value]] != 0} {
+		if {[set r [:$valid $extra $column $value]] != ""} {
 					return $r
 		}
 
@@ -75,89 +76,89 @@ nx::Class create ModelValidation {
 	}
 
 	:method required {extra column value} {
-		if {$value == ""} { return [msgcat::mc "%s is required" $column_name] }
+		if {$value == ""} { return [msgcat::mc "%s is required" ${:column_name}] }
 	}
 
 	:method string {extra column value} {
-		if {0} { return "$column_name must be a string" }
+		if {0} { return "${:column_name} must be a string" }
 	}
 
 	:method not {extra column value} {
-		if {[string match $value $rule]} { return [msgcat::mc {%1$s must not be %2$s} $column_name $rule]   }
+		if {[string match $value ${:rule}]} { return [msgcat::mc {%1$s must not be %2$s} ${:column_name} ${:rule}]   }
 	}
 
 	:method exact {extra column value} {
-		if {![string match $value $rule]} { return  [msgcat::mc {%1$s must be exactly %2$s} $column_name $rule]   }
+		if {![string match $value ${:rule}]} { return  [msgcat::mc {%1$s must be exactly %2$s} ${:column_name} ${:rule}]   }
 	}
 
 	:method match {extra column value} {
-		if {![regexp $rule $value]} { return [msgcat::mc "This doens't match what is required.."] }
+		if {![regexp ${:rule} $value]} { return [msgcat::mc "This doens't match what is required.."] }
 
 	}
 
 	:method email {extra column value} {
 		set regexp {^[A-Za-z0-9._]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$}
-		if {![regexp $regexp $value]} { return [msgcat::mc "%s must contain a valid e-mail address." $column_name]  }
+		if {![regexp $regexp $value]} { return [msgcat::mc "%s must contain a valid e-mail address." ${:column_name}]  }
 
 	}
 
 	:method in {extra column value} {
 		set match 0
-				foreach val $rule {
+				foreach val ${:rule} {
 					if {[string match -nocase ${val} [string trim $value]]} { incr match 1 ; break }	
 				}
-				if {!$match} {return [msgcat::mc {%1$s must be one of the following: %2$s} $column_name [join $rule "; " ] ] }
+				if {!$match} {return [msgcat::mc {%1$s must be one of the following: %2$s} ${:column_name} [join ${:rule} "; " ] ] }
 
 	}
 
 	:method max-length {extra column value} {
-		if {[string length $value] > $rule} { return [msgcat::mc {%1$s is too long (maximum %2$s characters)} $column_name $rule] }
+		if {[string length $value] > ${:rule}} { return [msgcat::mc {%1$s is too long (maximum %2$s characters)} ${:column_name} ${:rule}] }
 	}
 
 	:method min-length {extra column value} {
-		if {[string length $value] < $rule} { return [msgcat::mc {%1$s must be at least %2$s characters long} $column_name $rule] }
+		if {[string length $value] < ${:rule}} { return [msgcat::mc {%1$s must be at least %2$s characters long} ${:column_name} ${:rule}] }
 	}
 
 	:method exact-length {extra column value} {
-		if {[string length $value] < $rule} { return [msgcat::mc {%1$s must be exactly %2$d characters long} $column_name $rule] } 
+		if {[string length $value] < ${:rule}} { return [msgcat::mc {%1$s must be exactly %2$d characters long} ${:column_name} ${:rule}] } 
 	}
 
 	:method between {extra column value} {
-		foreach {min max} $rule { }
+		foreach {min max} ${:rule} { }
 		if {[string length $value] > $max || [string length $value] < $min} {
-			return [msgcat::mc {%1$s must be between %2$s and %3$s characters long} $column_name $min $max ]  
+			return [msgcat::mc {%1$s must be between %2$s and %3$s characters long} ${:column_name} $min $max ]  
 		}
 	}
 
 	:method integer {extra column value} {
-		if {![string is integer $value]} { return [msgcat::mc "%s must be an integer" $column_name] } 
+		if {![string is integer $value]} { return [msgcat::mc "%s must be an integer" ${:column_name}] } 
 	}
 
 	:method numerical {extra column value} {
-		if {![string is double $value]} { return [msgcat::mc "%s must be a number" $column_name] } 
+		if {![string is double $value]} { return [msgcat::mc "%s must be a number" ${:column_name}] } 
 	}
 
 	:method min-num {extra column value} {
-		if {$value < $rule } { return [msgcat::mc {%1$s must be bigger than %2$s} $column_name $rule] }
+		if {$value < ${:rule} } { return [msgcat::mc {%1$s must be bigger than %2$s} ${:column_name} ${:rule}] }
 	}
 
 	:method max-num {extra column value} {
-	 if {$value > $rule } { return [msgcat::mc {%1$s must be smaller than %2$s} $column_name $rule] } 
+	 if {$value > ${:rule} } { return [msgcat::mc {%1$s must be smaller than %2$s} ${:column_name} ${:rule}] } 
 	}
 
 	:method between-num {extra column value} {
-		foreach {min max} $rule { }
+		foreach {min max} ${:rule} { }
 		if {$min > $value || $max < $value} {
-			return [msgcat::mc {%1$s must  be between number between %2$s and %3$s} $column_name $min $max] 
+			return [msgcat::mc {%1$s must  be between number between %2$s and %3$s} ${:column_name} $min $max] 
 		}
 	}
 
 	:method same-as {extra column value} {
-		if {![string match [my get $column] [my get $rule]]} {
-			return [msgcat::mc {%1$s must be same as %2$s. These two fields don't seem too match}  $column_name $rule]
+		if {![string match [my get $column] [my get ${:rule}]]} {
+			return [msgcat::mc {%1$s must be same as %2$s. These two fields don't seem too match}  ${:column_name} ${:rule}]
 		}
 	}
-
+#TODO
 	:method one-of {extra column value} {
 	
 	}
@@ -169,18 +170,24 @@ nx::Class create ModelValidation {
 		if { [my getScenario] ni [dict get $extra on] } { return 0 }
 		set column_name [my getAlias $column]
 		if {[my findByCond -save 0 [list $column $value] ]} {
-			return [msgcat::mc 	{%1$s must be unique. There already exists someone who uses %2$s}	 $column_name $value] 
+			return [msgcat::mc 	{%1$s must be unique. There already exists someone who uses %2$s}	 ${:column_name} $value] 
 		
 		}
-		return 0
 	}
 
 	:public method captcha {extra column value} {
+		if {[info exists :rule]} {
+			if {"css-[:getScenario]" in ${:rule}} {
+				if {[ns_queryget name] != ""} {
+					return [msgcat::mc {Oops, something went wrong, did you fill in the name? If you're a human DON'T fill it in. Try again.}]
+				}	
+			}
+		}
+
 		if {![string match -nocase $value [ns_session get humanTest]]} {
 			return [msgcat::mc 	{The code you've entered is incorrect, try again.}] 
 		}
-		:unset captcha
-		return 0
+		#:unset captcha
 	}
 
 }
