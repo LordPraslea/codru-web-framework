@@ -1,3 +1,5 @@
+<%
+set config {
 #Config settings 
 appname		unitedbrainpower
 lang	ro
@@ -6,10 +8,11 @@ routes {
 	/cms/*   ./modules/cms/controllers/PostController.adp
 }
 loadFrom lostmvc	
-forceMultilingual 0
+forceMultilingual 1
 database dbipg2
 names {website UnitedBrainPower.com sitename "United Brain Power" }
 email info@unitedbrainpower.com
 mode dev
-mailsettings { username yourgmailaddress@gmail.com password WW91clBhc3N3b3JkSGVyZQ== }
-
+mandrill {  host smtp.mandrillapp.com port 587 username yourgmailaddress@gmail.com password your-mandrill-api }
+}
+%>
