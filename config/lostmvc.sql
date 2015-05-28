@@ -8,8 +8,9 @@
 CREATE EXTENSION IF NOT EXISTS citext ;
 CREATE TABLE users (
 	id serial PRIMARY KEY UNIQUE NOT NULL,
-	username CITEXT UNIQUE NOT NULL ,
+	use/name CITEXT UNIQUE NOT NULL ,
 	password TEXT NOT NULL,
+	telephone TEXT NOT NULL,
 	email CITEXT UNIQUE NOT NULL,
 	last_login_at timestamptz,
 	creation_at timestamptz,
@@ -70,7 +71,7 @@ CREATE TABLE user_profile (
 
 CREATE TABLE role_item (
 	id serial PRIMARY KEY UNIQUE NOT NULL,
-	name CITEXT NOT NULL,
+	name CITEXT UNIQUE NOT NULL,
 	type int NOT NULL,
 	description TEXT,
 	bizrule TEXT,
@@ -276,35 +277,77 @@ create table user_subscription (
 
 ALTER TABLE user_subscription OWNER to lostone;
 
--- Shop 
-create table shoppingcart (
+/*	United Brain Power
+	---	Online Shop System
+*/
+create table shop_order (
 	id serial primary key unique not null,
 	user_id INT NOT NULL references users(id),
-	begin_at timestamptz,
-	end_at timestamptz,
+	creation_date timestamptz,
+	payment_date timestamptz,
 	payment_instrument text,
-	--  Open 0 , In Process 1, Error 2, Complete 3 
+	invoice_number text,
+	final_price numeric,
+	name citext,
+	address text,
+	creation_ip TEXT,
+	payment_ip TEXT,
+	--  Open 0 , In Process 1, Error 2, Complete 3 = Paid, 4 Not Accepted/Refused , 5 = refunded 
 	status smallint default 0
 );
 
-ALTER TABLE shoppingcart OWNER to lostone;
-create table orderitem (
+ALTER TABLE shop_order OWNER to lostone;
+
+
+Create table shop_item (
 	id serial primary key unique not null,
 	name text,
 	description text,
 	price numeric,
 	credits int,
-	credits_you_receive int,
-	location text
+	stock int,
+	sold int DEFAULT 0,
+	-- Images .. 
+	images_gallery text
 );
-ALTER TABLE orderitem OWNER to lostone;
-create table shoppingcart_item (
-	order_id INT NOT NULL references shoppingcart(id),
-	item_id INT  references orderitem(id),
+
+ALTER TABLE shop_item OWNER to lostone;
+Create table shop_item_rating (
+	item_id INT  references shop_item(id),
+	user_id INT NOT NULL references users(id),
+	rating int,
+	rating_ip TEXT
+);
+
+ALTER TABLE shop_item_rating OWNER to lostone;
+Create table shop_item_comment (
+	id serial primary key unique not null,
+	reply_to INT references shop_item_comment(id),
+	item_id INT NOT NULL references shop_item(id),
+	comment text,
+	creation_at timestamptz,
+	user_id int not null references users(id) ,
+	status smallint DEFAULT 0
+);
+
+ALTER TABLE shop_item_comment OWNER to lostone;
+-- Used for recommended/related products!
+CREATE TABLE shop_item_tags (
+	tag_id INT NOT NULL references tags(id),
+	item_id INT NOT NULL references shop_item(id),
+	constraint shop_item_tags_pkey primary key(tag_id,item_id)
+);
+
+ALTER TABLE shop_item_tags OWNER to lostone;
+
+Create table shop_order_item (
+	shop_order_id INT NOT NULL references shop_order(id),
+	item_id INT  references shop_item(id),
 	final_price numeric,
-	quantity INT DEFAULT 1
+	quantity INT DEFAULT 1,
+	constraint shop_order_item_pkey primary key(shop_order_id,item_id)
 );
-ALTER TABLE shoppingcart_item OWNER to lostone;
+ALTER TABLE shop_order_item OWNER to lostone;
 
 
 
