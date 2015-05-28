@@ -342,6 +342,8 @@ proc generateCrud {model controller {bhtml ""}} {
 		set viewsloc [ns_pagepath]/modules/$module/views/[string tolower $modelname]
 		set controllerloc [ns_pagepath]/modules/$module/controllers
 		set modelloc [ns_pagepath]/modules/$module/models 
+
+		set moduleViewLoc [ns_pagepath]/modules/$module/views/
 		foreach dir "$viewsloc $controllerloc $modelloc" {
 
 			catch {
@@ -357,7 +359,10 @@ proc generateCrud {model controller {bhtml ""}} {
 		set viewsloc [ns_pagepath]/views/[string tolower $modelname]
 		set controllerloc [ns_pagepath]/controllers
 		set modelloc [ns_pagepath]/models 
+
+		set moduleViewLoc [ns_pagepath]/views/
 	}
+
 
 	#Locations			
 	set templateloc [ns_pagepath]/templates
@@ -389,17 +394,27 @@ proc generateCrud {model controller {bhtml ""}} {
 		}	
 		#	file attributes $viewsloc -permissions 0666
 		#Also _view
-		foreach file {form  view index  create update admin _view} {
-
+		foreach file {form  view index  create update admin _view module_layout} {
+			if {$file == "module_layout"} {
+				set viewdir $moduleViewLoc 
+				set saveFile $file
+			} else {
+				set viewdir $viewsloc
+				set saveFile ${controllername}_layout
+			}
 		#		puts "Opening the following $templateloc/$file.adp"
 			set tpl [ns_adp_parse -file $templateloc/$file.adp $columns]	
-			set tplfile [open $viewsloc/$file.adp w]
+			set tplfile [open $viewdir/$saveFile.adp w]
 			puts $tplfile $tpl
 			close $tplfile
-			file attributes $viewsloc/$file.adp -permissions 0664
+			file attributes $viewdir/$saveFile.adp -permissions 0664
 			append created "Created $file.adp <br>\n"
 
 		}
+
+
+
+
 		append created "<br>\n"
 		#creating controller based on template file..
 		set controllertemplatefile [open $templateloc/controller.tcl r]
