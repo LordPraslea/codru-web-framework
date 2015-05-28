@@ -107,13 +107,17 @@ nx::Class create SQLRelations {
 			:computeMultiTables $ts
 
 		}
+
+		:computeForeignKeyValue $ts
+
+		#Experiment to use subselects so we return:)
+		return  
 		#An extra verification to be sure we don't include the same table 2 times if it #has relationships to itself 
 		if {[lsearch $from $fk_table ] == -1}	{
 			if {$fk_table != ${:table}} {
 				append from " , $fk_table"
 			}
 		}
-		:computeForeignKeyValue $ts
 
 		${:criteria} addRelation -table ${:table} -fk_table $fk_table  $column $fk_column 
 
@@ -163,8 +167,12 @@ nx::Class create SQLRelations {
 	#Computes the foreign key value in fk_value
 	#(if you want something else than fk_column)
 	:method computeForeignKeyValue {ts} {
-		foreach refVar {fk_value fk_table fk_function newSelect} { :upvar $refVar $refVar }
+		foreach refVar {newSelect} { :upvar $refVar $refVar }
+		
+		foreach {k v} [${:model} getRelations $ts] { set $k $v }	
+		set criteria [SQLCriteria new -table ${:table}]
 
+		#set criteria [SQLCriteria new]
 		#Concatenate multiple values
 		if {[llength $fk_value] > 1} {
 			set fk_col_value ""
@@ -179,7 +187,17 @@ nx::Class create SQLRelations {
 				set fk_col_value [string map ":fk_value ${fk_table}.${fk_value}" $fk_function]
 			}  else {		set fk_col_value ${fk_table}.${fk_value} }
 		}
-		lappend newSelect "$fk_col_value as $ts"	
+	
+		$criteria addRelation -fk_table $fk_table $column $fk_column 
+		if {[dict exists [${:model} getAttributes] relations $ts fk_extra]} {
+			foreach {column value} $fk_extra {
+				$criteria addRelation  $column '$value' 
+
+			}
+		}
+		set sqlcriteria [${criteria} getCriteriaSQL ]
+		$criteria destroy
+		lappend newSelect "(SELECT $fk_col_value FROM $fk_table WHERE  $sqlcriteria) as $ts"	
 	}
 
 		
