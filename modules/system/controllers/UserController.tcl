@@ -70,83 +70,27 @@ nx::Class create UserController -superclass Controller {
 		if {[set model [my loadModel $id]] ==0} { return }
 		my render view model $model 
 	}
+	
 
-	:public method actionLang {} {
-		#Using dataprovider and loading from database COMMENT?
-
-		set supportedlang "en ro nl"
-		set supportedlanguages "English Română Nederlands"
-
-		if {[ns_conn method] == "GET" && [ns_queryexists lang]} {
-			#Set optional value the one from the configuration instead of english?
-			set lang [ns_queryget lang en]
-			if {[lsearch $supportedlang $lang] == -1} { set lang en }	
-			#TODO if logged in save his choice OR set his choice in the database in profile:D	
-			
-			#Set the session, cookie & locale with the current correct language,  
-			ns_log debug "Changed language to $lang"
-			ns_session put lang $lang
-			ns_setcookie -path / lostmvc_lang $lang 
-			msgcat::mclocale $lang
-
-			set infoalert [list -type success [mc "Your language settings have been changed to English"] ]
-		
-			my render lang infoalert $infoalert 
-			return 1
-		}
-		my render lang  
-	}
 
 		#TODO if PK same when creating new, view if not unique constraing..
 	
 	:public method actionRegister {} {
-			my redirectLogin
+		my redirectLogin
 		set model [User new]
-		#set bhtml [bhtml new]
 
-		#For when you want ajax validation..
-		#$model nodjsRules $bhtml
-
-		#If POST...
 		$model setScenario register
 		if {[ns_conn method] == "POST"} {
-		#	puts "Yeah, creating a new thingie here!"
-			set queryattributes [$model getQueryAttributes POST ]
-			#Encrypt password..
-			set password [$model get password]
-			if {$password != ""} {
-			$model set password [ns_sha1 [$model get password]]
-			}
-		#	$model set creation_at [clock milliseconds]
-			$model set activation_code [generateCode 13]
-			$model set creation_at [getTimestamp]
-			$model set creation_ip [ns_conn peeraddr] 
-			#TODO future add regIp to db..
-			#set errors [$model validate]
-			#puts "errors are $errors"
+			set queryattributes [$model getQueryAttributes POST]
+			:setRegisterModelInformation
 			if {[$model save]} {
-				#Using e-mail template to send mail with activation link..:D
-				#
-				#
 				set bhtml [bhtml new]
 				set jumbotron [$bhtml jumbotron [msgcat::mc "Account created successfully"]  [msgcat::mc "You've successfully registered. 
 				You will recieve an e-mail with an activation link.
 				Please click on it to activate your account and start saving time."]]
+				:simpleRender $jumbotron
 
-				my simpleRender $jumbotron
-				#my redirect view id [$model get id] 
-				set activationlink [ns_conn location]/user/activate?code=[$model get activation_code]
-				set f [open [ns_server pagedir]/modules/system/views/user/register_email.adp r]
-				set email_template [read $f]
-				set email_data [string map "%username [$model get username]  %sitename [dict get $config names sitename ]  %password [$model get password] %activationlink $activationlink" $email_template ]
-				close $f
-
-				set config [ns_cache_get lostmvc config.[getConfigName]] 
-
-				send_mail [$model get email] "[dict get $config names sitename ] <[dict get $config email]>" \
-					[msgcat::mc "Your new account at %s" [dict get $config names website]] $email_data  
-
-			#	$model register
+				:sendRegisterEmail
 				return [$model get id]
 			}
 		}
@@ -155,122 +99,186 @@ nx::Class create UserController -superclass Controller {
 		my render register model $model
 	}
 
-	:public method actionLogin {} {
-			my redirectLogin
-		set model [User new]
-		#set bhtml [bhtml new]
+	:method setRegisterModelInformation {args} {
+		:upvar model model
+		#Encrypt password..
+		set password [$model get password]
+		if {$password != ""} {
+			$model set password [ns_sha1 [$model get password]]
+		}
+		#	$model set creation_at [clock milliseconds]
+		$model set activation_code [generateCode 13]
+		$model set creation_at [getTimestamp]
+		$model set creation_ip [ns_conn peeraddr] 
+	}
 
-		#For when you want ajax validation..
-		#$model nodjsRules $bhtml
+	:method sendRegisterEmail {  } {
+		:upvar model model
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
+		set activationlink [ns_conn location]/user/activate?code=[$model get activation_code]
+		set templateData 	"%username [$model get username]  %sitename [dict get $config names sitename ]
+			%password [$model get password] %activationlink $activationlink"
+		set	emailTemplate [:getDataFromTemplate /modules/system/views/user/register_email.adp $templateData]
+
+		send_mail [$model get email] "[dict get $config names sitename ] <[dict get $config email]>" \
+			[msgcat::mc "Your new account at %s" [dict get $config names website]] $emailTemplate  
+	}
+
+
+
+	:public method actionLogin {} {
+		my redirectLogin
+		set model [User new]
+
 		$model setScenario login
 		if {[ns_conn method] == "POST"} {
-		#	puts "Yeah, creating a new thingie here!"
 			set queryattributes [$model getQueryAttributes POST]
 			#Login Function and send him on his way!
 			if {[$model login]} {
-				if {[ns_session contains returnto]} {
-					set returnto [ns_session get returnto]
-					ns_session delete returnto
-					if {![string match *user/login* $returnto]} {
-						puts "Returning to $returnto"
-						ns_returnredirect $returnto
-						return 1
-					}
-				} 
-					
-					#my redirect view id [$model get id] ;#old value
-					my redirect profile
-				return 1
+				:loginRedirect
 			}
 		}
-		#using ns_adp_parse AND ns_adp_include
 		my render login model $model
 	}
-	
+
+	:method loginRedirect {  } {
+		if {[ns_session contains returnto]} {
+			set returnto [ns_session get returnto]
+			ns_session delete returnto
+			if {![string match *user/login* $returnto]} {
+				puts "Returning to $returnto"
+				ns_returnredirect $returnto
+				return -level 2 1
+			}
+		} 
+
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
+		if {[dict exists $config redirectLogin ]} {
+			:redirect {*}[dict get $config redirectLogin]
+		} else {
+			my redirect profile
+		}
+		return -level 2 1
+	}
+
+
 	:public method actionActivate {} {
-			my redirectLogin
+		my redirectLogin
 		set model [User new]
 		$model setScenario activate
 
 		if {[ns_conn method] == "GET" && [ns_queryexists code]} {
 			set bhtml [bhtml new]
-			set code [ns_queryget code]
-			#TODO separate function in Model?
-			#TODO better to split this in views....?
-			if {![$model findByCond -save 1 [list activation_code $code]]} {
-				set jumbotron [$bhtml jumbotron [msgcat::mc  "Activation code incorrect."]  [msgcat::mc "No such activation code seems to exist"]]
-				my simpleRender $jumbotron
-				return 0
-			} 
-			if {[$model get status] != 1} {
-				set alreadybody [msgcat::mc "This account is already activated, you don't need to activate it again.."]
-				set jumbotron [$bhtml jumbotron [msgcat::mc  "Account is already activated."] $alreadybody  ]
-				my simpleRender $jumbotron
-				#	my render login model $model extrainfo $jumbotron
-				return 0
-			}
-			#Unset password.. so no "hackattempt" 
-			$model unset password 
-			$model set status 2
-			$model set last_login_at [getTimestamp]
-			#Using update instead of save because "save" does validation which is not needed..
-			$model update
+			:verifyActivationCode
+			:verifyAccountActivated
+		
+			:activateSetModel	
 
-			#TODO If settings for autoLoginAfterActivate = true
-			#then autologin username.. 
-			if {1} {
-				ns_session put userid [$model get id] 
-				ns_session put username [$model get username] 
-				ns_session put user_type [$model get user_type] 
-
-				if {[ns_session contains returnto]} {
-					set returnto [ns_session get returnto]
-					ns_session delete returnto 
-					#ns_returnredirect [ns_session get returnto] 
-					if {![string match *user/login* $returnto]} { 
-						ns_returnredirect $returnto 
-						return 0
-					}
-				} 
-				#my redirect view id [$model get id]
-				my redirect profile 
-				
-			#	set extrainfo [$bhtml ]
+			if {[:autoLoginAfterActivation]} {
+					:activateAutoLogin
 			} else {
-			#Else just redirect to Login Page
-
 				my render login model $model extrainfo [$bhtml alert [msgcat::mc  "You've successfully activated your account. You may now login!"]] 
 			}
 			return 1
-
 		}
-
-		#using ns_adp_parse AND ns_adp_include
 		my render login model $model
 	}
-	
+
+	:method verifyActivationCode {  } {
+		:upvar model model
+		set code [ns_queryget code]
+		set criteria [SQLCriteria new -model [self]]
+		$criteria add activation_code $code
+		if {![$model findByCond -save 1  $criteria ]} {
+			set jumbotron [$bhtml jumbotron [msgcat::mc  "Activation code incorrect."]  [msgcat::mc "No such activation code seems to exist"]]
+			my simpleRender $jumbotron
+			return -level 2 0
+		} 
+	}
+
+	:method verifyAccountActivated { } {
+		:upvar model model
+		if {[$model get status] != 1} {
+			set alreadybody [msgcat::mc "This account is already activated, you don't need to activate it again.."]
+			set jumbotron [$bhtml jumbotron [msgcat::mc  "Account is already activated."] $alreadybody  ]
+			my simpleRender $jumbotron
+			#	my render login model $model extrainfo $jumbotron
+			return -level 2 0
+		}
+	}
+
+	:method activateSetModel {  } {
+		:upvar model model	 
+		#Unset password.. so no "hackattempt" 
+		$model unset password 
+		$model set status 2
+		$model set last_login_at [getTimestamp]
+		#Using update instead of save because "save" does validation which is not needed..
+		$model update
+	}
+
+	:method  autoLoginAfterActivation {} {
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
+		if {[dict exists $config autoLoginAfterActivation]} {
+			return [dict get $config autoLoginAfterActivation]
+		}
+		return 0
+	}
+
+	:method activateAutoLogin {  } {
+		:upvar model model
+		ns_session put userid [$model get id] 
+		ns_session put username [$model get username] 
+		ns_session put user_type [$model get user_type] 
+
+		if {[ns_session contains returnto]} {
+			set returnto [ns_session get returnto]
+			ns_session delete returnto 
+			#ns_returnredirect [ns_session get returnto] 
+			if {![string match *user/login* $returnto]} { 
+				ns_returnredirect $returnto 
+				return -level 2 0
+			}
+		} 
+		my redirect profile 
+	}
+
+
+	#Password Reset form fill to send e-mail
 	:public method actionReset {} {
-			my redirectLogin
-		#Resetting the password
-		#first showing form.. 
+		my redirectLogin
 		set model [User new]
-		#For when you want ajax validation..
-		#$model nodjsRules $bhtml
 		$model setScenario reset
+
 		if {[ns_conn method] == "POST"} {
-		#	puts "Yeah, creating a new thingie here!"
 			set queryattributes [$model getQueryAttributes POST]
-			#$model validate email	
-			#	puts [$model getScenarioKeys]
-			set email [$model get email]
+
+			:verifyResetDetails
+			$model setScenario reset
+
+			if {[$model getErrors] == ""} {
+				:setModelForReset
+				:renderResetSuccessful
+				:sendResetPaswordEmail	
+				return 1
+			}
+		} 	
+		my render reset model $model
+	}
+
+	:method verifyResetDetails {  } {
+		:upvar model model
+		 	set email [$model get email]
 			if {[string match "*@*" $email ]} {
 				set tomatch email
 			} else { set tomatch username }
+			set criteria [SQLCriteria new -model [self]]
+			$criteria add $tomatch $email
 
-			if {![$model findByCond -save 1 [list $tomatch $email]]} {
+			if {![$model findByCond -save 1 $criteria ]} {
 				$model addError email [msgcat::mc "No such username or e-mail can be found!"]	
-				
 			}
+
 			set password_at [$model get password_reset_at]
 			if {$password_at != ""} {
 				if {([scanTz  [getTimestamp]] < [clock add [scanTz $password_at] 3 hours])} {
@@ -278,85 +286,91 @@ nx::Class create UserController -superclass Controller {
 					You need to wait 3 hours between consequent password resets. Did you verify your e-mail? "]
 				}
 			}
-			$model setScenario reset
-		#	$model validate captcha
+	}
+	
 
-	#	if {[$model validate captcha] == 0} {
-	#		puts "Validation ok..? [$model getScenario]"
-	#	}
-		#	puts " password at $password_at time [clock scan  [getTimestamp]] time [clock add [clock scan $password_at] 3 hours] errors [$model getErrors] "
-			if {[$model getErrors] == ""} {
-				$model set password_code [generateCode 13]	
-				$model set password_reset_at [getTimestamp]
-				#TODO verify if something is wrong or not..
-				$model save
+	:method setModelForReset {  } {
+		$model set password_code [generateCode 13]	
+		$model set password_reset_at [getTimestamp]
+		#TODO verify if something is wrong or not..
+		$model save
+	}
 
+	:method renderResetSuccessful {  } {
+		 
 				set bhtml [bhtml new]
 				set msgbody [msgcat::mc "You will recieve an e-mail with an password reset link.
 				Please click on it to change your account's password."]
 				set jumbotron [$bhtml jumbotron [msgcat::mc "Reset e-mail sent successfully"] $msgbody  ]
-
-
 				my simpleRender $jumbotron
-				#my redirect view id [$model get id] 
-				set activationlink [ns_conn location]/user/resetPassword?code=[$model get password_code]
-				set f [open [ns_server pagedir]/modules/system/views/user/reset_password_email.adp r]
-				set email_template [read $f]
-				set email_data [string map "%username [$model get username]   %sitename [dict get $config names sitename ] %activationlink $activationlink" $email_template ]
-				close $f
+	}
+	:method sendResetPaswordEmail {  } {
+		:upvar model model
 
-				send_mail [$model get email] "[dict get $config names sitename ] <[dict get $config email]>" 	[msgcat::mc "Resetting your password at %s" [dict get $config names website]] $email_data  
-				return 1
-			}
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
 
-		} 	
-		#using ns_adp_parse AND ns_adp_include
-		my render reset model $model
+		set activationlink [ns_conn location]/user/resetPassword?code=[$model get password_code]
+		set templateData  "%username [$model get username]   %sitename [dict get $config names sitename ] 
+		%activationlink $activationlink"
+		set	emailTemplate [:getDataFromTemplate /modules/system/views/user/reset_password_email.adp $templateData]
+		send_mail [$model get email] "[dict get $config names sitename ] <[dict get $config email]>" [msgcat::mc "Resetting your password at %s" [dict get $config names website]] $email_data  
+
 	}
 
+	#Password reset
 	:public method actionResetPassword {} {
-			my redirectLogin
+		my redirectLogin
 		set model [User new]
 
-		#set code [ns_get code]
 		if {[set code [ns_get code]] != "" && $code != "reset"} {
 		
-			if {[$model findByCond  [list password_code $code]]} {
-					
-				$model setScenario resetpassword
-				if {[ns_conn method] == "POST"} {
-					
-					set queryattributes [$model getQueryAttributes POST]
-					set validate [$model validate]
-				#	puts [$model getScenarioKeys]
-			#	puts "My errors [$model getErrors]"
+			set criteria [SQLCriteria new -model $model]
+			$criteria add password_code $code
+			if {[$model findByCond  $criteria ]} {
+				:resetPasswordVerification
 
-					if {[string is space [$model getErrors]] && $validate ==0} {
-						#set new timestamp (so if resetting.. sorry, wait again!)
-						#Password_code set to 0 so you can't use it again after 3 hours:)
-						#You could simply use another if to verify if it passed 24-48 hours..
-						$model set password_reset_at [getTimestampTz]
-						$model set password_code "reset"
-						$model set password [ns_sha1 [$model get password]]
-						$model set retype_password [ns_sha1 [$model get retype_password]]
-
-						$model setScenario reset_password_ok
-						#puts "Model validate $validate [$model get retype_password] and original [$model get password] "
-						#TODO auto login?
-						#
-						$model unset retype_password
-						$model save
-							my errorPage [msgcat::mc "Your password has been successfully changed."] [msgcat::mc "You've changed your password, you may now login!"]
-							return 1  
-					}
-				}
-				$model set password ""
-				$model set retype_password ""
-				my render reset_password model $model
-				return 1
 			} else { my errorPage [msgcat::mc "This code doesn't exist"] [msgcat::mc "Sorry this reset password code doesn't exist.."] }
 		} 
 		my render reset model $model
+	}
+
+	:method resetPasswordVerification {} {
+		:upvar model model
+
+		$model setScenario resetpassword
+		if {[ns_conn method] == "POST"} {
+			set queryattributes [$model getQueryAttributes POST]
+			set validate [$model validate]
+
+			:resetPasswordVerifyValidationErrors
+		}
+
+		$model set password ""
+		$model set retype_password ""
+		my render reset_password model $model
+		return -level 2 1
+	}
+
+	#set new timestamp (so if resetting.. sorry, wait again!)
+	#Password_code set to 0 so you can't use it again after 3 hours:)
+	#You could simply use another if to verify if it passed 24-48 hours..
+	#TODO auto login?
+	:method resetPasswordVerifyValidationErrors {  } {
+	   foreach refVar {model validate} { :upvar $refVar $refVar }
+
+		if {[string is space [$model getErrors]] && $validate ==0} {
+			$model set password_reset_at [getTimestampTz]
+			$model set password_code "reset"
+			$model set password [ns_sha1 [$model get password]]
+			$model set retype_password [ns_sha1 [$model get retype_password]]
+
+			$model setScenario reset_password_ok
+			
+			$model unset retype_password
+			$model save
+			my errorPage [msgcat::mc "Your password has been successfully changed."] [msgcat::mc "You've changed your password, you may now login!"]
+			return -level 3 1  
+		}
 	}
 
 	:public method actionLogout {} {
@@ -375,97 +389,73 @@ nx::Class create UserController -superclass Controller {
 		set id [ns_session get userid ]
 		if {[set model [my loadModel $id]] ==0} { return }
 		set userprofilemodel [User new]
-		#Load all profiles, check them against the userid + profile id..
-		#create forms and show them
 
+		#Load all profiles, check them against the userid + profile id..  #create forms and show them
 		$userprofilemodel loadUserProfile	
 		$userprofilemodel genScenarios
 		if {[ns_conn method] == "POST"} {
 			set update_type [ns_queryget update_type profileupdate]
 
 			if {$update_type == "password"} {
-				$model setScenario passwordprofileupdate
-
-				$model loaddata 0
-			set queryattributes [$model getQueryAttributes POST ]
-				if {[$model validate] ==0} {
-					$model unset retype_password
-					$model unset current_password
-					$model setScenario other
-					$model set password [ns_sha1 [$model get password]]
-					set infoalert [list -type success [mc "Successfully changed your password."]]
-					if {[$model save]} {
-					#	$model set password "" retype_password "" current_password ""
-						my render profileupdate model $model userprofilemodel $userprofilemodel infoalert $infoalert  ;#id $id
-						return 1
-					}
-
-				} 
+				:profileUpdatePassword
 			} else { 
-				$userprofilemodel setScenario profileupdate
-				$userprofilemodel getQueryAttributes POST 
-
-				puts "[$userprofilemodel getScenario]"
-				set infoalert [list -type success [mc "Successfully saved all profile data."]]
-				if {[$userprofilemodel validate] == 0} {
-					if {[$userprofilemodel saveUserProfile]} {
-					
-					#INSERT if not existing, update otherwise..
-				#	$model set password "" retype_password "" current_password ""
-					my render profileupdate model $model userprofilemodel $userprofilemodel infoalert $infoalert  ;#id $id
-					return 1
-					}
-				}
+				:profileUpdateData
 			}
 		}
 		my render profileupdate model $model userprofilemodel $userprofilemodel
-
 	} 
 
+	:method profileUpdatePassword {  } {
+	   foreach refVar {model userprofilemodel} { :upvar $refVar $refVar }
+
+		$model setScenario passwordprofileupdate
+		$model loaddata 0
+
+		set queryattributes [$model getQueryAttributes POST ]
+		if {[$model validate] ==0} {
+			$model unset retype_password
+			$model unset current_password
+			$model setScenario other
+			$model set password [ns_sha1 [$model get password]]
+			set infoalert [list -type success [mc "Successfully changed your password."]]
+			if {[$model save]} {
+				my render profileupdate model $model userprofilemodel $userprofilemodel infoalert $infoalert  ;#id $id
+				return 1
+			}
+		} 
+	}
+
+	:method profileUpdateData {  } {
+		foreach refVar {userprofilemodel model} { :upvar $refVar $refVar }
+
+		$userprofilemodel setScenario profileupdate
+		$userprofilemodel getQueryAttributes POST 
+
+		#puts "[$userprofilemodel getScenario]"
+		set infoalert [list -type success [mc "Successfully saved all profile data."]]
+		if {[$userprofilemodel validate] == 0} {
+			if {[$userprofilemodel saveUserProfile]} {
+			#INSERT if not existing, update otherwise..
+			#	$model set password "" retype_password "" current_password ""
+				my render profileupdate model $model userprofilemodel $userprofilemodel infoalert $infoalert  ;#id $id
+				return 1
+			}
+		}
+	}
+
 	:public method actionUpdate {} {
-		#TODO change password/change e-mail
 		set id [ns_get id ]
 		if {[set model [my loadModel $id]] ==0} { return }
-		#For when you want ajax/javascript validation.. (ajax validation not working atm)
-		#$model nodjsRules $bhtml
 		if {[ns_conn method] == "POST"} {
 			set queryattributes [$model getQueryAttributes POST ]
-		#	set errors [$model validate]
-		#	puts "errors are $errors"
-			#If it's ok to save it.. redirect to new 
 			if {[$model save]} {
 				my redirect view id $id
 				return 1
 			}
 		}
-	#	puts "Generating the update thingie.."
-		#using ns_adp_parse AND ns_adp_include
 		my render update model $model
-
 	} 
 
-	#or id as argument for this method
-	:public method actionDelete {} {
-		set id [ns_queryget id ]
-		#TODO if not via POST..  give 400 error "invalid request"
-		
-	#TODO do intermediate step CONFIRMING the deletion..:D	
-	#TODO or make undo button.. 
-		#set model [my loadModel $id]
-		if {[set model [my loadModel $id]] ==0} { return }
-
-		set returnLoc [expr {[ns_queryexists returnUrl] ? "[ns_queryget returnUrl]" : "admin"}]
-		if {[$model delete;]} {
-		 	my render $returnLoc infoalert [list -type success "Successfully deleted column with id $id. TODO click here to UNDO"] model $model
-		 }
-	
-	#TODO if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
-		if {![ns_queryexists ajax]} {
-			my redirect $returnLoc model $model
-		}
-		#TODO show page that you've deleted this..
-	}
-	
 
 	:public method actionAdmin {} {
 		set model [User new]
@@ -477,8 +467,6 @@ nx::Class create UserController -superclass Controller {
 		my render admin model $model 
 	}
 
-#TODO find the best way to just stop execution without doing things like
-#return -level 100 or ns_adp_return which gives error..
 	:public method loadModel {id} {
 		set model [User new]
 	
@@ -489,6 +477,7 @@ nx::Class create UserController -superclass Controller {
 			my notFound <br>[msgcat::mc "Tried to search for id %d but just couldn't find it!" $id]
 			return 0
 		}
+
 		$model setScenario "search"
 		$model set id $id 
 		if {[set validation [$model validate id]] != 0} { 	my notFound  [msgcat::mc "Not validating, sorry! %s" $validation]; return 0 }
@@ -503,15 +492,7 @@ nx::Class create UserController -superclass Controller {
 	
 	} 
 
-	:public method performAjaxValidation {model} {
-		if {0} {
-			if(isset($_POST['ajax']) && $_POST['ajax']==='posts-form')
-			{
-				echo CActiveForm::validate($model);
-				Yii::app()->end();
-			}
-		}
-	}
+
 	:public method  redirectLogin {} {
 		if {[my verifyAuth]} {
 			my redirect profile ; #view id [ns_session get userid]	
@@ -519,14 +500,10 @@ nx::Class create UserController -superclass Controller {
 		}
 	}
 	:public method defaultNotFound {} {
-	
 		set url [ns_conn url]
-		
 		set action [string tolower [lindex [join [split $url /]] 1]]
 
-	#	ns_puts "url is $url <br> action $action"
 		my notFound
-
 	}
 	
 }
