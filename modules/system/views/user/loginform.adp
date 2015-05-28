@@ -39,7 +39,7 @@ set field longlogin
 	$f errorMsg $field
 	$f endGroup $field 
 
-	$f captcha
+	$f captcha css
 
 
 $f submit [mc "Login"] xsubmit "btn-block btn-lg" 

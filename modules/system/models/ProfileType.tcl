@@ -68,7 +68,6 @@ nx::Class create ProfileType -superclass Model {
 		next 
 	}
 
-	#TODO profiletype as string or integer
 	#string = 1 .. etc
 	:public method getProfileType {{type ""}} {
 		set profiletype "String string Numerical numerical Integer integer E-mail email"
