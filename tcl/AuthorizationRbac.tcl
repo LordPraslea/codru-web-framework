@@ -116,14 +116,20 @@ nx::Class create AuthorizationRbac {
 	:method loadRolesData {} {
 		foreach refVar {data guestid authid rbac time action_id r} { :upvar $refVar $refVar }
 
-		set data [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.action_id.$rbac  { 
-			$r search -where [list name $rbac ] "id"  
+		set data [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.[getConfigName].action_id.$rbac  { 
+			set criteria [SQLCriteria new -table role_item ]
+			$criteria add name $rbac
+			$r search -criteria $criteria "id"  
 		}]
-		set guestid [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.guestid  { 
-			dict get  [$r search -where [list name "guest" ] "id" ] values
+		set guestid [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.[getConfigName].guestid  { 
+			set criteria [SQLCriteria new -table role_item]
+			$criteria add name guest
+			dict get  [$r search -criteria $criteria "id" ] values
 		}]
-		set authid [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.authid  { 
-			dict get  [$r search -where [list name "authenticated" ] "id" ] values
+		set authid [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.[getConfigName].authid  { 
+			set criteria [SQLCriteria new -table role_item]
+			$criteria add name authenticated 
+			dict get  [$r search -criteria  $criteria "id" ] values
 		}]
 
 		if {$data == ""} { 
@@ -133,7 +139,7 @@ nx::Class create AuthorizationRbac {
 		} else {
 			set action_id [dict get $data values]
 		}
-		puts "Done in function loadRolesData"
+		#puts "Done in function loadRolesData"
 	} 
 
 	#Search all the possible descendants/parents of this current child # within the RBAC
@@ -163,7 +169,9 @@ nx::Class create AuthorizationRbac {
 		
 		#Contains ALL parent/children history
 		#even authenticated / guest ones!
-		set cache [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.recursive.$action_id  { 
+
+		set cache [ns_cache_eval -timeout 5 -expires $time lostmvc loadRoles.[getConfigName].recursive.$action_id  { 
+		#	puts "pr_stmt $pr_stmt and $select_recursive_rbac "
 			lappend return [dbi_rows -db [$r db get] -columns rbacGenealogyColumns -bind $pr_stmt $select_recursive_rbac ]
 			lappend return $rbacGenealogyColumns
 			return $return 
@@ -207,7 +215,7 @@ nx::Class create AuthorizationRbac {
 		set uservalues  [dbi_rows -db [$r db get] -columns usercolumns -bind $pr_stmt $sql_select ]
 		return $uservalues
 
-		puts "Done in function loadRolesForUser uservalues $uservalues"
+		#puts "Done in function loadRolesForUser uservalues $uservalues"
 	}
 
 	#	Verify All Roles
