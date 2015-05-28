@@ -14099,11 +14099,18 @@ Zone
 	}
 }
 
+if {0} {
 #Generation of 700 examples
-if {1} {
-	for {set i 1} { $i < 700} {incr i} {
-			puts "[namegenerator::genRealFirstname M]  [namegenerator::genRealLastname]  "
+set filename "~/nume.txt"
+set file [open $filename w]
+puts $file "First Name ; Last Name ; Gender ; Company Name; Rating;"
+	for {set i 1} { $i < 3000} {incr i} {
+			set gender [string index "FM" [namegenerator::rnd 0 1]]
+			set company [namegenerator::genCompany]
+			set rating [namegenerator::rnd 1 10]
+			puts $file "[namegenerator::genRealFirstname]  ; [namegenerator::genRealLastname] ; $gender ; $company ; $rating  "
 	}
+close $file
 }
 
 
