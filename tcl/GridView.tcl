@@ -1,5 +1,6 @@
-nx::Class create GridView {
+nx::Class create GridView -superclass [list bhtml] {
 
+	:property bhtml:required,object,type=bhtml
 #TODO OPTIONS CAN BE GIVEN INTO A DICT?
 #TODO very important: VERIFY DATA AND DON'T GIVE IT TO DB IF NOT CORRECT
 #Give DICT with settings for each column..
@@ -15,6 +16,8 @@ nx::Class create GridView {
 	:property {sort id} 
 	:property {defSort asc} 
 	:property {admin 0} 
+	#NOT IMPLEMENTED YET!
+	:property {adminColumn ""} 
 	:property {searchBar 0}
 
 	#	-makeAllLinks makes links as default but it can also make the links as you want them..
@@ -42,15 +45,14 @@ nx::Class create GridView {
 	:variable pr_stmt ""
 
 	:method init {} {
+		set :table [${:model} getTable]
 		:queryInfo
 
-		set :table [$model getTable]
 		#Give this model a bhtml object reference..
 		#so we don't generate 100 bhtml objects for grids where we need them
-		$model bhtml [self ]
+		${:model} bhtml ${:bhtml}
 
-		set originalSort $sort
-		return [:cacheGridView]
+		set originalSort ${:sort}
 	}
 
 	:method queryInfo {} {
@@ -58,11 +60,11 @@ nx::Class create GridView {
 	#Cleaner code and faster implementation
 		if {[ns_queryexists ${:table}_page]} { set :page [ns_queryget ${:table}_page 1] }
 		if {[ns_queryexists ${:table}_perpage]} { set :perpage [ns_queryget ${:table}_perpage 10] }
-		if {[ns_queryexists ${:table}_sort]} { set :sort [ns_queryget ${:table}_sort $sort] }
+		if {[ns_queryexists ${:table}_sort]} { set :sort [ns_queryget ${:table}_sort ${:sort}] }
 		#If somehow , sort manage to be something else than what exists as columns
 		#OR it's not even originalSort specified.. resort to originalSort which is usually id
 		#OR specified
-		if {![${:model} exists $sort]} { if {${:sort} ni ${:allowedSort}} { set :sort ${:originalSort} } }
+		if {![${:model} exists ${:sort}]} { if {${:sort} ni ${:allowedSort}} { set :sort ${:originalSort} } }
 		set :sort_type [ns_queryget sort ${:defSort}] 
 
 	}
@@ -70,19 +72,18 @@ nx::Class create GridView {
 	#CACHING system implemented for your ease..
 	#if no cache time.. expire NOW
 	#key, time, value 
-	#For caching we don't want to use $model ..
-	:method cacheGridView {} {
-
+	#For caching we don't want to use ${:model} ..
+	:public method getGridView {} {
 
 		set forcache "${:toSelect} ${:perpage} ${:page} ${:sort} ${:sort_type} ${:admin} ${:makeAllLinks} ${:hideFirstColumn} ${:extraUrlVars} ${:specialFunctions} ${:searchOptions}"
 		ns_parseargs {{-key ""} time}	${:cache}
 		if {$key == ""} { 
-			set key [::sha2::sha256 -hex $forcache]
+			set key [ns_sha1  $forcache]
 		}
 		#	puts "Evaluating cache with key $key"
 		return	[ns_cache_eval -timeout 5 -expires $time lostmvc $key  { 
 			:gridView
-		}
+		}]
 	}
 
 	:public method gridView {} {
@@ -92,7 +93,6 @@ nx::Class create GridView {
 
 		:columnSubFunction
 		:makeAllValuesLinks 
-		:searchBar
 
 		:processColumns
 		:gridSorting
@@ -106,8 +106,9 @@ nx::Class create GridView {
 	:method processExternalData {} {
 
 		if {${:externalData} != 0} {
-			foreach {k v} ${:externalData} { set $k $v }
-			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} $sql_size
+			foreach {k v} ${:externalData} { set :$k $v }
+			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} ${:sql_size}
+			set :size $size
 		}
 
 		if {${:externalData} == 0} {
@@ -119,13 +120,13 @@ nx::Class create GridView {
 			if {$where_loc != -1} {
 				set criteria [lindex ${:searchOptions} $where_loc+1]
 				append where_sql "WHERE "  [$criteria getCriteriaSQL]
-				set pr_stmt [dict merge $pr_stmt [$criteria getPreparedStatements]
+				set pr_stmt [dict merge $pr_stmt [$criteria getPreparedStatements]]
 		}
 			#SELECT count(*)
 			#	FROM information_schema.columns
 			#	WHERE table_name = '<table_name>'
-			dbi_1row  -db [$model db get ] -bind $pr_stmt "SELECT count(*) as size FROM $table  $where_sql;"
-			set :size size
+			dbi_1row  -db [${:model} db get ] -bind $pr_stmt "SELECT count(*) as size FROM ${:table}  $where_sql;"
+			set :size $size
 		}
 
 		if {${:externalData} != 0} {
@@ -134,16 +135,16 @@ nx::Class create GridView {
 	}
 
 	:method pageCalculation {} {
-		if {${:size} == 0} { return [:tag div [msgcat::mc "There is no data available"]] }	
+		if {${:size} == 0} { return -level 2 [:tag div [msgcat::mc "There is no data available"]] }	
 
 		#some verifications
 		if {${:sort_type} != "asc" && ${:sort_type} != "desc"} {set :sort_type ${:defSort} }	
 
-		if {![string is integer ${:perpage}]} { set perpage 10 }
-		if {![string is integer ${:page}]} { set page 1 }
-		if {${:perpage} < 5} { set perpage 5 }
-		if {${:perpage} > 100} { set perpage 100 }
-		set lastpage [expr {int(ceil(double(${:size})/${:perpage}))}]
+		if {![string is integer ${:perpage}]} { set :perpage 10 }
+		if {![string is integer ${:page}]} { set :page 1 }
+		if {${:perpage} < 5} { set :perpage 5 }
+		if {${:perpage} > 100} { set :perpage 100 }
+		set :lastpage [expr {int(ceil(double(${:size})/${:perpage}))}]
 
 		#Verify if page isn't outside our borders
 		if {${:page} < 1} { set page 1 } elseif {${:page} > ${:lastpage} } { set page ${:lastpage} }
@@ -152,9 +153,10 @@ nx::Class create GridView {
 
 	:method searchData {} {
 
-	#set other_get_opts "&{table}_sort=$sort&${:table}_page=$page&${:table}_perpage=$perpage&sort=${sort_type}"
+	#set other_get_opts "&{table}_sort=${:sort}&${:table}_page=$page&${:table}_perpage=$perpage&sort=${sort_type}"
 		set :data [${:model} search {*}[concat ${:searchOptions}] ${:toSelect} ]
-		if {${:data} == ""} { return [mc "No data has been found, try adding something!"]}
+		#puts "GridView searchdata ${:data}"
+		if {${:data} == ""} { return -level 2 [mc "No data has been found, try adding something!"]}
 
 		#Add an extra column to the data to editeverything..
 		set :columnsize [llength [dict get ${:data} columns]]
@@ -165,7 +167,8 @@ nx::Class create GridView {
 	}
 
 	:method columnSubFunction {} {
-
+		set functions ""
+		set newvaluesdata ""
 		if {${:specialFunctions} != ""} {
 			set count 0
 			foreach col [dict get ${:data} columns] {
@@ -174,36 +177,37 @@ nx::Class create GridView {
 					lappend functions $count $fun
 					dict set dictfunctions $count $fun
 					#lappend locations  $count
-					#lappend locations  [$model $fun [$model get $col]]
+					#lappend locations  [${:model} $fun [${:model} get $col]]
 				} 
 				incr count
 			}
 			set count 0
 			#lsearch/lindex may be fast but wouldn't it be easier to just make
 			#a dictionary and get it from there? DONE but commented
-			foreach d $valuesdata {
-				if {[expr {$count%$columnsize}]==0} { 
+			foreach d ${:valuesdata} {
+				if {[expr {$count%${:columnsize}}]==0} { 
 				#Set the ID so we can use it later(if required..)
-					$model set id $d
+					${:model} set id $d
 				}
-				if {[set loc [expr {$count%$columnsize}]] in $functions } { 
+				if {[set loc [expr {$count%${:columnsize}}]] in $functions } { 
 					set fun [lindex $functions	[lsearch $functions $loc]+1]
 					#	set fun [dict get $dictfunctions $loc]
 					#	puts "Running function $fun for $d"
-					set d [$model $fun $d]
+
+					set d [${:model} $fun $d]
 				}
 				lappend newvaluesdata $d
 				incr count
 			}
-			set valuesdata $newvaluesdata
+			set :valuesdata $newvaluesdata
 			unset newvaluesdata  functions  ;#locations
 
 		}
 	}
 	:method makeAllValuesLinks {} {
-		ns_parseargs {{-type 0} -- link query} ${:makeAllLinks}
 
 		if {${:makeAllLinks} != 0} {	
+		#	ns_parseargs {{-type 0} -- link query} ${:makeAllLinks}
 
 			set link "view" 
 			set query id
@@ -218,8 +222,8 @@ nx::Class create GridView {
 			set vlength [llength ${:valuesdata}]
 			foreach d ${:valuesdata} {
 				set id [list [lindex ${:valuesdata} [expr {($count-1)/${:columnsize}*${:columnsize}+$location-1}] ]]
-				lappend newvaluesdata [my link $d  $link "$query $id" ]
-				#lappend newvaluesdata [my a $d  [ns_queryencode {*}$link $id] ]
+				lappend newvaluesdata [${:bhtml} link $d  $link "$query $id" ]
+				#lappend newvaluesdata [${:bhtml} a $d  [ns_queryencode {*}$link $id] ]
 				incr count
 			}
 			set :valuesdata $newvaluesdata
@@ -228,16 +232,20 @@ nx::Class create GridView {
 
 	:method searchBar {} {
 	
-		if {$searchBar} { 
+		if {${:searchBar}} { 
 		#Add extra row before data
-			foreach col [dict get $data columns] {
-				set key [$model classKey $col]	
-				lappend mydata  [my input -id $key $key ]  
+			set bar ""	
+			foreach col [dict get ${:data} columns] {
+				set key [${:model} classKey $col]	
+				lappend bar  [${:bhtml} input -id $key $key ]  
 			}
-			if {$admin} {
+			if {${:admin}} {
 				;#THIS is for the extra edit/admin column:) 
-				lappend mydata   [my  input -type submit  -class "btn btn-primary" submit [mc "Search"]]  
+				lappend bar   [${:bhtml}  input -type submit  -class "btn btn-primary" submit [mc "Search"]]  
 			}
+			if {${:rowId}} {
+				lappend :mydata $bar
+			} else { append :mydata " " $bar }
 		}
 	}
 
@@ -245,7 +253,7 @@ nx::Class create GridView {
 			#This hides the first column usually the "id" column
 		if {${:hideFirstColumn}} {
 			set :varincr 1
-			dict set data columns  [lrange [dict get ${:data} columns] 1 end]
+			dict set :data columns  [lrange [dict get ${:data} columns] 1 end]
 			#	incr columnsize -1
 		} 
 
@@ -254,26 +262,36 @@ nx::Class create GridView {
 	:method processColumns {} {
 		set :varincr 0
 		:hideFirstColumn
+		:searchBar
 		for {set var 0} {$var < ${:datasize} } {incr var ${:columnsize}} {
 			set id [lindex ${:valuesdata} $var]
-			#TODO TEMPLATES
-			if {${:admin}} {
-				set view  [my link  "[my fa fa-eye] [mc View]" view [list id $id]]
-				set delete  [my link -new 1   "[my fa fa-trash-o ] [mc Delete]" delete [list id $id]]
-				set edit  [my link   "[my fa fa-pencil] [mc Update]" update [list id $id]]
 
-				set adminoptions [concat $view $edit $delete]
+			if {${:admin}} {
+				#TODO implement adminColumn # with templates
+				set query ""
+				if {${:adminColumn} == ""} {
+					set view  [${:bhtml} link  "[${:bhtml} fa fa-eye] [mc View]" view [list id $id]]
+					set delete  [${:bhtml} link -new 1   "[${:bhtml} fa fa-trash-o ] [mc Delete]" delete [list id $id]]
+					set edit  [${:bhtml} link   "[${:bhtml} fa fa-pencil] [mc Update]" update [list id $id]]
+
+					set adminoptions [concat $view $edit $delete]
+				} else {
+					#TODO NOT IMPLEMENTED YET!
+					set adminoptions ""
+			
+				}
+
 				#TODO add extra columns..
 				if {${:rowId}} {
-					lappend mydata [format "%s %s {%s}" "-id $id"   [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]] $adminoptions   ] 
+					lappend :mydata [format "%s %s {%s}" "-id $id"   [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]] $adminoptions   ] 
 				} else {
-					append mydata " " [format "%s {%s}"  [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]] $adminoptions   ] 
+					append :mydata " " [format "%s {%s}"  [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]] $adminoptions   ] 
 				}
 			} else {
 				if {${:rowId}} {
-					lappend mydata [format "%s %s" "-id $id"  [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]]]
+					lappend :mydata [format "%s %s" "-id $id"  [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]]]
 				} else {
-					append mydata " " [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]]
+					append :mydata " " [lrange ${:valuesdata} [expr $var+${:varincr}] [expr {$var+${:columnsize}-1}]]
 				}
 			}
 		}
@@ -281,15 +299,18 @@ nx::Class create GridView {
 
 	:method gridSorting {  } {
 		if {${:sort_type} == "asc"} { set newsort_type "desc" } else { set newsort_type "asc" }
-		foreach th [dict get $data columns] {
-			lappend :tablehead [format {-url 1  "%s" "%s" } [$model getAlias $th] \
-				[ns_queryencode ${:table}_sort $th	sort ${newsort_type}	${:table}_page $page		${:table}_perpage $perpage	{*}$extraUrlVars]]
+		foreach th [dict get ${:data} columns] {
+			lappend :tablehead [format {-url 1  "%s" "%s" } [${:model} getAlias $th] \
+				[ns_queryencode ${:table}_sort $th	sort ${newsort_type}	${:table}_page ${:page}		${:table}_perpage ${:perpage}	{*}${:extraUrlVars}]]
 		}
 	}
 	
 	:method generateGridViewWithPagination {  } {
-		if {${:admin}} {	 lappend tablehead [mc "Edit"] }
-		set tablehtml [my table -class col-md-12 -bordered 1 -striped 1 -hover 1  -rpr ${:rowId}   ${:tablehead}   $mydata ]
+		if {${:admin}} {	 lappend :tablehead [mc "Edit"] }
+		if {${:rowId}} {
+		#	set :mydata  ${:mydata}  ]
+		}
+		set :tablehtml [${:bhtml} table -class col-md-12 -bordered 1 -striped 1 -hover 1  -rpr ${:rowId}   ${:tablehead}   ${:mydata} ]
 		
 		set pagination [Pagination new -size ${:size} -extraUrlVars ${:extraUrlVars} -page ${:page} \
 			-table ${:table} -lastpage ${:lastpage} -perpage ${:perpage} -sort ${:sort} -sort_type ${:sort_type}]	
@@ -298,9 +319,9 @@ nx::Class create GridView {
 		set pageInfo [$pagination pageInfo get]
 		set perPageDiv  [$pagination perPageDiv get]
 
-		set clearfix [my htmltag -htmlOptions [list class clearfix] div]
-		set return [my htmltag -htmlOptions [list class ${:class}] div "$divPagination  $pageInfo \n $clearfix  \n 
-			$extraData \n\n  $tablehtml  \n\n $divPagination $perPageDiv  $clearfix"]
+		set clearfix [${:bhtml} htmltag -htmlOptions [list class clearfix] div]
+		set return [${:bhtml} htmltag -htmlOptions [list class ${:class}] div "$divPagination  $pageInfo \n $clearfix  \n 
+			${:extraData} \n\n  ${:tablehtml}  \n\n $divPagination $perPageDiv  $clearfix"]
 		return  $return
 
 	}
