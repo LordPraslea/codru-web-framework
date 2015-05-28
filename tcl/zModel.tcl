@@ -2,10 +2,8 @@
 # Model Database File 
 ##########################################
 
-
-
-nx::Class create Model -mixin [list NodJsModelValidation ModelRelations ] \
-	-superclass [list  SQLSelect SQLInsert SQLUpdate SQLRecycle ModelValidation RbacModel TagModelManagement]  {
+nx::Class create Model -mixin [list  ModelRelations ] \
+	-superclasses [list  SQLSelect SQLInsert SQLUpdate SQLRecycle ModelValidation NodJsModelValidation RbacModel TagModelManagement]  {
 
 	:property -accessor public attributes  ; #Attribute dict/list/array  name  value
 	:property  -accessor public  alias   ;#Alias for query
@@ -205,8 +203,12 @@ nx::Class create Model -mixin [list NodJsModelValidation ModelRelations ] \
 			foreach {key n } $all_attributes {
 				##dict set attributes sqlcolumns last_name validation exact 
 				#Get all variables return the variables and also set the keys
-			
 				set value [string trim [ns_queryget  [my classKey $key]]]
+
+				#querygetall for checkboxes..	
+				if {[dict exists ${:attributes} sqlcolumns $key checkbox]} {	
+					set value [string trim [ns_querygetall  [my classKey $key]]]
+				}
 					#Old remains from old version where we got every las one of the attributes..
 				if {[dict exists ${:attributes} sqlcolumns $key unsafe]} {		
 					#If this scenario is unsafe.. don't save it!
