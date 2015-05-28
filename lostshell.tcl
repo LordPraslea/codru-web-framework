@@ -87,6 +87,21 @@ nx::Class create LostShell {
 	#	exec asciidoc  [regsub {.tcl} $args .txt]
 	}
 	
+	:public  method makePdf {{-tcl 1} file} {
+		puts "Making documentation  $file [info script]"
+		puts [array get env ]
+		if {$tcl} {
+			exec  >&@stdout source-doc-beautifier.tcl $file
+			exec  >&@stdout a2x -fpdf -dbook --no-xmllint  --dblatex-opts "-P latex.output.revhistory=0" [regsub {\.tcl} $file .txt]
+		} else {
+			#don't forget to do apt-get install source-highlight
+			exec  >&@stdout 	a2x -fpdf -dbook --no-xmllint  --dblatex-opts "-P latex.output.revhistory=0" [regsub {\.tcl} $file .txt]
+		}
+		
+	}
+	
+	
+	
 	#TODO CPU watcher
 	# If cpu is 100% for longer than 60 seconds for a certain PID, kill it
 	# this means that the cpu is  100% at each interval
