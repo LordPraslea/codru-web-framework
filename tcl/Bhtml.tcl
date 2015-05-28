@@ -169,6 +169,32 @@ nx::Class create bhtml {
 		my htmltag {*}$args
 	}
 
+	#Generating html using tdom
+	:public method domtag {{-htmlOptions ""} {-closingTag 1} {-singlequote 0} -- tag {data ""}} {
+		set attributes ""
+		
+		set doc [dom createDocument $tag]
+		set root [$doc documentElement]
+		foreach {name value} $htmlOptions {
+			$root setAttribute $name $value
+		}
+		
+		$root appendChild [$doc createTextNode $data]
+		
+
+		return [$doc asHTML]
+	}
+
+if {0} { 
+	Currently htmltag is 2.5-3x faster than domtag 
+set bhtml [bhtml new]
+set htmlOptions "href http://unitedbrainpower.com class beautify target _new"
+set text "Click here to start a new Project with us!"
+$bhtml htmltag -htmlOptions $htmlOptions  a $text
+$bhtml domtag -htmlOptions $htmlOptions  a $text
+time {$bhtml domtag -htmlOptions $htmlOptions  a $text} 1000
+time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
+}
 	##########################################
 	# TODO Grid System...
 	##########################################
@@ -189,7 +215,7 @@ nx::Class create bhtml {
 
 		foreach cls $class { dict lappend listOptions class $cls }
 		set button [my htmltag -htmlOptions [list type button class close data-dismiss alert aria-hidden true] button "&times;"] 
-		set tag [my htmltag  -htmlOptions [list class "alert alert-${type}"] div "$button	$data" ]
+		set tag [my htmltag  -htmlOptions [list class "alert alert-${type} $class"] div "$button	$data" ]
 
 		#	append tag $script
 		return $tag
@@ -451,6 +477,7 @@ nx::Class create bhtml {
 		#Parse the args to view if they contain any hidden settings..
 			ns_parseargs {{-type ""} {-id ""} -- args} $row
 			set row $args
+
 			if {$type != ""} { set rowOptions [list class $type]   } else {set rowOptions ""}
 			if {$id != ""} { dict set rowOptions  id $id   } 
 
@@ -458,7 +485,8 @@ nx::Class create bhtml {
 			foreach cell $row {
 
 				ns_parseargs {{-type ""} -- args} $cell
-				set cell $args
+				#Join args to fix the list issues!
+				set cell [join  $args]
 
 				if {$type != ""} { set cellOptions [list class $type]   } else {set cellOptions ""}
 				#parse the args of each cell to view if they contain any hidden settings
@@ -634,23 +662,28 @@ nx::Class create bhtml {
 	##########################################
 	# checkbox and radiobutton bootstrapping to type less code..
 	##########################################
-	:public	method checkbox {{-id ""} {-inline 0} {-class ""} -- name text} {
+	:public	method checkbox {{-id ""} {-inline 0} {-class ""} -- name args} {
 		set htmlOptions [dict create class checkbox]
 		if {$inline} { dict set htmlOptions class checkbox-inline }
 
-		set input [my input -class $class -type checkbox $name]
-		set label [my label [concat $input $text]]
-		return [my htmltag  -htmlOptions $htmlOptions div $label]
+		set html ""
+		foreach {value text} $args {
+			set input [my input -class $class -id $value -type checkbox $name $value]
+			set label [my label [concat $input $text]]
+			append html [my htmltag  -htmlOptions $htmlOptions  div $label]
+		}
+
+		return $html
 	}
 
 	:public method radio {{-id ""} {-inline 0} {-class ""} -- name  args} {
 
 		set htmlOptions [dict create class radio]
-
+		set html ""
 		foreach {value text} $args {
 			if {$inline} { dict set htmlOptions class radio-inline }
 
-			set input [my input -class $class -type radio $name $value]
+			set input [my input -class $class -id $value -type radio $name $value]
 			set label [my label [concat $input $text]]
 			append html [my htmltag  -htmlOptions $htmlOptions  div $label]
 		}
@@ -726,6 +759,13 @@ nx::Class create bhtml {
 			dict lappend htmlOptions class $arg
 		}
 		return [my htmltag -htmlOptions $htmlOptions span]
+	}
+	
+	:public method faStack {{-size 1 } background foreground} {
+		
+		set faBackground [:fa {*}$background fa-stack-2x]
+		set faForeground [:fa {*}$foreground fa-stack-1x]
+		return [:tag -htmlOptions [list class "fa-stack fa-${size}x"]  span "$faBackground $faForeground"]
 	}
 
 	#glyphicons functionality for carousel..
@@ -1180,7 +1220,7 @@ nx::Class create bhtml {
 		foreach cls $class {
 			dict lappend htmlOptions class $cls
 		}
-
+		:panelHeaderAndFooter
 		if {$type != ""} { dict lappend htmlOptions class [my returnType "panel" $type]  };
 		#	if {$active} {dict lappend progressOptions class active}
 		if {$component == 1} {
@@ -1401,10 +1441,14 @@ nx::Class create bhtml {
 		foreach refVar {data  accordionID rand in first type } { :upvar $refVar $refVar }
 
 		foreach panel $data {
-			ns_parseargs {{-id ""} -- panelName panelData} $panel
+			ns_parseargs {{-id ""} {-fa ""} -- panelName panelData} $panel
 			if {$id == ""} {
 				set id "[join [string tolower $panelName] _]-${rand}"
 			} else { set id "accordion-${id}" }
+			#Font Awesome integration
+			if {$fa != ""} {
+				set panelName "[:fa $fa] $panelName"
+			}
 
 			# Heading 
 			set a [my a -htmlOptions [list data-toggle "collapse" data-parent "#${accordionID}"] $panelName "#${id}"]
