@@ -72,13 +72,11 @@ nx::Class create SQLSelect   {
 
 	:method generateRelationData {} {
 		foreach refVar {relations table criteria from toSelect } { :upvar $refVar $refVar }
-
 		if {$relations} {	
 			set sqlrelations [SQLRelations new -table $table -model [self] -criteria $criteria -select $toSelect  ]
 			append from [$sqlrelations getFrom]
 			
 			set toSelect [$sqlrelations getToSelect]
-		
 		}
 		if {$toSelect != "*"} {
 			set toSelect [:genSelectConditions $toSelect]
@@ -98,7 +96,6 @@ nx::Class create SQLSelect   {
 	#TODO differentiate between 1 row (set object) and many (return values)
 	#TODO prstmt not used yet.. could be used with selectSql
 	#TODO view if limit empty and if only a number, view if offset is a number..
-	#	puts "Search with args: \n $args \n"
 	#	TODO 	{-orderType:choice,arg=asc|desc asc}  
 	:public method search {{-relations 0} 
 						{-table ""} 
@@ -140,6 +137,7 @@ nx::Class create SQLSelect   {
 		:selectProcessOffset 
 	
 		my sqlstats ${:sql_select}
+		#puts "SEARCH PRSTMT   ${:pr_stmt} \n SQL ${:sql_select}\n"
 		set values  [dbi_rows -db ${:db} -columns columns -bind ${:pr_stmt} ${:sql_select} ]
 		return [dict create columns $columns values $values ]
 	}
