@@ -166,7 +166,7 @@ namespace eval lostmvc {
 		set value [regsub -all  {<script[^>]*>.*<\/script>} $value ""]
 		set value [regsub -all  {<iframe[^>]*>.*<\/iframe>} $value ""]
 		set value [regsub -all  {<style[^>]*>.*<\/style>} $value ""]
-		set value [regsub -all  {on.{3,15}=} $value ""]
+		set value [regsub -all  {\s+on.{3,15}=} $value ""]
 
 		#"/" "&#x2F;"
 		if {0} {
@@ -277,7 +277,6 @@ namespace eval lostmvc {
 
 		proc send_mail_dev {to from subject body {Bcc ""} {cc ""}} {
 			package require mime 
-			package require base64
 			package require smtp
 			set token [mime::initialize -canonical text/html  -string $body]
 			mime::setheader $token Subject $subject
@@ -292,20 +291,45 @@ namespace eval lostmvc {
 
 			mime::finalize $token
 		}
-		proc send_mail_live {to from subject body {bcc ""} {cc ""}} {
+
+
+
+proc send_mail_mandrill_smtp {to from subject body {Bcc ""} {cc ""}} {
+	package require mime 
+	package require smtp
+	package require SASL ;#IF YYOU DON'T USE SASL IT WOn'T AUHENTICATE SUCCSESSFULLY!
+		global host port smtp_user smtp_password 
+		set token [mime::initialize -canonical text/html  -string $body]
+		if {$Bcc != ""} {  mime::setheader $token Bcc $Bcc -mode append }
+		#Sometimes the mail won't be sent because the ORIGINATOR isn't set as a good e-mail address..
+		#Next time if problems occur use the -debug 1 option
+
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
+
+		smtp::sendmessage $token -debug 0 -usetls 1 \
+		-username [dict get $config mandrill username] -password [dict get $config mandrill password] \
+		-ports [dict get $config mandrill port] -recipients $to -servers [dict get $config mandrill host] \
+		-header [list From $from] \
+		-header [list To $to] \
+		-header [list Subject $subject] \
+		-header [list Date "[clock format [clock seconds]]"]
+		mime::finalize $token
+
+		ns_log Notice "Sent e-mail from $from to $to"
+}
+		
+		#Sending mail through naviserver
+		proc send_mail_naviserver {to from subject body {bcc ""} {cc ""}} {
 		#	ns_sendmail $to info@unitedbrainpower.com $subject $body "" $bcc
 			set extraheaders [ns_set create]
 			ns_set put $extraheaders "MIME-Version" "1.0"
 			ns_set put $extraheaders "Content-type" "text/html; charset=UTF-8"
-			ns_set put $extraheaders Subject $subject
-			ns_set put $extraheaders From $from 
-			ns_set put $extraheaders To $to
 			ns_set put $extraheaders X-Mailer "LostMVC Mailer 1.0"
 			ns_sendmail $to $from $subject $body $extraheaders $bcc $cc
 		}
 
 		proc send_mail {args} {
-			send_mail_live {*}$args 
+			send_mail_naviserver {*}$args 
 		}
 
 		############################
