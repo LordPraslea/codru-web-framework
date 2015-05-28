@@ -25,34 +25,42 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 		}
 	}
 	
-	:public method add {{-fun default} {-cond "AND"} {-op =} column {value ""}} {
+	:public method add {{-fun default} {-cond "AND"} {-op =} {-includeTable 1} column {value ""}} {
 		set method [string tolower $fun]
 		set cond [string toupper $cond]
 		if {[:info lookup method $method] == ""} {
 			set method default
 		}
 		
-		:$method -cond $cond -op $op  $column $value
+		:$method -cond $cond -op $op -includeTable $includeTable  $column $value
 	#	incr :statementCount
 	}
 
 	:public method addUpdateCriteria {column value} {
-		:default -op = -cond ", " $column $value
+		:default -op = -cond ", "  -includeTable 0 $column $value
 	}
 
 	:public method addUpdate {column value} {
-		:default -op = -cond ", " $column $value
+		:default -op = -cond ", " -includeTable 0 $column $value
 	}
 
 	#:public alias addUpdate [:info method handle addUpdateCriteria]
 	
 	#AND / OR supported .. 
 	#TODO AND NOT etc
-	:method default { -cond  -op  column {value ""}} {
-		if {$value == ""} { set value [:get $column] }  
+	:method default { -cond  -op  -includeTable column {value ""}} {
+		if {$value == ""} {
+			if {[info exists :model]} {
+				set value [$model get $column] 
+			}
+		}  
 		set condition [:getCondition $cond]
 		set statement [:genStatement $column $value]
-		append :where_sql "$condition  ${:table}.$column $op :$statement "
+		if {$includeTable} {
+			set tableInfo "${:table}."
+		} else { set tableInfo "" }
+
+		append :where_sql "$condition  $tableInfo$column $op :$statement "
 	}
 	
 	#Generates relationships (no statements added, so it's safe to just return the sql)
@@ -74,12 +82,12 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 		set condition [:getCondition $cond]
 		append :where_sql "$condition ([$subcriteria getCriteriaSQL]) "
 		set :pr_stmt  [dict merge [:getPreparedStatements]	[$subcriteria getPreparedStatements]]
-		#	incr :statementCount
+		incr :statementCount
 	}
 	
 
 	#in multiple..
-	:method in {-cond -op column values} {
+	:method in {-cond -op -includeTable column values} {
 		set :columnCount 0
 		set in_statement ""
 		set condition [:getCondition  AND]
@@ -95,7 +103,7 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 	}
 
 	#TODO solution for multiple betweens within the select
-	:method between {-cond -op column value} {
+	:method between {-cond -op -includeTable column value} {
 		set condition [:getCondition AND]
 
 		foreach {between_start between_end} $value { }
