@@ -339,7 +339,7 @@ proc generateCrud {model controller {bhtml ""}} {
 
 		set module [lindex $splitmodel 0]
 		set modelname [lindex $splitmodel 1]
-		set viewsloc [ns_pagepath]/modules/$module/views/[string tolower $modelname]
+		set viewsloc [ns_pagepath]/modules/$module/views/[string tolower $controllername]
 		set controllerloc [ns_pagepath]/modules/$module/controllers
 		set modelloc [ns_pagepath]/modules/$module/models 
 
@@ -356,7 +356,7 @@ proc generateCrud {model controller {bhtml ""}} {
 		}
 	} else { 
 	#Locations
-		set viewsloc [ns_pagepath]/views/[string tolower $modelname]
+		set viewsloc [ns_pagepath]/views/[string tolower $controllername]
 		set controllerloc [ns_pagepath]/controllers
 		set modelloc [ns_pagepath]/models 
 
@@ -397,10 +397,10 @@ proc generateCrud {model controller {bhtml ""}} {
 		foreach file {form  view index  create update admin _view module_layout} {
 			if {$file == "module_layout"} {
 				set viewdir $moduleViewLoc 
-				set saveFile $file
+				set saveFile ${controllername}_layout
 			} else {
 				set viewdir $viewsloc
-				set saveFile ${controllername}_layout
+				set saveFile $file
 			}
 		#		puts "Opening the following $templateloc/$file.adp"
 			set tpl [ns_adp_parse -file $templateloc/$file.adp $columns]	
@@ -477,7 +477,11 @@ proc generateRBAC {modelname authenticated guest {bhtml  ""}} {
 	# #TODO inform it's already added to database.. 
 	set r [RoleItem new]
 	set testrbac "$rbac index"
-	set data [$r search -where [list name [join $testrbac .] ] "id" ] 
+
+	set criteria [SQLCriteria new -model $r]
+	$criteria add name [join $testrbac .]
+
+	set data [$r search -criteria $criteria "id" ] 
 	puts "RBAC $testrbac and data is $data"
 	if {[dict get $data  values] != ""} { append page "There already seems to be a RBAC for $rbac <br>\n"} else {	
 
