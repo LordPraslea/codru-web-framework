@@ -569,7 +569,7 @@ bhtml public method highcharts {{-slideOpen 0} {-height 400} {-text ""} -- name 
 #  http://seiyria.github.io/bootstrap-slider/
 #  Bootstrap slider for sliding selecting.. 
 ###########################################
-bhtml public method slider {{-slideOpen 0} {-sliderid "allslider"} {-min 0} {-max 100 }  {-step 1} --  name {value 0} {secondval ""}} {
+bhtml public method slider { {-sliderid "allslider"} {-min 0} {-max 100 }   {-step 1} --  name {value 0} {secondval ""}} {
 
 	set plugin slider
 	if {![my existsPlugin $plugin]} {
@@ -588,6 +588,7 @@ bhtml public method slider {{-slideOpen 0} {-sliderid "allslider"} {-min 0} {-ma
 		//	formater: function(value) {
 		//		return "Current value: " + value
 		//	}
+		tooltip: 'always',
 		});
 	} $name ]
 	if {$secondval != ""} {
@@ -814,6 +815,95 @@ bhtml public method syntaxHighlighter {args} {
 # http://averagemarcus.github.io/Bootstrap-AcknowledgeInputs/
 # Give user visual feedback on the page..
 ##########################################
+#
+
+##########################################
+# Bootstrap FileInput 
+# url:  http://plugins.krajee.com/file-input
+# beautiful bootstrap file input
+##########################################
+
+bhtml public method fileinput {{-class ""} {-id ""} {-placeholder ""} {-options ""} {-multiple:boolean false}   -- name data } {
+#TODO implement more options
+	set plugin fileinput
+	if {![my existsPlugin $plugin]} {
+		my addPlugin $plugin { 
+			css  "/css/fileinput.min.css" 
+			css-min  "/css/fileinput.min.css" 
+			js "/js/fileinput.min.js"
+			js-min "/js/fileinput.min.js"
+		}
+	}
+	set lang [ns_session get urlLang]
+	if {$lang == "en"} { set lang LANG }
+
+	if {![my existsPlugin $plugin-$lang]} {
+		my addPlugin $plugin-$lang " 
+			js /js/fileinput_locale_$lang.js
+			js-min /js/fileinput_locale_$lang.js
+		"
+	}
+
+	#Plugin options either in javascript OR in html using data-preview etc
+	my js [format { $('#%s').fileinput({
+		%s
+		initialCaption: 'Upload files..',
+		showCaption: true,	
+		browseIcon: '<i class="fa fa-file"></i> &nbsp;',
+	}); } $name $options ]
+
+	set htmlOptions ""
+	if {$multiple} {
+		set htmlOptions "multiple $multiple"
+	}
+	#DO NOT SET CLASS as file or initial loading won't work!
+	set input [my input -htmlOptions $htmlOptions -type file -class ""  -id $name $name $data]
+	return $input
+}
+
+bhtml public method fileinputProcessImageData {data} {
+	set preview " \n initialPreview: \[ "
+	set previewConfig " \n initialPreviewConfig: \[ "
+			foreach image $data {
+				append preview " \n \"<img src='/content/$image' class='file-preview-image' alt='$image' title='$image'>\", "
+				append previewConfig " \n {caption: '$image', url: '[:getUrl deleteImageFromGallery [list image $image content_id [ns_get id]] ]', key: '$image', }, "
+			}
+	append preview "\n \],  "
+	append previewConfig "\n \],  "
+	return "$preview $previewConfig"
+}
+
+##########################################
+# Bootstrap Rating Stars 
+# url:   http://plugins.krajee.com/star-rating/demo
+# Stars rating input system (for forms)
+##########################################
+#
+bhtml public method ratingstars { {-min 1}  {-max 5}  name  {data ""} } {
+	set plugin ratingstars
+	if {![my existsPlugin $plugin]} {
+		my addPlugin $plugin { 
+			css  "/css/stars-rating.min.css" 
+			css-min  "/css/stars-rating.min.css" 
+			js "/js/stars-rating.min.js"
+			js-min "/js/stars-rating.min.js"
+		}
+	}
+
+	set htmlOptions "min $min max $max"	
+	set input [my input -htmlOptions $htmlOptions -type number -class "rating"  -id $name $name $data ]
+	return $input
+}
+
+#Generate Labels from tags
+bhtml public method generateLabelTags {{-controller ""} tags} {
+	set newtags ""
+	set tags [split $tags ,]
+	foreach tag $tags {
+		append newtags [: link -controller $controller -htmlOptions [list class {label label-success}] $tag tag/[ns_urlencode $tag]] " " 
+	}
+	return $newtags
+}
 
 ##########################################
 # Tag Cloud 
