@@ -103,11 +103,7 @@ nx::Class create SQLRelations {
 		set many_table ""
 		foreach {k v} [${:model} getRelations $ts] { set $k $v }	
 
-		if {$many_table!=""} {
-			:computeMultiTables $ts
-
-		}
-
+		#TODO differentiate like before between multi/foreinkey ?
 		:computeForeignKeyValue $ts
 
 		#Experiment to use subselects so we return:)
@@ -131,37 +127,7 @@ nx::Class create SQLRelations {
 	}
 
 	:method computeMultiTables {ts} {
-	#	lappend newSelect $ts
-	#	append form ", ..."
-	#
-	#Whenever you want many-to-many ... just select the current ID!
-	#TODO this should work for multi keys..
-		if {0} {
-			set pks [dict get [${:model} getAttributes] primarykey]
-			if {[llength $pks] == 1} {
 
-				puts "llength is 1 for $pks"
-				lappend newSelect "${:table}.id as $ts"
-			} else {	
-				set c 0
-				foreach pk $pks {
-					#	append ok_pk  "(${:table}.id as $ts"
-
-					append pk_col_value  [expr {$c==0? "" : " || ' ' || "}] $pk
-					incr c
-				}
-				lappend newsSelect "$pk_col_value as $ts"
-			}
-		} else {
-			lappend newSelect "${:table}.id as $ts"
-		}
-		#This returns 2 functions higher (from the days there was 1 unrefactored function)
-		return -level 2	-code continue 
-		#This will never run..
-		lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_table}.${fk_value}
-		FROM $fk_table,$many_table,${:table}
-		WHERE $many_table.$many_column = ${:table}.$column
-		AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts"
 	}	
 
 	#Computes the foreign key value in fk_value
@@ -187,18 +153,37 @@ nx::Class create SQLRelations {
 				set fk_col_value [string map ":fk_value ${fk_table}.${fk_value}" $fk_function]
 			}  else {		set fk_col_value ${fk_table}.${fk_value} }
 		}
+
+		if {[info exists many_table]} {
+			$criteria addRelation -table ${:table} -fk_table $many_table $column $many_column  
+			$criteria addRelation -table $many_table -fk_table $fk_table $many_fk_column $fk_column  
+		} else {
 	
-		$criteria addRelation -fk_table $fk_table $column $fk_column 
+			$criteria addRelation -fk_table $fk_table $column $fk_column 
+		}
 		if {[dict exists [${:model} getAttributes] relations $ts fk_extra]} {
 			foreach {column value} $fk_extra {
 				$criteria addRelation  $column '$value' 
 
 			}
 		}
+
 		set sqlcriteria [${criteria} getCriteriaSQL ]
 		$criteria destroy
-		lappend newSelect "(SELECT $fk_col_value FROM $fk_table WHERE  $sqlcriteria) as $ts"	
+
+		if {[info exists many_table]} {
+			lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_col_value}
+			FROM $fk_table,$many_table
+			WHERE $sqlcriteria) as ok) as $ts"
+			
+			#WHERE $many_table.$many_column = ${:table}.$column
+			#AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts
+
+		} else {
+			lappend newSelect "(SELECT $fk_col_value FROM $fk_table WHERE  $sqlcriteria) as $ts"	
+		}
 	}
+
 
 		
 }
