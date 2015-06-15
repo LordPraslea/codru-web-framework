@@ -15,8 +15,10 @@
 #
 #    You should have received a copy of the GNU General Public License
 namespace eval lostmvc {
+
 	proc Captcha {type {image "img.jpg"}}  {
-		package require tclgd
+		package require tclgd/
+
 		set font [ns_server pagedir]/fonts/FreeSans.ttf
 		#set font [file dirname [web::config script]]/gamesys/FreeSans.ttf
 		set width 120 ; set height 40
@@ -80,9 +82,16 @@ namespace eval lostmvc {
 	}
 
 	proc goodName {str} {
-		return [string map  {Ț T ț t Ș S ș s Ă A ă a Î I î i Â A â a } $str]
+		return [string map  {Ț T ț t Ș S ș s Ă A ă a Î I î i Â A â a    Ş S ş s Ţ t ţ t  } $str]
 
 	}
+
+	proc makeGoodUrl {name} {
+		set url [string tolower [goodName $name]]
+		set url [regsub -all {[^A-Za-z0-9-]+} $url -]
+		return $url
+	}
+
 	proc getHost {} {
 		return [lindex [split [ns_conn location] /] 2]
 	}
@@ -170,42 +179,42 @@ namespace eval lostmvc {
 
 		#"/" "&#x2F;"
 		if {0} {
-		"oncontextmenu" "ignore"
-		"ondblclick" "ignore"
-		"onmousedown" "ignore"
-		"onmouseenter" "ignore"
-		"onmouseleave" "ignore"
-		"onmousemove" "ignore"
-		"onmouseover" "ignore"
-		"onmouseout" "ignore"
-		"onmouseup" "ignore"
+			"oncontextmenu" "ignore"
+			"ondblclick" "ignore"
+			"onmousedown" "ignore"
+			"onmouseenter" "ignore"
+			"onmouseleave" "ignore"
+			"onmousemove" "ignore"
+			"onmouseover" "ignore"
+			"onmouseout" "ignore"
+			"onmouseup" "ignore"
+		}
+		#Most of the javascript enabled html attribtues begin with "on", so we just replace "on" with the ascii values:D
+		# "on"  "&#111;&#110;"
+		return [string map {
+			"\"" "&#34;" 
+			"'" "&#39;"
+			"<" "&#60;"
+			">" "&#62;"
+			{[} "&#91;"
+			{]} "&#93;"
+		} $value ]
 	}
-	#Most of the javascript enabled html attribtues begin with "on", so we just replace "on" with the ascii values:D
-	# "on"  "&#111;&#110;"
+	#Do this for things like ckeditor
+	#TODO however eliminate <script> tags!
+	#this function NEVER unescapes []!
+	proc ns_unescapehtml {value} {
+	#Not updating "&" "&#38;" because it generates loops..
 	return [string map {
-		"\"" "&#34;" 
-		"/" "&#x2F;"
-		"'" "&#39;"
-		"<" "&#60;"
-		">" "&#62;"
-		{[} "&#91;"
-		{]} "&#93;"
-	} $value ]
-}
-#Do this for things like ckeditor
-#TODO however eliminate <script> tags!
-#this function NEVER unescapes []!
-		proc ns_unescapehtml {value} {
-		#Not updating "&" "&#38;" because it generates loops..
-			return [string map {
-				"&#34;" "\"" 
-				"&#x2F;" "/"
-				"&#39;" "'" 
-				"&#60;" "<" 
-				"&#62;"	">"
-				"&#91;" {[}
-				"&#93;" {]} 
-			} $value ]
+	"&#34;" "\"" 
+	"&#x2F;" "/"
+	"&#47;" "/"
+	"&#39;" "'" 
+	"&#60;" "<" 
+	"&#62;"	">"
+		"&#91;" {[}
+	"&#93;" {]} 
+} $value ]
 		}
 		if {0} {
 			oo::objdefine bhtml method sanitize {value filter} {
@@ -229,6 +238,7 @@ namespace eval lostmvc {
 				return $newvalue
 			}
 		}
+
 		#from scanner.tcl to implement "sanitation"
 		#very ingenious form of queryget .. sanitizing everything!
 		proc safequeryget {varname datatype {defaultval ""}} {
@@ -260,6 +270,16 @@ namespace eval lostmvc {
 			return ""	
 		}
 
+		#Verifies if method is POST (default)
+		#If we have a contentfile (spooler saved a temp file) our method is usually GET, we return 1
+		# all other cases return 0
+		proc ns_getcontentmethod {{method POST}} {
+			if {[ns_conn method] == $method || [ns_conn contentfile] != "" } {
+				return 1
+			}
+			return 0
+		} 
+
 		#Extracts the GET value of the QUERY using ns_queryget results
 		#in either GET if it's GET or POST if it's a POST not both..
 		#which complicates when you want to send a specific form
@@ -274,6 +294,208 @@ namespace eval lostmvc {
 				return [dict get $q $name]
 			} else { return "" }
 		}
+
+		proc ns_getallform {form key} {
+			set result ""
+			set alldata [ns_set array $form]
+			set indices [lsearch -all $alldata $key] 
+			foreach i $indices {
+				lappend result [lindex $alldata $i+1] 
+			}
+			return $result
+		}
+
+		#Gets the content for the form if a spooler was used
+		#It also copies the tempfile created..
+		proc ns_getcontentform {} {
+			set form ""
+			set tmpfile [ns_conn contentfile]
+			#If the content file is empty (thus not spooled, and under the maxupload limit)
+			#we write the content to a temporary file.. so we can process it
+			if {$tmpfile == "" } {
+				set tmpfile [ns_mktemp /tmp/nscontent-XXXXXX]
+				set cf [open $tmpfile w]
+				ns_writecontent $cf
+				chan close $cf
+				ns_atclose [list file delete $tmpfile]
+			}
+			if {$tmpfile != ""} {
+			#	set newtempfile [ns_mktemp [ns_pagepath]/uploads/up-XXXXXX]
+			#	file copy -force -- $tmpfile $newtempfile
+			#	file attributes $newtempfile -permissions 00644
+				set form [ns_set create]
+				ns_parseFormContentData $tmpfile $form [ns_set iget [ns_conn headers] content-type]
+				#Atclose!
+				#	ns_atclose [list file delete $newtempfile]
+			}
+			return $form
+		}
+
+		#Copy from tempfile to real a location we won't delete
+		#In future add options to modify file before saving:D
+		#RETURNS name of new files ...
+		proc ns_manageUploadFiles {uploadLocation uploadFolder action} {
+			foreach refVar {form fieldName} { upvar $refVar $refVar }
+			set count [ns_set get $form $fieldName.count]
+			catch {file mkdir $uploadLocation/$uploadFolder}
+			set returnFiles ""
+
+			for {set i 1} {$i <= $count} {incr i} {
+				set filename [ns_set get $form $fieldName.$i.name]
+				set tmpname [ns_set get $form $fieldName.$i.tmpfile]
+				#Sometimes when the upload is empty, we have a "empty" tmpname with a empty filename
+				if {[file size $tmpname] == 0 && $filename == ""} { continue }
+				#	set savefile $uploadLocation/$filename
+				#	puts "Copying from $tmpname ([file size $tmpname]) name $filename"
+				#	file copy -force  -- $tmpname $savefile
+				#	lappend returnFiles $filename
+
+				lappend returnFiles [$action]
+
+			}
+			return $returnFiles
+		}
+
+		#First convert then save to database? Or the other way arround?
+		#Seems that the imagemagick returns an error "unable to locate img"
+		#even though it generates the images, tcl seems to say "child process exited abonrmally
+		#so we surround it with a catch
+		proc	ns_convertResizeImages {} {
+			foreach refVar {tmpname filename uploadLocation uploadFolder} { upvar $refVar $refVar }
+			set filename [join [file rootname $filename] _]
+
+			catch { set result [exec  >&@stdout   convert  $tmpname -quality 85 -write mpr:img \
+			   \( mpr:img  -thumbnail 1300x1300 -write $uploadLocation/$uploadFolder/l_$filename.jpg \) \
+			   \( mpr:img -thumbnail 600x600 -write $uploadLocation/$uploadFolder/m_$filename.jpg  \) \
+			   \( mpr:img -thumbnail 300x300 -write $uploadLocation/$uploadFolder/s_$filename.jpg \) \
+		   -thumbnail 100x100 $uploadLocation/$uploadFolder/t_$filename.jpg]}
+
+		   #We return the name of the large file then it's
+		   #regexp time to rename /l_ to other things
+			return $uploadFolder/l_$filename.jpg  
+		}
+
+
+		#Create temporary files from file (spooler or your own data file)
+		proc ns_parseFormContentData { file form contentType } {
+
+			if { [catch { set fp [open $file r] } errmsg] } {
+				return
+			}
+
+			if { ![regexp -nocase {boundary=(.*)$} $contentType 1 b] } {
+				return
+			}
+
+			fconfigure $fp -encoding binary -translation binary
+			set boundary "--$b"
+
+			while { ![eof $fp] } {
+			# skip past the next boundary line
+				if { ![string match $boundary* [string trim [gets $fp]]] } {
+					continue
+				}
+
+				# fetch the disposition line and field name
+				set disposition [string trim [gets $fp]]
+				if { $disposition eq "" } {
+					break
+				}
+
+				set disposition [split $disposition \;]
+				set name [string trim [lindex [split [lindex $disposition 1] =] 1] \"]
+				#File Count increasing
+				if {[set fileCount [ns_set get $form $name.count]]  == "" } { 
+					set fileCount 1
+				} else { incr fileCount }
+				ns_set update $form $name.count $fileCount
+
+				# fetch and save any field headers (usually just content-type for files)
+
+				while { ![eof $fp] } {
+					set line [string trim [gets $fp]]
+					if { $line eq "" } {
+						break
+					}
+					set header [split $line :]
+					set key [string tolower [string trim [lindex $header 0]]]
+					set value [string trim [lindex $header 1]]
+
+					ns_set put $form $name.$key $value
+				}
+
+				if { [llength $disposition] == 3 } {
+				# uploaded file -- save the original filename as the value
+					set filename [string trim [lindex [split [lindex $disposition 2] =] 1] \"]
+					ns_set delkey $form $name.$key
+					ns_set put $form $name $filename
+					ns_set put $form $name.$fileCount.name $filename
+					ns_set put $form $name.$fileCount.$key $value
+
+					# read lines of data until another boundary is found
+					set start [tell $fp]
+					set end $start
+
+					while { ![eof $fp] } {
+						if { [string match $boundary* [string trim [gets $fp]]] } {
+							break
+						}
+						set end [tell $fp]
+					}
+					set length [expr {$end - $start - 2}]
+
+					# create a temp file for the content, which will be deleted
+					# when the connection close.  ns_openexcl can fail, hence why 
+					# we keep spinning
+
+					set tmp ""
+					while { $tmp eq "" } {
+						set tmpfile [ns_mktemp]
+						set tmp [ns_openexcl $tmpfile]
+					}
+
+					catch {fconfigure $tmp -encoding binary -translation binary}
+
+					if { $length > 0 } {
+						seek $fp $start
+						chan copy $fp $tmp -size $length
+					}
+
+					close $tmp
+					seek $fp $end
+					ns_set put $form $name.$fileCount.tmpfile $tmpfile
+
+					if { [ns_conn isconnected] } {
+						ns_atclose [list file delete $tmpfile]
+					}
+
+				} else {
+
+				# ordinary field - read lines until next boundary
+					set first 1
+					set value ""
+					set start [tell $fp]
+
+					while { [gets $fp line] >= 0 } {
+						set line [string trimright $line \r]
+						if { [string match $boundary* $line] } {
+							break
+						}
+						if { $first } {
+							set first 0
+						} else {
+							append value \n
+						}
+						append value $line
+						set start [tell $fp]
+					}
+					seek $fp $start
+					ns_set put $form $name $value
+				}
+			}
+			close $fp
+		}
+
 
 		proc send_mail_dev {to from subject body {Bcc ""} {cc ""}} {
 			package require mime 
@@ -294,30 +516,30 @@ namespace eval lostmvc {
 
 
 
-proc send_mail_mandrill_smtp {to from subject body {Bcc ""} {cc ""}} {
-	package require mime 
-	package require smtp
-	package require SASL ;#IF YYOU DON'T USE SASL IT WOn'T AUHENTICATE SUCCSESSFULLY!
-		global host port smtp_user smtp_password 
-		set token [mime::initialize -canonical text/html  -string $body]
-		if {$Bcc != ""} {  mime::setheader $token Bcc $Bcc -mode append }
-		#Sometimes the mail won't be sent because the ORIGINATOR isn't set as a good e-mail address..
-		#Next time if problems occur use the -debug 1 option
+		proc send_mail_mandrill_smtp {to from subject body {Bcc ""} {cc ""}} {
+			package require mime 
+			package require smtp
+			package require SASL ;#IF YYOU DON'T USE SASL IT WOn'T AUHENTICATE SUCCSESSFULLY!
+			global host port smtp_user smtp_password 
+			set token [mime::initialize -canonical text/html  -string $body]
+			if {$Bcc != ""} {  mime::setheader $token Bcc $Bcc -mode append }
+			#Sometimes the mail won't be sent because the ORIGINATOR isn't set as a good e-mail address..
+			#Next time if problems occur use the -debug 1 option
 
-		set config [ns_cache_get lostmvc config.[getConfigName]] 
+			set config [ns_cache_get lostmvc config.[getConfigName]] 
 
-		smtp::sendmessage $token -debug 0 -usetls 1 \
-		-username [dict get $config mandrill username] -password [dict get $config mandrill password] \
-		-ports [dict get $config mandrill port] -recipients $to -servers [dict get $config mandrill host] \
-		-header [list From $from] \
-		-header [list To $to] \
-		-header [list Subject $subject] \
-		-header [list Date "[clock format [clock seconds]]"]
-		mime::finalize $token
+			smtp::sendmessage $token -debug 0 -usetls 1 \
+				-username [dict get $config mandrill username] -password [dict get $config mandrill password] \
+				-ports [dict get $config mandrill port] -recipients $to -servers [dict get $config mandrill host] \
+				-header [list From $from] \
+				-header [list To $to] \
+				-header [list Subject $subject] \
+				-header [list Date "[clock format [clock seconds]]"]
+			mime::finalize $token
 
-		ns_log Notice "Sent e-mail from $from to $to"
-}
-		
+			ns_log Notice "Sent e-mail from $from to $to"
+		}
+
 		#Sending mail through naviserver
 		proc send_mail_naviserver {to from subject body {bcc ""} {cc ""}} {
 		#	ns_sendmail $to info@unitedbrainpower.com $subject $body "" $bcc
@@ -335,196 +557,202 @@ proc send_mail_mandrill_smtp {to from subject body {Bcc ""} {cc ""}} {
 		############################
 		# Date and Time functions
 		############################
-		proc getTimestamp {{unixtime ""}} {
-			if {$unixtime == ""} { set unixtime [clock seconds] }
-			return [clock format $unixtime -format "%Y-%m-%d %H:%M:%S"]
-		}
-
-		proc getTimestampTz {{unixtime ""}} {
-			if {$unixtime == ""} { set unixtime [clock seconds] }
-			return [clock format $unixtime -format "%Y-%m-%d %H:%M:%S%z"]
-		}
-
-		proc beautifulDate {args} {
-			ns_parseargs {{-locale ""} {-hour 0} -- time} $args
-			if {$hour} {
-				set hour " at %H:%M"
-			} else { set hour "" }
-			if {$locale == ""} {
-				set locale [msgcat::mclocale]
-			}
-			if {$time != ""} {
-				set time [scanTz $time]
-				return [clock format $time -locale $locale -format "%A, %d %B %Y $hour"]
-			}
-		}
-		proc scanTz {time} {
-			if {![string is integer $time]} {
-				set r [string range $time 19 19]
-				if {$r != "" && ($r == "-" || $r == "+")} {
-					set time [clock scan $time -format {%Y-%m-%d %H:%M:%S%z} ]	
-				} else {
-					set time [clock scan $time]
-				}
-			}
-			return $time
-		}
-	proc howlongago {time} {
-		# Returns the difference between $time and now in vague terms
-		set diff [expr {[clock seconds] - $time}]
-		# What units are we dealing with (don't care about leap years -
-		# we're being vague, after all :)
-		foreach {div unit} {
-		"60*60*24*365"        year
-		"60*60*24*30"         month
-		"60*60*24*7"          week
-			"60*60*24"            day
-			"60*60"               hour
-			"60"                  minute
-			"1"                   second
-		} {
-			if {[set num [expr $diff / ($div)]] > 0} {
-				break
-			}
-		} 
-
-		#TODO translation in multiple languages..
-		if {$num != 1} {
-			append unit "s" ;#or .pl 
-		}
-		set unit [mc $unit]
-		if {$num == 0} { return [mc "now"] }
-		if {$num == 1} { return [mc {a %1$s ago} $unit] }
-		if {$num == 2} { return [mc {a couple of %1$s ago} $unit] }
-		if {$num > 2 && $num < 5} { return [mc {a few %1$s ago} $unit] }
-		return [mc {%1$s %2$s ago} $num $unit]
-	}
-	#LREMOVE
-	if {[info command lremove] == ""} {
-		proc lremove {args} {
-			if {[llength $args] < 2} {
-				puts stderr {Wrong # args: should be "lremove ?-all? list pattern"}
-			}
-			set list [lindex $args end-1]
-			set elements [lindex $args end]
-			if [string match -all [lindex $args 0]] {
-				foreach element $elements {
-					set list [lsearch -all -inline -not -exact $list $element]
-				}
-			} else {
-			# Using lreplace to truncate the list saves having to calculate
-			# ranges or offsets from the indexed element. The trimming is
-			# necessary in cases where the first or last element is the
-			# indexed element.
-			foreach element $elements {
-			set idx [lsearch $list $element]
-			set list [string trim \
-				"[lreplace $list $idx end] [lreplace $list 0 $idx]"]
-			}
-			}
-			return $list
-		}
-	}
-		############################
-		# Dictionary Pretty PRINT!
-		############################
-	proc dict_format {dict} { 
-		dictformat_rec $dict "" "\t" 
-	} 
+   proc getTimestampDay {{unixtime ""}} {
+	   if {$unixtime == ""} { set unixtime [clock seconds] }
+	   return [clock format $unixtime -format "%Y-%m-%d"]
+   }
 
 
-	proc isdict {v} { 
-		string match "value is a dict *" [::tcl::unsupported::representation $v] 
-	} 
+   proc getTimestamp {{unixtime ""}} {
+	   if {$unixtime == ""} { set unixtime [clock seconds] }
+	   return [clock format $unixtime -format "%Y-%m-%d %H:%M:%S"]
+   }
 
-	proc lasubdict {dictname key subkey value} {
-		upvar 1 $dictname dictvar
-		dict set dictvar $key $subkey "[if {[dict exists $dictvar $key $subkey]} { dict get $dictvar $key $subkey }] $value"
-	}
-	#Thanks to http://wiki.tcl.tk/17680
-	proc dict'sort {dict args} {
-		set res {}
-		foreach key [lsort {*}$args [dict keys $dict]] {
-			dict set res $key [dict get $dict $key] 
-		}
-		set res
-	}
+   proc getTimestampTz {{unixtime ""}} {
+	   if {$unixtime == ""} { set unixtime [clock seconds] }
+	   return [clock format $unixtime -format "%Y-%m-%d %H:%M:%S%z"]
+   }
 
-	## helper function - do the real work recursively 
-	# use accumulator for indentation 
-	proc dictformat_rec {dict indent indentstring} {
-	# unpack this dimension 
-		dict for {key value} $dict { 
-			if {[isdict $value]} { 
-			#append result "$indent[list $key]\n$indent\{\n" 
-				append result "$indent[list $key] \{\n" 
-				append result "[dictformat_rec $value "$indentstring$indent" $indentstring]\n" 
-				append result "$indent\}\n" 
-			} else { 
-				append result "$indent[list $key] [list $value]\n" 
-			}
-		}
+   proc beautifulDate {args} {
+	   ns_parseargs {{-locale ""} {-hour 0} -- time} $args
+	   if {$hour} {
+		   set hour " at %H:%M"
+	   } else { set hour "" }
+	   if {$locale == ""} {
+		   set locale [msgcat::mclocale]
+	   }
+	   if {$time != ""} {
+		   set time [scanTz $time]
+		   return [clock format $time -locale $locale -format "%A, %d %B %Y $hour"]
+	   }
+   }
+   proc scanTz {time} {
+	   if {![string is integer $time]} {
+		   set r [string range $time 19 19]
+		   if {$r != "" && ($r == "-" || $r == "+")} {
+			   set time [clock scan $time -format {%Y-%m-%d %H:%M:%S%z} ]	
+		   } else {
+			   set time [clock scan $time]
+		   }
+	   }
+	   return $time
+   }
+   proc howlongago {time} {
+   # Returns the difference between $time and now in vague terms
+	   set diff [expr {[clock seconds] - $time}]
+	   # What units are we dealing with (don't care about leap years -
+	   # we're being vague, after all :)
+	   foreach {div unit} {
+		   "60*60*24*365"        year
+		   "60*60*24*30"         month
+		   "60*60*24*7"          week
+		   "60*60*24"            day
+		   "60*60"               hour
+		   "60"                  minute
+		   "1"                   second
+	   } {
+		   if {[set num [expr $diff / ($div)]] > 0} {
+			   break
+		   }
+	   } 
 
-		return $result 
-	}
+	   #TODO translation in multiple languages..
+	   if {$num != 1} {
+		   append unit "s" ;#or .pl 
+	   }
+	   set unit [mc $unit]
+	   if {$num == 0} { return [mc "now"] }
+	   if {$num == 1} { return [mc {a %1$s ago} $unit] }
+	   if {$num == 2} { return [mc {a couple of %1$s ago} $unit] }
+	   if {$num > 2 && $num < 5} { return [mc {a few %1$s ago} $unit] }
+	   return [mc {%1$s %2$s ago} $num $unit]
+   }
+   #LREMOVE
+   if {[info command lremove] == ""} {
+	   proc lremove {args} {
+		   if {[llength $args] < 2} {
+			   puts stderr {Wrong # args: should be "lremove ?-all? list pattern"}
+		   }
+		   set list [lindex $args end-1]
+		   set elements [lindex $args end]
+		   if [string match -all [lindex $args 0]] {
+			   foreach element $elements {
+				   set list [lsearch -all -inline -not -exact $list $element]
+			   }
+		   } else {
+		   # Using lreplace to truncate the list saves having to calculate
+		   # ranges or offsets from the indexed element. The trimming is
+		   # necessary in cases where the first or last element is the
+		   # indexed element.
+			   foreach element $elements {
+				   set idx [lsearch $list $element]
+				   set list [string trim \
+					   "[lreplace $list $idx end] [lreplace $list 0 $idx]"]
+			   }
+		   }
+		   return $list
+	   }
+   }
+   ############################
+   # Dictionary Pretty PRINT!
+   ############################
+   proc dict_format {dict} { 
+	   dictformat_rec $dict "" "\t" 
+   } 
 
-		#always place this at bottom because of VIM things.. put it as last function 
-		#Generates a JSON from a TCL dictionary
-		#Ripped from: http://rosettacode.org/wiki/JSON#Tcl
-	proc tcl2json value {
-	# Guess the type of the value; deep *UNSUPPORTED* magic!
-	regexp {^value is a (.*?) with a refcount} \
-		[::tcl::unsupported::representation $value] -> type
 
-	switch $type {
-		string {
-		# Skip to the mapping code at the bottom
-		}
-		dict {
-			set result "{"
-			set pfx ""
-			dict for {k v} $value {
-				append result $pfx [tcl2json $k] ": " [tcl2json $v]
-				set pfx ", "
-			}
-			return [append result "}"]
-		}
-		list {
-			set result "\["
-			set pfx ""
-			foreach v $value {
-				append result $pfx [tcl2json $v]
-				set pfx ", "
-			}
-			return [append result "\]"]
-		}
-		int - double {
-			return [expr {$value}]
-		}
-		booleanString {
-			return [expr {$value ? "true" : "false"}]
-		}
-		default {
-		# Some other type; do some guessing...
-		if {$value eq "null"} {
-		# Tcl has *no* null value at all; empty strings are semantically
-		# different and absent variables aren't values. So cheat!
-			return $value
-		} elseif {[string is integer -strict $value]} {
-			return [expr {$value}]
-		} elseif {[string is double -strict $value]} {
-			return [expr {$value}]
-		} elseif {[string is boolean -strict $value]} {
-			return [expr {$value ? "true" : "false"}]
-		}
-		}
-	}
+   proc isdict {v} { 
+	   string match "value is a dict *" [::tcl::unsupported::representation $v] 
+   } 
 
-	# For simplicity, all "bad" characters are mapped to \u... substitutions
-	set mapped [subst -novariables [regsub -all {[][\u0000-\u001f\\""]} \
-		$value {[format "\\\\u%04x" [scan {& } %c]]}]]
-	return "\"$mapped\"" ;#"
-	}
-namespace export *
-}
+   proc lasubdict {dictname key subkey value} {
+	   upvar 1 $dictname dictvar
+	   dict set dictvar $key $subkey "[if {[dict exists $dictvar $key $subkey]} { dict get $dictvar $key $subkey }] $value"
+   }
+   #Thanks to http://wiki.tcl.tk/17680
+   proc dict'sort {dict args} {
+	   set res {}
+	   foreach key [lsort {*}$args [dict keys $dict]] {
+		   dict set res $key [dict get $dict $key] 
+	   }
+	   set res
+   }
+
+   ## helper function - do the real work recursively 
+   # use accumulator for indentation 
+   proc dictformat_rec {dict indent indentstring} {
+   # unpack this dimension 
+	   dict for {key value} $dict { 
+		   if {[isdict $value]} { 
+		   #append result "$indent[list $key]\n$indent\{\n" 
+			   append result "$indent[list $key] \{\n" 
+			   append result "[dictformat_rec $value "$indentstring$indent" $indentstring]\n" 
+			   append result "$indent\}\n" 
+		   } else { 
+			   append result "$indent[list $key] [list $value]\n" 
+		   }
+	   }
+
+	   return $result 
+   }
+
+   #always place this at bottom because of VIM things.. put it as last function 
+   #Generates a JSON from a TCL dictionary
+   #Ripped from: http://rosettacode.org/wiki/JSON#Tcl
+   proc tcl2json value {
+   # Guess the type of the value; deep *UNSUPPORTED* magic!
+	   regexp {^value is a (.*?) with a refcount} \
+		   [::tcl::unsupported::representation $value] -> type
+
+	   switch $type {
+		   string {
+		   # Skip to the mapping code at the bottom
+		   }
+		   dict {
+			   set result "{"
+			   set pfx ""
+			   dict for {k v} $value {
+				   append result $pfx [tcl2json $k] ": " [tcl2json $v]
+				   set pfx ", "
+			   }
+			   return [append result "}"]
+		   }
+		   list {
+			   set result "\["
+			   set pfx ""
+			   foreach v $value {
+				   append result $pfx [tcl2json $v]
+				   set pfx ", "
+			   }
+			   return [append result "\]"]
+		   }
+		   int - double {
+			   return [expr {$value}]
+		   }
+		   booleanString {
+			   return [expr {$value ? "true" : "false"}]
+		   }
+		   default {
+		   # Some other type; do some guessing...
+			   if {$value eq "null"} {
+			   # Tcl has *no* null value at all; empty strings are semantically
+			   # different and absent variables aren't values. So cheat!
+				   return $value
+			   } elseif {[string is integer -strict $value]} {
+				   return [expr {$value}]
+			   } elseif {[string is double -strict $value]} {
+				   return [expr {$value}]
+			   } elseif {[string is boolean -strict $value]} {
+				   return [expr {$value ? "true" : "false"}]
+			   }
+		   }
+	   }
+
+	   # For simplicity, all "bad" characters are mapped to \u... substitutions
+	   set mapped [subst -novariables [regsub -all {[][\u0000-\u001f\\""]} \
+													 $value {[format "\\\\u%04x" [scan {& } %c]]}]]
+												 return "\"$mapped\"" ;#"
+	   }
+	   namespace export *
+   }
 namespace import -force lostmvc::*
