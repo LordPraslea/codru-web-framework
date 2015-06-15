@@ -141,6 +141,22 @@ nx::Class create bhtml {
 	}
 
 
+	# == Cache bhtml components
+	# NOTE these functions DO NOT compute the actual <link> or <script> tags
+	# the caching of whole pages will be done later
+	# getCacheData : returns JavaScript code, HTML Compoments and the JS & CSS files 
+	:public method getCacheData {} {
+		return [dict create  scripts ${:scripts}  components ${:components} plugins ${:plugins}]
+	}
+
+	# setDataFromCache : sets previously returned javascript code, js/css files (no more processing)
+	:public method setDataFromCache {cache} {
+		set :plugins [dict get $cache plugins]
+		set :components [dict get $cache components]
+		set :scripts [dict get $cache scripts]
+	}
+	
+
 # == tag , html or htmltag 
 # Creating html tags.. good for now
 	:public method htmltag {{-htmlOptions ""} {-closingTag 1} {-singlequote 0} -- tag {data ""}} {
@@ -427,6 +443,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	:public	method table {{-rpr 0} {-striped 0} {-bordered 0} {-hover 0} {-condensed 0} {-responsive 0} {-class ""} {-id ""} -- header data} {
 		set htmlOptions [dict create class table]
 		set html ""
+		set tdOptions ""
 
 		#Different options
 		if {$striped} { dict lappend htmlOptions class "table-striped"}
@@ -523,7 +540,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	#TODO class like options.. create form then add thigns to it
 	#TODO when making horizontal form..make all other things horizontal!
 	# this means modifying each item to incluse a column..
-	:public	method form {{-horizontal 0}  {-inline 0} {-method "GET"} {-action ""} {-class ""} {-id ""} -- data} {
+	:public	method form {{-horizontal 0}  {-inline 0} {-method "GET"} {-action ""} {-class ""} {-multipart:boolean false} {-id ""} -- data} {
 		set htmlOptions [dict create role form]
 		set html ""
 		dict lappend htmlOptions method $method
@@ -534,6 +551,9 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		if {$horizontal} { dict lappend htmlOptions class "form-horizontal"}
 		if {$action != ""} { dict lappend htmlOptions action $action}
 		if {$id != ""} { dict set htmlOptions id $id}
+		if {$multipart} {
+			lappend htmlOptions  enctype "multipart/form-data"
+		}
 
 		return [my htmltag -htmlOptions $htmlOptions form $data ]
 	}
@@ -611,28 +631,15 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		 }
 	}
 
-	:method inputGroupAddon {} {
-		:upvar right right left left
-
-		if {$left !=""} {
-			set :leftSpan [:tag -htmlOptions [list class input-group-addon] span $left]
-		}
-		if {$right !=""} {
-			set :rightSpan [:tag -htmlOptions [list class input-group-addon] span $right]
-		}
-	}
-
-##########################################
-# TODO input group addon 
-##########################################
+	##########################################
+	# input group addon 
+	##########################################
 # Warnings & limitations from bootstrap
 #only <input> 
 #tooltips &popovers require .input-group  and container:'body' 
 #always add labels
 #no support for multiple addons on a single side
 #no support for multiple form-controls in a single input group
-
-	
 	if {0} {
 		Adding a span to create a beautiful input groups
 		<div class="input-group">
@@ -658,6 +665,18 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		div class=input-group-btn
 
 	}
+	
+	:method inputGroupAddon {} {
+		:upvar right right left left
+
+		if {$left !=""} {
+			set :leftSpan [:tag -htmlOptions [list class input-group-addon] span $left]
+		}
+		if {$right !=""} {
+			set :rightSpan [:tag -htmlOptions [list class input-group-addon] span $right]
+		}
+	}
+
 
 	##########################################
 	# checkbox and radiobutton bootstrapping to type less code..
@@ -1593,6 +1612,24 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	#  whole page markup
 	##########################################
 	#export alert htmltag a fa label input alert form formGroup errorMsg 
+	#
+	:public method generateStars {rating {maxRating 5}} {
+		set stars ""
+		for {set var 1} {$var <= $rating} {incr var} {
+			append stars [:fa fa-star ]
+		}
+		set halfstar [expr int(round($rating)-floor($rating))]	
+		if {$halfstar} {
+		 	append stars [:fa fa-star-half-full]
+		}
+		incr var $halfstar
+
+		for {  } {$var<=$maxRating} {incr var} {
+			append stars [:fa fa-star-o ]
+		}
+
+		return $stars
+	}
 }
 
 
