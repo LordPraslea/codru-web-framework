@@ -182,10 +182,10 @@ nx::Class create ModelValidation {
 					return [msgcat::mc {Oops, something went wrong, did you fill in the name? If you're a human DON'T fill it in. Try again.}]
 				}	
 			}
-		}
-
-		if {![string match -nocase $value [ns_session get humanTest]]} {
-			return [msgcat::mc 	{The code you've entered is incorrect, try again.}] 
+		} else {
+			if {![string match -nocase $value [ns_session get humanTest]]} {
+				return [msgcat::mc 	{The code you've entered is incorrect, try again.}] 
+			}
 		}
 		#:unset captcha
 	}
