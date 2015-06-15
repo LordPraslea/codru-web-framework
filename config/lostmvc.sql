@@ -36,8 +36,8 @@ create table login_stats (
 );
 -- CREATE UNIQUE INDEX users_username_key ON users (lower(username));
 -- CREATE UNIQUE INDEX users_email_key ON users (lower(email));
-ALTER TABLE users OWNER TO lostone;
-ALTER TABLE login_stats OWNER TO lostone;
+--ALTER TABLE users OWNER TO lostone;
+--ALTER TABLE login_stats OWNER TO lostone;
 
 -- This is so we don't have a enormous users table
 -- Everything else that's a field of user provided
@@ -117,7 +117,7 @@ CREATE TABLE lostmvc_recyclebin (
 	data text
 );
 
-ALTER TABLE lostmvc_recyclebin OWNER to lostone;
+--ALTER TABLE lostmvc_recyclebin OWNER to lostone;
 
 /*
 	Tags that will be used all over the application
@@ -229,7 +229,7 @@ create table paypal_payments (
 
 	state text
 );
-ALTER TABLE paypal_payments OWNER to lostone;
+-- ALTER TABLE paypal_payments OWNER to lostone;
 
 /*
 United Brain Power 
@@ -245,7 +245,7 @@ CREATE TABLE credit_purchase (
 	price numeric,
 	buy_at timestamptz
 );
-ALTER TABLE credit_purchase OWNER to lostone;
+-- ALTER TABLE credit_purchase OWNER to lostone;
 
 CREATE TABLE credit_history (
 	user_id INT NOT NULL references users(id),
@@ -253,7 +253,7 @@ CREATE TABLE credit_history (
 	use_for text,
 	use_at timestamptz
 );
-ALTER TABLE credit_history OWNER to lostone;
+-- ALTER TABLE credit_history OWNER to lostone;
 
 -- Subscription table from within administration panel...
 -- can be overwritten by each controller..
@@ -264,7 +264,7 @@ create table subscription (
 	time int, -- days either 30 or 365
 	credits int
 );
-ALTER TABLE subscription OWNER to lostone;
+-- ALTER TABLE subscription OWNER to lostone;
 
 create table user_subscription (
 	subscription_id INT NOT NULL references subscription(id),
@@ -275,7 +275,7 @@ create table user_subscription (
 	status smallint default 1
 );
 
-ALTER TABLE user_subscription OWNER to lostone;
+-- ALTER TABLE user_subscription OWNER to lostone;
 
 /*	United Brain Power
 	---	Online Shop System
@@ -296,12 +296,13 @@ create table shop_order (
 	status smallint default 0
 );
 
-ALTER TABLE shop_order OWNER to lostone;
+-- ALTER TABLE shop_order OWNER to lostone;
 
 
 Create table shop_item (
 	id serial primary key unique not null,
 	name text,
+	url text,
 	description text,
 	price numeric,
 	credits int,
@@ -311,7 +312,7 @@ Create table shop_item (
 	images_gallery text
 );
 
-ALTER TABLE shop_item OWNER to lostone;
+-- ALTER TABLE shop_item OWNER to lostone;
 Create table shop_item_rating (
 	item_id INT  references shop_item(id),
 	user_id INT NOT NULL references users(id),
@@ -319,7 +320,7 @@ Create table shop_item_rating (
 	rating_ip TEXT
 );
 
-ALTER TABLE shop_item_rating OWNER to lostone;
+-- ALTER TABLE shop_item_rating OWNER to lostone;
 Create table shop_item_comment (
 	id serial primary key unique not null,
 	reply_to INT references shop_item_comment(id),
@@ -330,7 +331,7 @@ Create table shop_item_comment (
 	status smallint DEFAULT 0
 );
 
-ALTER TABLE shop_item_comment OWNER to lostone;
+-- ALTER TABLE shop_item_comment OWNER to lostone;
 -- Used for recommended/related products!
 CREATE TABLE shop_item_tags (
 	tag_id INT NOT NULL references tags(id),
@@ -338,7 +339,7 @@ CREATE TABLE shop_item_tags (
 	constraint shop_item_tags_pkey primary key(tag_id,item_id)
 );
 
-ALTER TABLE shop_item_tags OWNER to lostone;
+-- ALTER TABLE shop_item_tags OWNER to lostone;
 
 Create table shop_order_item (
 	shop_order_id INT NOT NULL references shop_order(id),
@@ -347,7 +348,7 @@ Create table shop_order_item (
 	quantity INT DEFAULT 1,
 	constraint shop_order_item_pkey primary key(shop_order_id,item_id)
 );
-ALTER TABLE shop_order_item OWNER to lostone;
+-- ALTER TABLE shop_order_item OWNER to lostone;
 
 
 

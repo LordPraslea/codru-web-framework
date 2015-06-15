@@ -38,6 +38,11 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 		return 1
 	}
 
+	:object method help {} {
+		set allMethods [:info lookup methods]
+		puts "All methods: \n $allMethods"
+	}
+
 	:object method confirmStart {} {
 		if {[colorterm]} { background black;  }
 		set confirm "Hello, welcome to the LostMVC installation process." 
@@ -291,36 +296,69 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 #TODO Finish and test
 	:object method installNewDomain {{-username ""} {-password ""} domain} {
 		set nsuser www-data
+		set domainFolder /opt/ns/www/$domain 
+	if {[file exists $domainFolder ]}  { puts "The $domain domain already exists. Try using update $domain " ; exit}
 		if {$username == ""} {
 			set username $domain
 			adduser $username
 			#passwd $username
 		 	exec >&@stdout sudo	echo -e "$password\n$password\n" | passwd $username
 		}
-		mkdir -p /opt/ns/www/$username/www
-		sudo chown -R $username:$nsuser /opt/ns/www/$username
+		exec >&@stdout sudo mkdir -p $domainFolder/www
+		exec >&@stdout sudo chown -R $username:$nsuser $dolainFolder
 		#710 is better since it gives owner full power, group execute and the rest NOTHING.. so 
 		#no one can access things
 		#Running generator.adp you have to set permissions 770 temporarily till it writes data
 		#then set it to 710 or 750 again
-		sudo chmod -R 750 /opt/ns/www/$username
+		exec >&@stdout sudo chmod -R 750 $domainFolder
 
 		#Install Database
-		
+	
+		#SWITCH BETWEEN BIND AND LOCAL HOSTS!
 		#Add domain to hosts
 		sudo echo "127.0.0.1 $username" > /etc/hosts
 		#TODO add domain to BIND!
 
 	}
+	:object method copyDomainData {} {
+		foreach {folder} {img js css fonts lang} {
+			file copy lostmvc/$folder $domain/www/$folder
+			#	file attributes $domain/www/$folder -group www-data 
+			puts "Copied $folder/ folder.. to $domain/$folder"
+		}
 
-	:object  method module {args} {
+		foreach folder {modules controllers models views sessions} {
+			file mkdir $domain/www/$folder
+			puts "Creating $domain/$folder folder "
+		}
+
+		#Copy Important Views
+		set folder views
+		foreach file {column2.adp layout.adp generator_layout.adp} {
+			file copy lostmvc/$folder/$file $domain/www/$folder/$file
+			#	file attributes $domain/www/$folder/$file -group www-data 
+		}
+		puts "Finished copying important Views"
+		file copy lostmvc/index.adp $domain/www/	
+
+		foreach module {system rbac} {
+			set folder modules/$module
+			file copy $folder $domain/www/$folder
+
+			#	file attributes $domain/www/$folder -group www-data 
+			puts "Finished copying $module Module"
+		}
+	}
+
+
+		:object  method module {args} {
 			lassign $args domain module	
 			if {$::argc <= 2} { puts "Usage: module <domain> <module> "; exit }
 			if {![file exists /opt/ns/www/$domain]}  { puts "The $domain domain doesn't exist, try again [pwd]" ; exit}
 			if {![file exists modules/$module]}  { 
 				puts "This module doesn't exist."
 				puts [:getModules] ; exit}
-		
+
 			set moduleLocation /opt/ns/www/$domain/www/modules/$module 
 			file delete -force  $moduleLocation 
 			file copy modules/$module $moduleLocation
@@ -328,13 +366,13 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 			exec >&@stdout   sudo chgrp -R www-data $moduleLocation	 
 			exec >&@stdout sudo  chmod -R g+w $moduleLocation
 			puts "Installed $module in $domain/modules/$module"
-	}
-	:object method getModules {} {
-		return "Available modules: \n\t[join [glob -type d modules/*] \n\t]"
-	}
+		}
+		:object method getModules {} {
+			return "Available modules: \n\t[join [glob -type d modules/*] \n\t]"
+		}
 
 
-}
+	}
 if {[info exists argv0]} {
 	if { [info script] eq $::argv0 } {
 		InstallLostMVC install

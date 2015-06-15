@@ -64,7 +64,7 @@ nx::Class create RoleAssignment -superclass Model {
 			relations {
 				item {column item_id fk_table role_item fk_column id fk_value name}
 				user {column user_id fk_table users fk_column id fk_value username}
-				options {column user_id fk_table users fk_column id fk_value username fk_function "concat(users.id,' ',role_item.id)" }
+				options {column user_id fk_table users fk_column id fk_value username fk_function "concat(user_id,' ',item_id)" }
 
 			}
 
