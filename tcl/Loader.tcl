@@ -47,7 +47,7 @@ proc includeControllerFromPath {path {folder "" } {server ""}} {
 	#	ns_cache_eval -timeout 5 -expires 600 lostmvc Loader.Controller.Routes.$ct { }
 	
 			puts "Include  controller /$cn/ path $path (/modules)/$tail/controllers/$ct.adp  for server $server"
-			foreach method {GET POST} { 	
+			foreach method {GET POST DELETE} { 	
 				if {$tail != ""} {
 					set module [string tolower $tail]
 					foreach lang $languages {
@@ -85,7 +85,7 @@ if {0} {
 }
 proc registerRoute {server route  location } {
 	set languages [defineLanguages $server]
-	foreach method {GET POST} {
+	foreach method {GET POST DELETE} {
 		ns_register_adp   $method $route $location	
 		foreach lang $languages {
 			ns_register_adp $method /$lang$route $location
