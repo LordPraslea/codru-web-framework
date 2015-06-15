@@ -21,6 +21,10 @@ ns_puts [string map "%modelname $modelname %controller [string tolower $modelnam
 
 	set id [$model get id]
 dict set pageinfo menu "
+	{  -url 1 -active [my isActiveLink /update]  -show [my hasRole admin%controller]  
+			{[mc {Update %controller}]} [my getUrl update [list id $id]]}
+	{  -url 1 -active [my isActiveLink /delete]  -show [my hasRole admin%controller] 
+   			{[mc Delete] [mc %controller]} [my getUrl delete [list id $id]]}
 "
 }]
 

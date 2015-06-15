@@ -11,14 +11,19 @@ set title [mc "Index of %%s"]
 dict set pageinfo title $title} $modelname]
 
 #Breadcrumbs include
-ns_puts [string map "%modelname $modelname %controller [string tolower $modelname]"  {
+ns_puts [string map "%modelname $modelname %controller [string tolower $controllername]"  {
 		dict set pageinfo breadcrumb [subst {
 			{-url 1 {[mc Home]} "/"}
 			{-url 1 {[mc %modelname]} /%controller/index}
 			{-active 1 "$title"}
 	} ]  
 	set id [$model get id]
-dict set pageinfo menu " "
+dict set pageinfo menu "
+	{  -url 1 -active [my isActiveLink /update]  -show [my hasRole admin%controller]  
+			{[mc {Update %controller}]} [my getUrl update [list id $id]]}
+	{  -url 1 -active [my isActiveLink /delete]  -show [my hasRole admin%controller] 
+   			{[mc Delete] [mc %controller]} [my getUrl delete [list id $id]]}
+"
 }]
 
 #Include MENU for buttons.. etc

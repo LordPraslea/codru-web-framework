@@ -99,28 +99,25 @@ nx::Class create %controllerController -superclass Controller {
 		 my render admin model $model {*}$extra
 	}
 
-	:public	method loadModel {id} {
+	:public	method loadModel {id {ajax 0}} {
 		set model [%modelName new]
 	
-		if {$id == ""} { 
-			set id [ns_queryget [$model classKey id]]
-			if {$id == ""} {  
-				my notFound <br>[msgcat::mc "Please specify a valid id."]
-			}
+		if {$ajax} {
+			set returnFunction :returnAjaxNotFound
+		} else {  
+			set returnFunction :returnNotFound
 		}
-		if {![string is double $id]} {   
-			my notFound <br>[msgcat::mc "Tried to search for id %s but just couldn't find it!" $id]
-			return 0
-		}
+
+		:loadModelEmptyId 
+		:loadModelIsDouble
+
 		$model setScenario "search"
 		$model set id $id 
-		if {[set validation [$model validate id]] != 0} { 	my notFound  [msgcat::mc "Not validating, sorry! %s" $validation]; return 0 }
-		if {[$model findByPk $id] == 0} {
-			my notFound <br>[msgcat::mc "Tried to search for id %s but just couldn't find it!" $id]
-			return 0
-		} else {  	return $model; }
-	
+		:loadModelValidateId	
+
+		:loadModelFindByPk
 	} 
+
 
 	
 }

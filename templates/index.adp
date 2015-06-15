@@ -23,7 +23,7 @@ ns_puts [string map " %modelname  $modelname " {
 ns_puts [format {ns_puts [$bhtml htmltag h1 $title]} $modelname]
 
 ns_puts {
-set gridView [GridView new -model $model ]
+set gridView [GridView new -model $model -bhtml $bhtml ]
 ns_puts [$gridView getGridView]
 }
 

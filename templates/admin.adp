@@ -8,7 +8,7 @@
 ns_puts "<%"
 #Include page title
 ns_puts [format {
-set title [mc "Admin page for %%s"]
+set title [mc "Admin page for %s"]
 dict set pageinfo title $title 
 } $modelname]
 
@@ -33,7 +33,7 @@ ns_puts {
 	}
 }
 
-ns_puts {set gridView [GridView new -search 1 -admin 1 -model $model -bhtml $bhtml ]
+ns_puts {set gridView [GridView new -searchBar 1 -admin 1 -model $model -bhtml $bhtml ]
 ns_puts [$gridView getGridView]
 }
 
