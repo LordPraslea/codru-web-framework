@@ -11,6 +11,10 @@ nx::Class create ListView -superclass [list bhtml] {
 	:property {sort id}
 	:property {sort_type asc}
 
+	#Options that work: 1 2 3 4  
+	#work only if you have big screens and/or have enough space 6 12
+	:property {perRow 1}
+
 	:property {extraUrlVars ""} 
 	#TODO NOT IMPLEMENTED YET, make it easier so you don't need to do -searchOptions [list -relations 1]
 	
@@ -26,21 +30,45 @@ nx::Class create ListView -superclass [list bhtml] {
 
 	:property {externalData 0} 
 
+	:property {cache 0}
 
 	:method init {} {
 		set :table [${:model} getTable]
 
+		:listViewInitVariables
+
+		
+		if {[ns_queryexists ${:table}_page]} { set :page [ns_queryget ${:table}_page 1] }
+		if {[ns_queryexists ${:table}_perpage]} { set :perpage [ns_queryget ${:table}_perpage 10] }
+
+		if {[ns_queryexists ${:table}_sort]} { set :sort [ns_queryget ${:table}_sort ${:sort}] }
+		if {![${:model} exists ${:sort}]}  {
+			set :sort ${:originalSort}	
+		}
+
+		set :sort_type [ns_queryget sort ${:sort_type}] 
+		if {${:sort_type} != "asc" && ${:sort_type} != "desc"} {set :sort_type ${:originalSortType} }	
+
+		if {${:perRow} ni "1 2 3 4 6 12"} { 
+			append :page_data [${:bhtml} alert -type warning "WARNING ListView Option -perRow must be only one of the following \"1 2 3 4 6 12\"  "] 	
+		}
+	}	
+
+
+	:method listViewInitVariables {  } {
 		set :pr_stmt ""
 		set :where_sql ""
 
-		if {[ns_queryexists ${:table}_page]} { set :page [ns_queryget ${:table}_page 1] }
-		if {[ns_queryexists ${:table}_perpage]} { set :perpage [ns_queryget ${:table}_perpage 10] }
-		set ${:table}_sort ${:sort}
-
-		#-extraUrlVars $extraUrlVars
 		set extraData ""
 
-	}	
+		set :currentColumn 1
+		set :row_data ""
+		set :page_data ""
+
+		set :originalSort ${:sort}
+		set :originalSortType  ${:sort_type}
+
+	}
 
 	:method processExternalData {} {
 
@@ -48,7 +76,7 @@ nx::Class create ListView -superclass [list bhtml] {
 			foreach {k v} ${:externalData} { set :$k $v }
 			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} ${:sql_size}
 			set :size $size
-			if {$size == 0} { return -level 2 [my htmltag div [msgcat::mc  "No data has been found, try adding something!" ]] }	
+			if {$size == 0} { return -level 2 [: alert  [msgcat::mc  "No data has been found, try adding something!" ]] }	
 
 			lappend :searchOptions -selectSql [list ${:sql_select}  ${:pr_stmt}]
 		}
@@ -81,9 +109,11 @@ nx::Class create ListView -superclass [list bhtml] {
 			if {$size == 0} { return -level 2 [my htmltag div [msgcat::mc  "No data has been found, try adding something!" ]] }	
 			set :size $size
 		}
-
 	}
+
 	:method listViewSearch {  } {
+		set col [expr {12/${:perRow}}]
+
 		lappend :searchOptions -offset [expr {${:perpage}*(${:page}-1)}] -limit ${:perpage} -order ${:sort} -orderType ${:sort_type} 
 
 		set data [${:model} search {*}[concat ${:searchOptions}] ${:toSelect} ]
@@ -95,14 +125,33 @@ nx::Class create ListView -superclass [list bhtml] {
 			set method ""
 			foreach v $columns {
 				lappend method $v  $$v 
-				#	${:model} set $v [subst $$v] 
 			}
 			${:model} set  {*}[subst $method]
 			set bhtml ${:bhtml}
 			set model ${:model}
-			append :page_data  [ns_adp_parse   -file ${:view}.adp     {*}$method]
-			#append :page_data  [ns_adp_parse   -file ${:view}.adp   bhtml $bhtml model ${:model}  {*}$method]
+			
+			#Per Row Separation
+			append :row_data  [ns_adp_parse   -file ${:view}.adp     {*}$method]
+			if {[expr {${:currentColumn} % ${:perRow}}] == 0} {
+				append :page_data [${:bhtml} tag -htmlOptions [list class row] div ${:row_data}] 
+				set :row_data ""
+			}
+
+			incr :currentColumn
 		}
+
+		#Row_data may still contain data at the end of processing, put it in a div with a row class
+		if {${:row_data} != ""} {
+			append :page_data [${:bhtml} tag -htmlOptions [list class row] div ${:row_data}] 
+		}
+	}
+
+
+	:method listViewPerRow {} {
+		:upvar method method
+
+
+	
 	}
 
 	:method generateListViewWithPagination {  } {
@@ -128,14 +177,29 @@ nx::Class create ListView -superclass [list bhtml] {
 	}
 
 	:public method getListView {args} {
-		:processExternalData
+		set forcache "${:toSelect} ${:view} ${:perpage} ${:page} ${:sort} ${:sort_type} " 
+		append forcache "${:perRow} ${:extraUrlVars} ${:externalData} ${:showTopPagination}   ${:searchOptions}"
+		ns_parseargs {{-key ""} time}	${:cache}
+		if {$key == ""} { 
+			set key [ns_sha1  $forcache]
+		}
+		#	puts "Evaluating cache with key $key"
+		#	#TODO key based on website domain?
+		# TODO Caching system saved in files,naviserver and redis
+		set cache [ns_cache_eval -timeout 5 -expires $time lostmvc ListView.$key  { 
+			:processExternalData
 
-		:listViewGetFromDatabase
+			:listViewGetFromDatabase
 
-		:pageVerifications	
+			:pageVerifications	
 
-		:listViewSearch
-		return [:generateListViewWithPagination]
+			:listViewSearch
+			return [dict create data [:generateListViewWithPagination] bhtml [${:bhtml} getCacheData]   ]
+		}]
+		
+		${:bhtml} setDataFromCache [dict get $cache bhtml]
+		return [dict get $cache data]
+
 	}
 	
 }
