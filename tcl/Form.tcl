@@ -62,7 +62,7 @@ nx::Class create Form {
 	
 	#	validate type between input textarea ckedior
 	#regexp {^(input|textarea|ckeditor)$}
-	:public method input {{-fa ""} {-type "input"} {-size ""} {-options ""} --  name  {tags ""}} {
+	:public method input {{-fa ""} {-type "input"} {-size ""} {-options ""} {-multiple:boolean false} --  name  {tags ""}} {
 	
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
@@ -72,11 +72,13 @@ nx::Class create Form {
 			set input [${:bhtml} $type -placeholder $itemname -id $id  $id   $data]	
 		} elseif {$type  =="select2"} {
 			set input [${:bhtml} select2 -placeholder $itemname -id $id -options $options  $id   $data $tags]	
+		} elseif {$type  =="fileinput"} {
+			set input [${:bhtml} fileinput -placeholder $itemname -id $id  -options $options -multiple $multiple $id   $data ]	
 		} else {
 			if {$fa != ""} {
 				set input [${:bhtml} button -fa $fa -type $type -placeholder $itemname -id $id -name $id $data]
 			} else {
-				set input [${:bhtml} input -type $type -placeholder $itemname -id $id $id $data]
+				set input [${:bhtml} input -htmlOptions $options -type $type -placeholder $itemname -id $id $id $data]
 			}
 		}
 		
@@ -87,6 +89,17 @@ nx::Class create Form {
 		if {$size != ""} {
 			set input [${:bhtml} htmltag -htmlOptions [list class "$size"] div $input ]	
 		}
+		append :${:form} $input
+	}
+
+
+	:public method  slider {{-sliderid "allslider"} {-min 0} {-max 100 }  {-step 1} --  name {value 0} {secondval ""}} {
+		set itemname [${:model} getAlias $name]
+		set id [${:model} classKey $name]
+		set data [my getData $name $id]
+		if {$value == 0} { set value $data }
+
+		set input [${:bhtml} slider  -sliderid $sliderid -min $min -max $max -step $step $name $value $secondval]
 		append :${:form} $input
 	}
 
@@ -130,13 +143,13 @@ nx::Class create Form {
 		append :${:form} $toggle
 	}
 
-	:public method submit {{-fa ""}  -- text {type xsubmit} {class "" }}  {
+	:public method submit {{-fa ""} {-btnType primary}  -- text {type xsubmit} {class "" }}  {
 
 		#NOD.js has problems if the name is submit, so renamed to xsubmit
 		if {$fa == ""} {
-			set input [${:bhtml} input  -class [list btn btn-primary {*}$class ]  -type submit $type $text]
+			set input [${:bhtml} input  -class [list btn btn-$btnType {*}$class ]  -type submit $type $text]
 		} else {
-			set input [${:bhtml} button -fa $fa -class [list btn btn-primary {*}$class ]  -type submit -name $type $text]
+			set input [${:bhtml} button -fa $fa -class [list btn btn-$btnType {*}$class ]  -type submit -name $type $text]
 		}
 			if {${:formType} == "horizontal" } { 
 				set input [${:bhtml} htmltag -htmlOptions [list "class" "col-sm-offset-${:labelSize} col-sm-${:inputSize}"] div $input ]	
@@ -169,6 +182,10 @@ nx::Class create Form {
 		append :${:form} [${:bhtml} label -class $class -for [${:model} classKey $name]  "$fa [${:model} getAlias $name] $req"]
 	}
 
+	:public method getDataForName {name} {
+		set id [${:model} classKey $name]
+		return [:getData $name $id ]
+	}
 	:public method getData { name id} {
 		if {![${:model} loaddata]} { return  "" }
 		#If query exists.. get info.. otherwise set model data
