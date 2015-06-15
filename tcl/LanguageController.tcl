@@ -52,8 +52,19 @@ nx::Class create LanguageController {
 		ns_session put urlLang $lang
 		set :lang $lang
 
+		set module [:getModule] 
+	
+	#Cache language evaluation for 360 seconds
+#	ns_cache_eval -expires 360 lostmvc lang.$lang.$module {
 		msgcat::mcload [ns_pagepath]/lang
 		#ns_session put urlLang [set :lang [set :urlLang $lang]]
+		msgcat::mcload [ns_pagepath]/modules/$module/lang/ 
+#	}
+
+		set moduleLangFile [ns_pagepath]/modules/$module/lang/$lang.$module.msg 
+		if {[file exists $moduleLangFile]} {
+		#	source $moduleLangFile 
+		}
 	}
 
 	:method forceMultiLingual {} {
