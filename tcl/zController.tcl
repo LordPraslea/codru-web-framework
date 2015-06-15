@@ -6,7 +6,7 @@
 #
 # This program is distributed according to GPL 3 license <http://www.gnu.org/licenses/>.
 #
-nx::Class create Controller -mixin [list LanguageController] -superclass [list AuthorizationRbac] {
+nx::Class create Controller -mixin [list LanguageController ImageGalleryController] -superclass [list AuthorizationRbac] {
 #TODO save controller name in variable?
 	:variable currentController 
 	:variable layout
@@ -166,8 +166,8 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 		set urlv [ns_conn urlv]
 		set _urlLang [string tolower [lindex $urlv 0]]
 
-		#Get current action
-		if {[string length $_urlLang] == 2} {
+		#Get current action, based on locale (en or en_US)
+		if {[string length $_urlLang] == 2 || [string length $_urlLang] == 5} {
 			set action [string tolower [lindex $urlv 2]]
 			set controller	[string totitle [lindex $urlv 1]]
 		} else { 
@@ -390,7 +390,7 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 		}
 
 		return $link	
-	}
+	} 
 
    #//Admin role example!
    if {0} {
@@ -513,6 +513,62 @@ nx::Class create Controller -mixin [list LanguageController] -superclass [list A
 		close $file
 		return $template_data
 	}
-	
+
+	#############
+	#LoadModel Subfunctions!
+	#############
+
+	:method loadModelEmptyId {} {
+	   foreach refVar {id returnFunction model} { :upvar $refVar $refVar }
+
+		if {$id == ""} { 
+			set id [ns_queryget [$model classKey id]]
+			if {$id == ""} { 
+				set msg		[msgcat::mc "Please specify a valid id."]
+				$returnFunction $msg
+				return -level 2 0
+			}
+		}
+	}
+
+	:method loadModelIsDouble {} {
+	   foreach refVar {returnFunction id} { :upvar $refVar $refVar }
+
+		if {![string is double $id]} {   
+			set msg [msgcat::mc "Tried to search for id %s but just couldn't find it!" $id]
+			$returnFunction $msg
+			return -level 2  0
+		}
+	}
+
+	:method loadModelValidateId	{} {
+	   foreach refVar {model returnFunction} { :upvar $refVar $refVar }
+
+		if {[set validation [$model validate id]] != 0} { 
+			set msg [msgcat::mc "Not validating, sorry! %s" $validation]
+			$returnFunction $msg
+			return -level 2 0 
+		}
+	}
+	:method loadModelFindByPk {} {
+	   foreach refVar {model returnFunction id} { :upvar $refVar $refVar }
+
+		if {[$model findByPk -relations 1 $id] == 0} {
+			set msg [msgcat::mc "Tried to search for id %s but just couldn't find it!" $id]
+			$returnFunction $msg
+			return -level 2 0
+		} else {  	return -level 2 $model; }
+	}
+
+	:method returnNotFound {msg} {
+		:notFound <br>$msg
+	}
+
+	:method returnAjaxNotFound {msg} {
+		dict set response error $msg
+		ns_puts [tcl2json $response]
+	}
+
+
 }
 	
