@@ -1,6 +1,7 @@
 nx::Class create GridView -superclass [list bhtml] {
 
 	:property bhtml:required,object,type=bhtml
+
 #TODO OPTIONS CAN BE GIVEN INTO A DICT?
 #TODO very important: VERIFY DATA AND DON'T GIVE IT TO DB IF NOT CORRECT
 #Give DICT with settings for each column..
@@ -46,13 +47,13 @@ nx::Class create GridView -superclass [list bhtml] {
 
 	:method init {} {
 		set :table [${:model} getTable]
-		:queryInfo
 
 		#Give this model a bhtml object reference..
 		#so we don't generate 100 bhtml objects for grids where we need them
 		${:model} bhtml ${:bhtml}
-
-		set originalSort ${:sort}
+		set :originalSort ${:sort}
+		
+		:queryInfo
 	}
 
 	:method queryInfo {} {
@@ -81,9 +82,14 @@ nx::Class create GridView -superclass [list bhtml] {
 			set key [ns_sha1  $forcache]
 		}
 		#	puts "Evaluating cache with key $key"
-		return	[ns_cache_eval -timeout 5 -expires $time lostmvc $key  { 
+		# TODO cache based on website domain name>?
+		# TODO Caching system saved in files,naviserver and redis
+		set cache	[ns_cache_eval -timeout 5 -expires $time lostmvc GridView.$key  { 
 			:gridView
 		}]
+
+		${:bhtml} setDataFromCache [dict get $cache bhtml]
+		return [dict get $cache data]
 	}
 
 	:public method gridView {} {
@@ -96,7 +102,8 @@ nx::Class create GridView -superclass [list bhtml] {
 
 		:processColumns
 		:gridSorting
-		return	[:generateGridViewWithPagination]	
+
+		return [dict create data [:generateGridViewWithPagination] bhtml [${:bhtml} getCacheData]   ]
 	}
 
 	#External data means you use a dictionary or function like the following:
