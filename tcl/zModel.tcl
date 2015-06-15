@@ -185,10 +185,11 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 	#then just put those for that scenario!
 	#futile to get them all.. just for "the fun of it"
 	#exclude unsafe anyway
-	#Gets all variables for defined scenario..
-	:public method getQueryAttributes {{method POST}} {
+	#Gets all variables for defined scenario..&
+	#form variable is a special case when we use the spooler (and transfer multiple files..)
+	:public method getQueryAttributes {{method POST} {form ""}} {
 		set returnattributes ""
-		if {[ns_conn method] == $method} {
+		if {[ns_getcontentmethod  $method]} {
 			set sc [my getScenario]
 			if {[dict exists ${:attributes} scenarios all safe]} {
 			  set all [dict get ${:attributes} scenarios all safe]
@@ -203,11 +204,19 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 			foreach {key n } $all_attributes {
 				##dict set attributes sqlcolumns last_name validation exact 
 				#Get all variables return the variables and also set the keys
-				set value [string trim [ns_queryget  [my classKey $key]]]
-
+				if {$form == "" && [ns_conn contentfile] == ""} {
+					set value [string trim [ns_queryget  [my classKey $key]]]
+				} else {
+					set value [string trim [ns_set iget $form [my classKey $key]]]
+				}
 				#querygetall for checkboxes..	
 				if {[dict exists ${:attributes} sqlcolumns $key checkbox]} {	
-					set value [string trim [ns_querygetall  [my classKey $key]]]
+
+					if {$form == "" && [ns_conn contentfile] == ""} {
+						set value [string trim [ns_querygetall  [my classKey $key]]]
+					} else {
+						set value [string trim [ns_getallform $form  [my classKey $key]]]
+					}
 				}
 					#Old remains from old version where we got every las one of the attributes..
 				if {[dict exists ${:attributes} sqlcolumns $key unsafe]} {		
@@ -293,7 +302,7 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 
 	:public method exists {name} {
 		# Verify if the name exists  otherwise if it's a relation or not
-		return [expr {[:existsColumn $name] ? 1 : [existsRelation $name]}]
+		return [expr {[:existsColumn $name] ? 1 : [:existsRelation $name]}]
 	}
 
 	:public method existsRelation {name} {
