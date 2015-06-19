@@ -44,9 +44,14 @@ set field longlogin
 
 $f submit [mc "Login"] xsubmit "btn-block btn-lg" 
 
-$f add <p\ class="text-center"><br>[$bhtml a [mc "Create a new account"] [my getUrl register]]\ <br>\ [$bhtml a [mc "Forgotten your password?"] [my getUrl reset]]</p>
 
-ns_puts [$f endForm  -horizontal 0 -action [my getUrl login] -method post -id users -class "col-sm-4"]
+set extraLinks {<p class="text-center"><br>} 
+append extraLinks [$bhtml a [mc "Create a new account"] [my getUrl -controller user register]] 	 {
+<br>}  [$bhtml a [mc "Forgotten your password?"] [my getUrl -controller user reset]] "</p>"
+
+$f add $extraLinks
+set loginform [$f endForm  -horizontal 0 -action [my getUrl -controller user login] -method post -id users ]
+ns_puts [$bhtml panel -h [mc "Log in"] -type primary -size "col-sm-5 col-md-5 col-lg-5" $loginform]
 $f destroy
 %>
 
