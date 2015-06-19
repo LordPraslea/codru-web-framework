@@ -29,7 +29,8 @@ proc defineLanguages {server} {
 proc includeFromPath {path} {
 #	puts "Include from path $path"
 	foreach file [glob -nocomplain -- $path] {
-	#	ns_adp_include $file
+		puts "Including with NOCACHE $file"
+		ns_adp_include -tcl -nocache $file
 #		puts "\tIncluded model $file"
 	}
 }
@@ -46,14 +47,16 @@ proc includeControllerFromPath {path {folder "" } {server ""}} {
 
 	#	ns_cache_eval -timeout 5 -expires 600 lostmvc Loader.Controller.Routes.$ct { }
 	
-			puts "Include  controller /$cn/ path $path (/modules)/$tail/controllers/$ct.adp  for server $server"
+		#	puts "Include  controller /$cn/ path $path (/modules)/$tail/controllers/$ct.adp  for server $server"
 			foreach method {GET POST DELETE} { 	
 				if {$tail != ""} {
 					set module [string tolower $tail]
 					foreach lang $languages {
 						ns_register_adp   $method /$lang/$cn/* modules/$tail/controllers/$ct.adp
+					#	ns_register_filter postauth $method  /$lang/$cn/*  developmentOrProduction
 					}
 					ns_register_adp   $method /$cn/* modules/$tail/controllers/$ct.adp
+					#ns_register_filter postauth $method  /$cn/*  developmentOrProduction
 				} else  {
 					foreach lang $languages {
 						ns_register_adp   $method /$lang/$cn/* controllers/$ct.adp
@@ -89,7 +92,7 @@ proc registerRoute {server route  location } {
 		ns_register_adp   $method $route $location	
 		foreach lang $languages {
 			ns_register_adp $method /$lang$route $location
-			puts "ns_register_adp $method /$lang$route $location "
+	#		puts "ns_register_adp $method /$lang$route $location "
 		}
 		#puts "ns_register_adp   $method $route $location	"
 	}
@@ -99,13 +102,14 @@ proc allConfigRoutes {} {
 #
 	foreach server [glob -type d [ns_server serverdir]/* ] {
 		set server_name $server/www
-		set file $server/www/tcl/config.tcl
+		set file $server/www/tcl/config.adp
 		if {![file exists $file]} { continue }
 		if {[info exists config]} { unset config }
-		set f [open $file r]
-		set config [read $f]
-		close $f
-		#source $file
+
+		set config [ns_adp_parse	-file  $file]
+		#set f [open $file r]
+		#set config [read $f]
+		#close $f
 		if {[dict exists $config routes]} {
 
 			puts "Exists Config: \n $config"
@@ -179,7 +183,7 @@ proc unknown {args} {
 		#	puts "Loading $cmdName new"
 			return [$cmdName new]
 		} else {
-			error "No such file?"
+			error "\[$cmdName $new\] No such file?"
 		}
 	}	else {
 		tailcall  original_unknown {*}$args
@@ -214,12 +218,46 @@ proc loadControllerOrModel {name} {
 	foreach folder {controllers models modules} {
 		set file [fileutil::findByPattern $server/$folder $name.tcl]
 		if {$file ne "" } {
-			ns_adp_include -tcl -cache 10   $file
+			ns_adp_include -tcl -cache 100   $file
+			source   $file
 			return 1
 		}
 	}
 	return 0
 
+}
+
+#If in development mode, always reload controllers,models
+#TODO maybe later do a reload of functions!
+#
+
+proc developmentOrProduction {args} {
+	set config [ns_cache_get lostmvc config.[getConfigName]]
+	if {[dict exists $config   mode]} {
+		set mode [dict get $config mode]
+		if {[string match dev* $mode]} {
+			developmentFilesLoading
+		}
+	}
+	puts "Filter $args"
+	return filter_ok
+}
+
+proc developmentFilesLoading {} {
+	set server [ns_pagepath]
+
+	set modelpath  "$server/models/*.tcl"
+	includeFromPath $modelpath
+
+	set controllerpath "$server/controllers/*.adp"
+	includeControllerFromPath $controllerpath "" $server
+	set modulepath "$server/modules/*"
+	foreach folder [glob -nocomplain -type d -- $modulepath]  {
+		set modelpath $folder/models/*.tcl
+		set controllerpath $folder/controllers/*.tcl
+		includeFromPath $modelpath
+		includeFromPath $controllerpath
+	}
 }
 
 
@@ -233,7 +271,6 @@ proc loadControllerOrModel {name} {
    #TODO maybe tcl unknown can load this..?
 apply {{} {
 #	defineLanguages
-#
 #	set server [ns_pagepath];#For when loading tcl/init within each request	
 	puts "\n=-=-=-=-\n pagepath  [ns_pagepath] and adp_dir [ns_adp_dir] pagedir [ns_server pagedir] serverdir [ns_server serverdir]\n=-=-=-=-=\n"
 	#		set server [ns_server serverdir];#For at server startup loading
@@ -243,22 +280,23 @@ apply {{} {
 		if {[file tail $server]=="lostmvc"} { puts "No model, controller or modules loading for $server " ; continue }
 		#Loading all models..
 		set modelpath  "$server/models/*.tcl"
-		includeFromPath $modelpath
+	#	includeFromPath $modelpath
 
 		set controllerpath "$server/controllers/*.adp"
-		#puts "Controllerpath $controllerpath"
-		#
 		includeControllerFromPath $controllerpath "" $server
-	#	global modulepath
+		
 		set modulepath "$server/modules/*"
-		#	puts "Modules for server $server with modulepath $modulepath are: [glob -nocomplain -type d -- $modulepath]"
 		foreach folder [glob -nocomplain -type d -- $modulepath]  {
-			set modelpath $folder/models/*.tcl
+	#		set modelpath $folder/models/*.tcl
 			set controllerpath $folder/controllers/*.adp
-			includeFromPath $modelpath
+	#		includeFromPath $modelpath
 			includeControllerFromPath $controllerpath $folder $server
 
 		}
 
 	}
 }}
+
+
+
+
