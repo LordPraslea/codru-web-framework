@@ -1044,7 +1044,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	#nav-pills  nav-tabs
 	#nav-stacked  for pills.. put them under eachother
 	#nav-justified fill all place
-	:public	method nav {{-class ""}  {-tabs 1} {-active ""}  {-style ""} -- data} {
+	:public	method nav {{-class ""}  {-tabs 1} {-active ""}  {-style ""} {-group 0}  -- data} {
 		set htmlOptions { class nav}
 		#if tabs = 1 using tabs if 0 using pills
 		dict lappend htmlOptions class [expr {$tabs ? "nav-tabs" : "nav-pills"}  ]
@@ -1055,8 +1055,9 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		if {$style != ""} {
 			dict set htmlOptions style $style
 		}
-
-		return [my makeList -activeli $active -htmlOptions $htmlOptions $data]
+	#	set function makeList
+	#	if {$makeGroup} { set function makeList }
+		return [my makeList -group $group -activeli $active -htmlOptions  $htmlOptions $data]
 	}
 
 
@@ -1630,6 +1631,32 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 
 		return $stars
 	}
+
+	##########################################
+	# Step Builder
+	#
+	##########################################
+	:public method stepBuilder {{-active 1} steps} {
+		set count 1
+		foreach {fa step link} $steps  {
+			set act 0
+			if {$active == $count} {
+				set act 1
+				append currentStep "-active 1 "
+			}
+			set text [concat  <h3 class="list-group-item-heading"> [:fa $fa] [mc "Step %s" $count] </h3>  <p class="list-group-item-text"> $step </p> ]
+
+			lappend data [list -active $act -url 1  $text "$link"]
+			incr count
+		}
+		#lappend data [list -active 1 -url 1  $step(1) "#" ]  [list  -url 1 $step(2) "#" ]  [list  -url 1  $step(3) "#"]
+
+		return   [:nav -group 0 -tabs 0 -class "nav-justified thumbnail" $data ]
+	}
+	
+
+
+
 }
 
 
