@@ -106,7 +106,9 @@ nx::Class create ListView -superclass [list bhtml] {
 			}
 
 			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} "SELECT count(*) as size FROM ${:table}  ${:where_sql};"
-			if {$size == 0} { return -level 2 [my htmltag div [msgcat::mc  "No data has been found, try adding something!" ]] }	
+			if {$size == 0} {
+				return -level 2 	[dict create data [:tag div [msgcat::mc "No data has been found, try adding something!"]]  bhtml [${:bhtml} getCacheData]] 
+			}	
 			set :size $size
 		}
 	}
@@ -118,7 +120,9 @@ nx::Class create ListView -superclass [list bhtml] {
 
 		set data [${:model} search {*}[concat ${:searchOptions}] ${:toSelect} ]
 
-		if {$data == ""} { return -level 2 [mc "No data has been found, try adding something!"]}
+		if {$data == ""} {
+			return -level 2 	[dict create data [:tag div [msgcat::mc "No data has been found, try adding something!"]]  bhtml [${:bhtml} getCacheData]] 
+		}
 
 		set columns [dict get $data columns]
 		foreach	$columns [dict get $data values]   {

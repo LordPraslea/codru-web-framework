@@ -142,7 +142,9 @@ nx::Class create GridView -superclass [list bhtml] {
 	}
 
 	:method pageCalculation {} {
-		if {${:size} == 0} { return -level 2 [:tag div [msgcat::mc "There is no data available"]] }	
+		if {${:size} == 0} { 
+			return -level 2	[dict create data [:tag div [msgcat::mc "There is no data available"]]  bhtml [${:bhtml} getCacheData]] 
+		}
 
 		#some verifications
 		if {${:sort_type} != "asc" && ${:sort_type} != "desc"} {set :sort_type ${:defSort} }	
@@ -163,7 +165,9 @@ nx::Class create GridView -superclass [list bhtml] {
 	#set other_get_opts "&{table}_sort=${:sort}&${:table}_page=$page&${:table}_perpage=$perpage&sort=${sort_type}"
 		set :data [${:model} search {*}[concat ${:searchOptions}] ${:toSelect} ]
 		#puts "GridView searchdata ${:data}"
-		if {${:data} == ""} { return -level 2 [mc "No data has been found, try adding something!"]}
+		if {${:data} == ""} { 
+			return -level 2 	[dict create data [:tag div [msgcat::mc "No data has been found, try adding something!"]]  bhtml [${:bhtml} getCacheData]] 
+		}
 
 		#Add an extra column to the data to editeverything..
 		set :columnsize [llength [dict get ${:data} columns]]
