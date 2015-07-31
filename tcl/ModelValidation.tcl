@@ -138,6 +138,11 @@ nx::Class create ModelValidation {
 		if {![string is double $value]} { return [msgcat::mc "%s must be a number" ${:column_name}] } 
 	}
 
+	#Usefull for telephone numbers
+	:method digit {extra column value} {
+		if {![string is digit $value]} { return [msgcat::mc "%s must be a number" ${:column_name}] } 
+	}
+
 	:method min-num {extra column value} {
 		if {$value < ${:rule} } { return [msgcat::mc {%1$s must be bigger than %2$s} ${:column_name} ${:rule}] }
 	}
@@ -169,7 +174,9 @@ nx::Class create ModelValidation {
 		#Verify if the column is unique
 		if { [my getScenario] ni [dict get $extra on] } { return 0 }
 		set column_name [my getAlias $column]
-		if {[my findByCond -save 0 [list $column $value] ]} {
+		set criteria [SQLCriteria new -model [self]]
+		$criteria add $column $value
+		if {[my findByCond -save 0 $criteria ]} {
 			return [msgcat::mc 	{%1$s must be unique. There already exists someone who uses %2$s}	 ${:column_name} $value] 
 		
 		}
