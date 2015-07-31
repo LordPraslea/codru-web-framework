@@ -187,7 +187,7 @@ nx::Class create UserController -superclass Controller {
 	:method verifyActivationCode {  } {
 		:upvar model model
 		set code [ns_queryget code]
-		set criteria [SQLCriteria new -model [self]]
+		set criteria [SQLCriteria new -model $model]
 		$criteria add activation_code $code
 		if {![$model findByCond -save 1  $criteria ]} {
 			set jumbotron [$bhtml jumbotron [msgcat::mc  "Activation code incorrect."]  [msgcat::mc "No such activation code seems to exist"]]
