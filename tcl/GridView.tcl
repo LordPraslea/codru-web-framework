@@ -13,6 +13,8 @@ nx::Class create GridView -superclass [list bhtml] {
 	:property {toSelect *} 
 	:property {class ""}   
 	:property {perpage 10} 
+	:property {maxPerPage 100}
+
 	:property {page 1} 
 	:property {sort id} 
 	:property {defSort asc} 
@@ -123,16 +125,23 @@ nx::Class create GridView -superclass [list bhtml] {
 			set pr_stmt ""
 			set where_sql ""
 			set where_loc [lsearch ${:searchOptions} -criteria]
+			set from  ${:table} 
 
 			if {$where_loc != -1} {
 				set criteria [lindex ${:searchOptions} $where_loc+1]
+				set relations [SQLRelations new -model ${:model} -criteria $criteria  -statistics 1]
+				$relations computeRelations * 
 				append where_sql "WHERE "  [$criteria getCriteriaSQL]
 				set pr_stmt [dict merge $pr_stmt [$criteria getPreparedStatements]]
+
+				append from [$relations getFrom]
 		}
 			#SELECT count(*)
 			#	FROM information_schema.columns
 			#	WHERE table_name = '<table_name>'
-			dbi_1row  -db [${:model} db get ] -bind $pr_stmt "SELECT count(*) as size FROM ${:table}  $where_sql;"
+	
+
+			dbi_1row  -db [${:model} db get ] -bind $pr_stmt "SELECT count(*) as size FROM ${from}  $where_sql;"
 			set :size $size
 		}
 
@@ -143,7 +152,7 @@ nx::Class create GridView -superclass [list bhtml] {
 
 	:method pageCalculation {} {
 		if {${:size} == 0} { 
-			return -level 2	[dict create data [:tag div [msgcat::mc "There is no data available"]]  bhtml [${:bhtml} getCacheData]] 
+			return -level 2	[dict create data [:alert -type info [msgcat::mc "There is no data available"]]  bhtml [${:bhtml} getCacheData]] 
 		}
 
 		#some verifications
@@ -152,7 +161,7 @@ nx::Class create GridView -superclass [list bhtml] {
 		if {![string is integer ${:perpage}]} { set :perpage 10 }
 		if {![string is integer ${:page}]} { set :page 1 }
 		if {${:perpage} < 5} { set :perpage 5 }
-		if {${:perpage} > 100} { set :perpage 100 }
+		if {${:perpage} > ${:maxPerPage}} { set :perpage ${:maxPerPage} }
 		set :lastpage [expr {int(ceil(double(${:size})/${:perpage}))}]
 
 		#Verify if page isn't outside our borders
@@ -166,7 +175,7 @@ nx::Class create GridView -superclass [list bhtml] {
 		set :data [${:model} search {*}[concat ${:searchOptions}] ${:toSelect} ]
 		#puts "GridView searchdata ${:data}"
 		if {${:data} == ""} { 
-			return -level 2 	[dict create data [:tag div [msgcat::mc "No data has been found, try adding something!"]]  bhtml [${:bhtml} getCacheData]] 
+			return -level 2 	[dict create data [:alert -type info [msgcat::mc "No data has been found, try adding something!"]]  bhtml [${:bhtml} getCacheData]] 
 		}
 
 		#Add an extra column to the data to editeverything..
@@ -321,7 +330,7 @@ nx::Class create GridView -superclass [list bhtml] {
 		if {${:rowId}} {
 		#	set :mydata  ${:mydata}  ]
 		}
-		set :tablehtml [${:bhtml} table -class col-md-12 -bordered 1 -striped 1 -hover 1  -rpr ${:rowId}   ${:tablehead}   ${:mydata} ]
+		set :tablehtml [${:bhtml} table -class "" -bordered 1 -striped 1 -hover 1  -rpr ${:rowId}   ${:tablehead}   ${:mydata} ]
 		
 		set pagination [Pagination new -size ${:size} -extraUrlVars ${:extraUrlVars} -page ${:page} \
 			-table ${:table} -lastpage ${:lastpage} -perpage ${:perpage} -sort ${:sort} -sort_type ${:sort_type}]	
