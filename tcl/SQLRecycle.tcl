@@ -39,7 +39,7 @@ nx::Class create SQLRecycle -mixin [list SQLCommands]  {
 		set where_sql [$deleteCriteria getCriteriaSQL]
 		set pr_stmt [$deleteCriteria getPreparedStatements]
 
-		set sql "DELETE FROM $table WHERE $where_sql"
+		set sql "DELETE FROM ${:schema}.$table WHERE $where_sql"
 		set status [dbi_dml -db ${:db} -bind $pr_stmt $sql]
 		return $status
 	}

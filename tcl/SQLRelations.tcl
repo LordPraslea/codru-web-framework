@@ -14,9 +14,11 @@ nx::Class create SQLRelations {
 	:property model:object,type=Model
 	:property criteria:object,type=SQLCriteria 
 	:property select
-
+	:property {statistics 0}
 
 	:property {statementCount 0}
+
+	:variable schema public
 
 	:method init {} {
 		if {[info exists :select]} {
@@ -25,6 +27,8 @@ nx::Class create SQLRelations {
 		 if {![info exists :table]} {
 		 	set :table [${:model} getTable ]
 		 }
+
+		 set :schema [${:model} schema get]
 	}
 
 	:public method getToSelect {} {
@@ -107,14 +111,16 @@ nx::Class create SQLRelations {
 		:computeForeignKeyValue $ts
 
 		#Experiment to use subselects so we return:)
-		return  
 		#An extra verification to be sure we don't include the same table 2 times if it #has relationships to itself 
-		if {[lsearch $from $fk_table ] == -1}	{
-			if {$fk_table != ${:table}} {
-				append from " , $fk_table"
+		if {${:statistics} && 0} {
+			if {[lsearch $from $fk_table ] == -1}	{
+				if {$fk_table != ${:table}} {
+					append from " , ${:schema}.$fk_table"
+				}
 			}
 		}
 
+		return  
 		${:criteria} addRelation -table ${:table} -fk_table $fk_table  $column $fk_column 
 
 		#TODO select from current table and also from many_table like form fk_extra
@@ -173,14 +179,14 @@ nx::Class create SQLRelations {
 
 		if {[info exists many_table]} {
 			lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_col_value}
-			FROM $fk_table,$many_table
+			FROM ${:schema}.$fk_table,${:schema}.$many_table
 			WHERE $sqlcriteria) as ok) as $ts"
 			
 			#WHERE $many_table.$many_column = ${:table}.$column
 			#AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts
 
 		} else {
-			lappend newSelect "(SELECT $fk_col_value FROM $fk_table WHERE  $sqlcriteria) as $ts"	
+			lappend newSelect "(SELECT $fk_col_value FROM ${:schema}.$fk_table WHERE  $sqlcriteria) as $ts"	
 		}
 	}
 
