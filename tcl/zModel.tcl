@@ -10,8 +10,10 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 
 	:property {newRecord 1} ;#Used when inserting/saving..
 	:property {database ""}
+	:property {debug 0}
 
 	:variable -accessor public db 
+	:variable -accessor public schema public
 	:variable scenario insert
 
 	:variable sqlstats 
@@ -23,14 +25,31 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 
 	:method init {} {
 		#Get Default database 
+		ns_cache_get lostmvc config.[getConfigName] config
+
+		
 		if {${:database} == ""} {
-			if {[ns_cache_get lostmvc config.[getConfigName] config]} {
+			if {[info exists config]} {
 			#	puts "Config is $config"
 				set :db [dict get $config database]	
 			} else { set :db [dbi_ctl default]  }
 		} else {
 			set :db ${:database}
 		}
+
+		if {[info exists config]} {
+			if {[dict exists $config schema ]} {
+				set :schema [dict get $config schema] 
+			}
+
+			if {[dict exists $config mode ]} {
+					
+				if {[set mode [dict get $config mode]] == "debug"} {
+					set :debug 1
+				}
+			}
+		}
+
 		:genScenarios
 	}
 
