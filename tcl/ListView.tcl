@@ -7,6 +7,7 @@
 nx::Class create ListView -superclass [list bhtml] {
 	:property bhtml:object,type=bhtml
 	:property {perpage 10}
+	:property {maxPerPage 50}
 	:property {page 1}
 	:property {sort id}
 	:property {sort_type asc}
@@ -76,7 +77,7 @@ nx::Class create ListView -superclass [list bhtml] {
 			foreach {k v} ${:externalData} { set :$k $v }
 			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} ${:sql_size}
 			set :size $size
-			if {$size == 0} { return -level 2 [: alert  [msgcat::mc  "No data has been found, try adding something!" ]] }	
+			if {$size == 0} { return -level 2 [:alert -type info [msgcat::mc  "No data has been found, try adding something!" ]] }	
 
 			lappend :searchOptions -selectSql [list ${:sql_select}  ${:pr_stmt}]
 		}
@@ -87,7 +88,7 @@ nx::Class create ListView -superclass [list bhtml] {
 		if {![string is integer ${:perpage}]} { set :perpage 10 }
 		if {![string is integer ${:page}]} { set :page 1 }
 		if {${:perpage} < 1} { set :perpage 1 }
-		if {${:perpage} > 100} { set :perpage 100 }
+		if {${:perpage} > ${:maxPerPage}} { set :perpage ${:maxPerPage} }
 		set :lastpage [expr {int(ceil(double(${:size})/${:perpage}))}]
 		#Verify if page isn't outside our borders
 		if {${:page} < 1} { set :page 1 } elseif {${:page} > ${:lastpage} } { set :page ${:lastpage} }
@@ -104,10 +105,9 @@ nx::Class create ListView -superclass [list bhtml] {
 				append :where_sql "WHERE "  [$criteria getCriteriaSQL]
 				set :pr_stmt [dict merge ${:pr_stmt} [$criteria getPreparedStatements ]]
 			}
-
 			dbi_1row  -db [${:model} db get ] -bind ${:pr_stmt} "SELECT count(*) as size FROM ${:table}  ${:where_sql};"
 			if {$size == 0} {
-				return -level 2 	[dict create data [:tag div [msgcat::mc "No data has been found, try adding something!"]]  bhtml [${:bhtml} getCacheData]] 
+				return -level 2 	[dict create data [:alert -type info [msgcat::mc "No data has been found, try adding something!"]]  bhtml [${:bhtml} getCacheData]] 
 			}	
 			set :size $size
 		}
@@ -182,7 +182,18 @@ nx::Class create ListView -superclass [list bhtml] {
 
 	:public method getListView {args} {
 		set forcache "${:toSelect} ${:view} ${:perpage} ${:page} ${:sort} ${:sort_type} " 
-		append forcache "${:perRow} ${:extraUrlVars} ${:externalData} ${:showTopPagination}   ${:searchOptions}"
+
+		append forcache "${:perRow} ${:extraUrlVars} ${:externalData} ${:showTopPagination} "
+		
+		set where_loc [lsearch ${:searchOptions} -criteria]
+		if {$where_loc != -1} {
+			set criteria [lindex ${:searchOptions} $where_loc+1]
+			set cache_where  [$criteria getCriteriaSQL]
+			set cache_pr_stmt [$criteria getPreparedStatements ]
+			append forcache " [$criteria getCriteriaSQL] [$criteria getPreparedStatements ] "
+		}
+		
+		puts "Forcache is $forcache"
 		ns_parseargs {{-key ""} time}	${:cache}
 		if {$key == ""} { 
 			set key [ns_sha1  $forcache]
