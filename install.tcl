@@ -300,34 +300,38 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 	if {[file exists $domainFolder ]}  { puts "The $domain domain already exists. Try using update $domain " ; exit}
 		if {$username == ""} {
 			set username $domain
-			adduser $username
+			exec >&@stdout	adduser $username
 			#passwd $username
 		 	exec >&@stdout sudo	echo -e "$password\n$password\n" | passwd $username
 		}
 		exec >&@stdout sudo mkdir -p $domainFolder/www
-		exec >&@stdout sudo chown -R $username:$nsuser $dolainFolder
+
+		exec >&@stdout sudo chown -R $username:$nsuser $domainFolder
 		#710 is better since it gives owner full power, group execute and the rest NOTHING.. so 
 		#no one can access things
 		#Running generator.adp you have to set permissions 770 temporarily till it writes data
 		#then set it to 710 or 750 again
-		exec >&@stdout sudo chmod -R 750 $domainFolder
 
 		#Install Database
 	
 		#SWITCH BETWEEN BIND AND LOCAL HOSTS!
 		#Add domain to hosts
-		sudo echo "127.0.0.1 $username" > /etc/hosts
+		exec >&@stdout  echo "127.0.0.1 $domain"  | sudo tee --append /etc/hosts
 		#TODO add domain to BIND!
+		:copyDomainData $domainFolder
+
+		exec >&@stdout sudo chown -R $username:$nsuser $domainFolder
+		exec >&@stdout sudo chmod -R 750 $domainFolder
 
 	}
-	:object method copyDomainData {} {
+	:object method copyDomainData {domain} {
 		foreach {folder} {img js css fonts lang} {
-			file copy lostmvc/$folder $domain/www/$folder
+			file copy [pwd]/$folder $domain/www/$folder
 			#	file attributes $domain/www/$folder -group www-data 
 			puts "Copied $folder/ folder.. to $domain/$folder"
 		}
 
-		foreach folder {modules controllers models views sessions} {
+		foreach folder {modules controllers models views sessions templates tcl} {
 			file mkdir $domain/www/$folder
 			puts "Creating $domain/$folder folder "
 		}
@@ -335,15 +339,17 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 		#Copy Important Views
 		set folder views
 		foreach file {column2.adp layout.adp generator_layout.adp} {
-			file copy lostmvc/$folder/$file $domain/www/$folder/$file
+			file copy [pwd]/$folder/$file $domain/www/$folder/$file
 			#	file attributes $domain/www/$folder/$file -group www-data 
 		}
 		puts "Finished copying important Views"
-		file copy lostmvc/index.adp $domain/www/	
+		file copy [pwd]/index.adp $domain/www/	
+
+		file copy [pwd]/tcl/config.adp $domain/www/tcl/config.adp
 
 		foreach module {system rbac} {
 			set folder modules/$module
-			file copy $folder $domain/www/$folder
+			file copy [pwd]/$folder $domain/www/$folder
 
 			#	file attributes $domain/www/$folder -group www-data 
 			puts "Finished copying $module Module"
