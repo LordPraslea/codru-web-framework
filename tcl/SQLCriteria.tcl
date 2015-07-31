@@ -51,7 +51,7 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 	:method default { -cond  -op  -includeTable column {value ""}} {
 		if {$value == ""} {
 			if {[info exists :model]} {
-				set value [$model get $column] 
+				set value [${:model} get $column] 
 			}
 		}  
 		set condition [:getCondition $cond]
@@ -107,8 +107,8 @@ nx::Class create SQLCriteria -mixin [list SQLCommands] {
 		set condition [:getCondition AND]
 
 		foreach {between_start between_end} $value { }
-		set between_start_statement [:genStatement -type numeric $column $value]
-		set between_end_statement [:genStatement -type numeric $column $value]
+		set between_start_statement [:genStatement -type numeric $column $between_start]
+		set between_end_statement [:genStatement -type numeric $column $between_end]
 		append :where_sql "$condition ${:table}.$column BETWEEN :$between_start_statement AND :$between_end_statement "
 	}
 
