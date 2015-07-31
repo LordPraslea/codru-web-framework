@@ -116,7 +116,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 			set link [ns_set get $n Referer]
 		} else { set link [ns_conn location] }
 		set goback [$bhtml link -simple 1 "[$bhtml fa fa-arrow-circle-left fa-2x] Or you can also go back from where you came from?" $link]
-				set rnd [rnd 1 6]	
+				set rnd [rnd 1 5]	
 			set hamster [$bhtml img /img/404/hamster404_${rnd}.jpg]
 
 		set jumbotron [$bhtml jumbotron [msgcat::mc t:404notfound] "$hamster [msgcat::mc p:404notfound  [concat $extra <p> $goback </p>]]"] 
@@ -150,7 +150,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 
 
 
-	:method loadConfigFile {} {
+	:public method loadConfigFile {} {
 		set config	[ns_cache_eval -timeout 5 -expires 100 lostmvc config.[getConfigName]  { 
 			ns_adp_parse	-file  [ns_pagepath]/tcl/config.adp 
 			return $config
@@ -161,7 +161,6 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 	# urlaction provides the functionality to redirect the url
 	# to an action within the object of the controller.
 	:public	method urlAction { } {
-
 		set url [ns_conn url]
 		set urlv [ns_conn urlv]
 		set _urlLang [string tolower [lindex $urlv 0]]
@@ -228,14 +227,14 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 			return ""
 		}
 	}
-
 	
 	:public	method getUrlAction {} {
-		#First is first is controller/view/action1/action2/action3/....
-		#We have "different" actions 
-		set url [ns_conn url]
-
-		set actions  [ns_urldecode [lrange [join [split $url /]] 2 end]]
+		set url [ns_conn urlv]
+		set index 2
+		if {[string length ${:urlLang}] in "2 5"} {
+			incr index
+		}
+		set actions  [ns_urldecode [lrange $url $index end]]
 		return $actions
 	}
 
@@ -555,6 +554,16 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 
 		if {[$model findByPk -relations 1 $id] == 0} {
 			set msg [msgcat::mc "Tried to search for id %s but just couldn't find it!" $id]
+			$returnFunction $msg
+			return -level 2 0
+		} else {  	return -level 2 $model; }
+	}
+
+	:method loadModelFindByCond {criteria} {
+	   foreach refVar {model returnFunction id} { :upvar $refVar $refVar }
+
+		if {[$model findByCond -relations 1 $criteria] == 0} {
+			set msg [msgcat::mc "The id ( %s ) you are searching for doesn't exist!" $id]
 			$returnFunction $msg
 			return -level 2 0
 		} else {  	return -level 2 $model; }

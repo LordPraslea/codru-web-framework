@@ -20,7 +20,9 @@ For more information see (http://www.gnu.org/licenses/fdl.html)
 
 [preface]
 == The world with software
+Why this when you have things like Websh, rivet, tclhttpd, wub, wibble.. etc or even OpenACS?
 
+A free book is excellent documentation. A free book written by the main developer is the best documentation.
 
 == Starting it up
 Before we dive into the beautiful world of programming there are some prequistories.
@@ -30,7 +32,7 @@ So fire up a +Virtual Box+ and install your favourite +Linux+ distribution,
 for development I'd suggest Linux Mint and for production Debian. But it's up to you.
 
 To follow this book you need to have a fair understanding of *Tcl*, *Linux*, *SQL*,
-*HTML*, *CSS* and a tiny bit of *JavaScript* including the *jQuery* framework and the *Bootstrap* framework.
+*HTML*, *CSS* and a tiny bit of *JavaScript* including the *jQuery* and the *Bootstrap* frameworks.
 
 When I say fair you don't need to be an expert, but you have to know how  SQL works for example or how to 
 build a simple static HTML website.
@@ -41,6 +43,9 @@ TODO setup NaviServer (automatically and generate script!)
 
 ==== nsdbi 
 
+=== nsphp 
+Optional PHP
+
 === Next Scripting Framework
 NaviServer runs best with XOTCL or nx/nsf better known as Next Scripting framework.
 LostMVC was rewritten (easily though!) from TclOO to nx 2.0.
@@ -49,7 +54,7 @@ It's necessary that you understand nx and are able to use it.
 We won't teach you nx here, but you can go through the nice tutorial provided here:
 https://next-scripting.org/xowiki/docs/nx/tutorial/index1
 
-The installation is fairly simple
+The installation is fairly simple.
 
 
 === LostMVC setup
@@ -63,7 +68,6 @@ TODO You can install LostMVC using the commandline tool located in in +tcl/+, we
 [source,bash]
 --------------------------------------------------
 sudo ./lostmvc/tcl/install.tcl install_lostmvc
-
 --------------------------------------------------
 
 This simply copies the  lostmvc/tcl/* to /opt/ns/tcl/lostmvc/*, it sets up the ubp-config.conf.
@@ -87,10 +91,41 @@ First we need to  setup our local hostname to +mywebsite+ so when we
 
 === 
 
-== How's your HTML ?
-
-
 == Do I really need a MVC?
+A MVC (Model-View-Controller) is a software architecural pattern. It allows us to divide the software application in three interconnected parts.
+We thus separate the code components so we have more structure in our code.
+
+The +Model+ concerns itself with database connectivity. 
+More than that a Model in LostMVC is actually a mapped SQL table. You can do Selects , Inserts, Updates, Deletes  operations without needing to write any SQL.
+Each Model is actually a class and you can define subobjects.
+
+At the moment only PostgreSQL has been fully tested but you could easily use SQLite or MySQL
+or anyother database supported by NaviServer.
+
+A +View+ is in the case of LostMVC any .adp file that contains HTML tags  (CSS and JS is also permitted)  either written by you or generated with helper classes bhtml or Plugins.
+A view usually contains one page or subpage.
+To illustrate imagine you have a form you use for adding a product to a database, however that form might be also used in updating the product.
+We can have a general form view, a update view and a create view which both use the form view.
+
+The +Controller+ is actually the orchestrator of the whole application, it interconnects the Views with the Model. 
+What you do in a Controller in web applications is load the query parameters, load the Model data and render the view.
+
+
+== How's your HTML 
+Introduction to using bhtml.
+We best learn by examples, so we'll have an example of everything.
+
+== Views System
+
+==  SQL, Models and the database
+
+== Controllers
+
+== Extra Plugins
+
+== Real Life Example 1: Detailed Blog/CMS Application
+== Real Life Example 2: Time Management App
+== Real Life Example 3: Project Management App
 
 [source,tcl,numbers]
 --------------------------------------------------

@@ -8,13 +8,13 @@
 CREATE EXTENSION IF NOT EXISTS citext ;
 CREATE TABLE users (
 	id serial PRIMARY KEY UNIQUE NOT NULL,
-	use/name CITEXT UNIQUE NOT NULL ,
+	username CITEXT UNIQUE NOT NULL ,
 	password TEXT NOT NULL,
-	telephone TEXT NOT NULL,
+	telephone TEXT NOT NULL DEFAULT 0,
 	email CITEXT UNIQUE NOT NULL,
 	last_login_at timestamptz,
 	creation_at timestamptz,
-	creation_ip TEXT,
+	creation_ip inet,
 
 	password_reset_at timestamptz,
 	password_code TEXT,
@@ -32,7 +32,7 @@ CREATE TABLE users (
 create table login_stats (
 	user_id int references users(id),
 	login_at timestamptz,
-	login_ip text
+	login_ip inet
 );
 -- CREATE UNIQUE INDEX users_username_key ON users (lower(username));
 -- CREATE UNIQUE INDEX users_email_key ON users (lower(email));
@@ -280,6 +280,22 @@ create table user_subscription (
 /*	United Brain Power
 	---	Online Shop System
 */
+
+create table shop_address (
+	id serial primary key unique not null,
+	user_id INT NOT NULL references users(id),
+
+	name citext,
+	telephone text,
+	country text,
+	state text,
+	city text,
+	address text,
+	
+	vat text,
+	company text
+);
+
 create table shop_order (
 	id serial primary key unique not null,
 	user_id INT NOT NULL references users(id),
@@ -288,13 +304,16 @@ create table shop_order (
 	payment_instrument text,
 	invoice_number text,
 	final_price numeric,
-	name citext,
-	address text,
-	creation_ip TEXT,
-	payment_ip TEXT,
+
+	shop_address_id  INT NOT NULL references shop_address(id),
+	
+	creation_ip inet,
+	payment_ip inet,
 	--  Open 0 , In Process 1, Error 2, Complete 3 = Paid, 4 Not Accepted/Refused , 5 = refunded 
 	status smallint default 0
 );
+
+
 
 -- ALTER TABLE shop_order OWNER to lostone;
 
@@ -305,6 +324,10 @@ Create table shop_item (
 	url text,
 	description text,
 	price numeric,
+	-- RON USD EUR etc
+	currency text,
+	-- if lang is set, then we show it in searches only for that specific language!
+	lang text,
 	credits int,
 	stock int,
 	sold int DEFAULT 0,
@@ -312,12 +335,18 @@ Create table shop_item (
 	images_gallery text
 );
 
+create table shop_item_belongs (
+	parent_id INT  references shop_item(id), 
+	child_id INT  references shop_item(id), 
+	constraint shop_item_belongs_pk primary key(parent_id,child_id)
+);
+
 -- ALTER TABLE shop_item OWNER to lostone;
 Create table shop_item_rating (
 	item_id INT  references shop_item(id),
 	user_id INT NOT NULL references users(id),
 	rating int,
-	rating_ip TEXT
+	rating_ip inet
 );
 
 -- ALTER TABLE shop_item_rating OWNER to lostone;

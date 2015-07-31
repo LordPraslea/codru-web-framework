@@ -551,7 +551,7 @@ namespace eval lostmvc {
 		}
 
 		proc send_mail {args} {
-			send_mail_naviserver {*}$args 
+			send_mail_mandrill_smtp {*}$args 
 		}
 
 		############################

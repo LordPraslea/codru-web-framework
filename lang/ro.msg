@@ -110,6 +110,7 @@ msgcat::mcmset ro {
 	View Vezi
 	Viewing Văzînd
 	Delete Șterge
+	Add	Adaugă 
 	Edit Editează
 	Update Actualizează
 	Updating Actualizînd
@@ -182,6 +183,7 @@ msgcat::mcmset ro {
 "Create a new account" "Crează un nou cont"
  "Register - Create a new user" "Înregistrare - Crează un nou utilizator."
 "By registering you agree to the terms and conditions." "Prin inregistrarea ta, ești de acord cu termenii si condițiile."
+"I agree to the terms and conditions of this website." "Sunt de acord cu termenii și condițiile acestui website."
 "Reset my password" "Resetează-mi parola."
 "Reset forgotten password" "Resetează parola uitată"
 "Updating User # %s" "Modificînd user-ul # %s"
