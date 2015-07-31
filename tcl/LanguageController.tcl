@@ -29,6 +29,8 @@ nx::Class create LanguageController {
 		if {$lang != $_urlLang && $_urlLang ne "na"} {
 			set lang $_urlLang
 		}
+		
+		:forceLanguage
 
 		if {$lang == "na"} {
 			set nc [ns_conn headers]
@@ -45,6 +47,18 @@ nx::Class create LanguageController {
 		return $lang
 	}
 
+	:public method forceLanguage {} {
+		foreach refVar {lang _urlLang config} { :upvar $refVar $refVar }
+			
+		if {[dict exists $config forceLanguage]} {
+			set forceLanguage [dict get $config forceLanguage]
+
+			set _urlLang $forceLanguage
+			set lang $forceLanguage
+		}
+	}
+	
+
 	:method setLangEverywhere {lang} {
 		msgcat::mclocale $lang
 
@@ -54,12 +68,8 @@ nx::Class create LanguageController {
 
 		set module [:getModule] 
 	
-	#Cache language evaluation for 360 seconds
-#	ns_cache_eval -expires 360 lostmvc lang.$lang.$module {
 		msgcat::mcload [ns_pagepath]/lang
-		#ns_session put urlLang [set :lang [set :urlLang $lang]]
 		msgcat::mcload [ns_pagepath]/modules/$module/lang/ 
-#	}
 
 		set moduleLangFile [ns_pagepath]/modules/$module/lang/$lang.$module.msg 
 		if {[file exists $moduleLangFile]} {
@@ -82,6 +92,10 @@ nx::Class create LanguageController {
 		#
 			set redirecturl [ns_conn location]/${:lang}$url$query
 			ns_returnredirect $redirecturl 
+			#After redirecting the execution goes on, even if it's unwanted
+			#Discovered bug when developing LifeBeyondApocalypse (multiple searches!)
+			#return -level 100 0
+			return -level 3 0
 		}
 	}
 
