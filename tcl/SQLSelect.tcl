@@ -8,7 +8,7 @@ nx::Class create SQLSelect   {
 
 	:method findByCriteria {{-relations 0} {-save 1} {-type pk} -- value } {
 		set table [dict get ${:attributes} table]
-		set from $table
+		set from ${:schema}.$table
 		set toSelect *
 		
 		if {$type == "pk"} {
@@ -23,9 +23,13 @@ nx::Class create SQLSelect   {
 
 		set where_sql [$criteria  getCriteriaSQL]
 		set pr_stmt  [$criteria getPreparedStatements]
-
 		
 		set sql_select "SELECT $toSelect FROM $from WHERE $where_sql"
+
+		if {${:debug}} {
+			puts "DEBUG: findByCriteria SQL ${:sql} and ${:pr_stmt}"
+		}
+
 		set result [dbi_0or1row -db ${:db} -array data -bind $pr_stmt $sql_select ]
 		
 		if {$save} {
@@ -137,7 +141,9 @@ nx::Class create SQLSelect   {
 		:selectProcessOffset 
 	
 		my sqlstats ${:sql_select}
-		#puts "SEARCH PRSTMT   ${:pr_stmt} \n SQL ${:sql_select}\n"
+		if {${:debug}} {
+			puts "DEBUG: SEARCH SQL ${:sql} and PRSTMT ${:pr_stmt}"
+		}
 		set values  [dbi_rows -db ${:db} -columns columns -bind ${:pr_stmt} ${:sql_select} ]
 		return [dict create columns $columns values $values ]
 	}
@@ -161,7 +167,7 @@ nx::Class create SQLSelect   {
 	:method computeSearchSQL {} {
 		foreach refVar {table toSelect criteria relations } { :upvar $refVar $refVar }
 
-		set from $table
+		set from ${:schema}.$table
 
 		if {$toSelect == "*"} {
 			set toSelect "${table}.*" 

@@ -25,8 +25,10 @@ nx::Class create SQLUpdate -mixin [list SQLCommands]  {
 		set update [${:updateCriteria} getCriteriaSQL]
 		
 		set :pr_stmt [dict merge  [${:whereCriteria} getPreparedStatements] [${:updateCriteria} getPreparedStatements]]
-		set :sql "UPDATE ${:table} SET $update WHERE $where "
-		puts "UPDATE SQL ${:sql} and ${:pr_stmt}"
+		set :sql "UPDATE ${:schema}.${:table} SET $update WHERE $where "
+		if {${:debug}} {
+			puts "DEBUG: UPDATE SQL ${:sql} and ${:pr_stmt}"
+		}
 		set values  [dbi_dml -db ${:db} -bind ${:pr_stmt} ${:sql}]
 		
 		if {$values} {

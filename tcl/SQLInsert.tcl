@@ -22,8 +22,10 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 			:insertMultipleRows $args
 		}
 
-		set :sql "INSERT INTO $table ${:columns} VALUES ${:insert} "
-
+		set :sql "INSERT INTO ${:schema}.$table ${:columns} VALUES ${:insert} "
+		if {${:debug}} {
+			puts "DEBUG: INSERT SQL ${:sql} and ${:pr_stmt}"
+		}
 		#If 1 or multiple primary keys, return.. otherwise don't return anything..
 		if {[dict exists ${:attributes} primarykey]} {
 			set return [:insertPrimaryKeyReturning]
@@ -86,7 +88,7 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 	}
 
 	:method insertPrimaryKeyReturningSQLite {} {
-		return  " ; SELECT last_insert_rowid() FROM $table LIMIT 1"
+		return  " ; SELECT last_insert_rowid() FROM ${:schema}.$table LIMIT 1"
 	}
 
 
