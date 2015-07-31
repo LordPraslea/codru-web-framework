@@ -495,7 +495,7 @@ bhtml public method highcharts {{-slideOpen 0} {-height 400} {-text ""} -- name 
 	set container ""
 	if {$text == ""} { set text $name } 
 	if {$slideOpen} {
-		append container  [my  a -htmlOptions "class tglchart-${name}"  "[my  fa fa-download] Click to toggle $text" "#$name" ]<br>
+		append container  [my  a -simple 1 -htmlOptions "class tglchart-${name}"  "[my  fa fa-download] Click to toggle $text" "#$name" ]<br>
 
 		append extra [format {
 			$(".tglchart-%s").click(function(e) {
@@ -740,6 +740,57 @@ bhtml public method wizard {{-step 1} -- tabs} {
 #https://github.com/eldarion/eldarion-ajax/
 ##########################################
 
+
+
+##########################################
+# jsPDF generating PDF's from JavaScript!
+# https://github.com/MrRio/jsPDF
+##########################################
+#TODO eventually also generate from JS.. OR give HTML directly
+bhtml public method jspdf {{-filename "file" } {-id pdfdocument} text} {
+
+	if {![my existsPlugin jspdf]} {
+		my addPlugin jspdf { 
+			js "/js/jspdf.debug.js"
+			js-min "/js/jspdf.min.js"
+		}
+	}
+	:js " 
+function generatePDF() {
+	var pdf = new jsPDF('p', 'pt', 'A4')
+	, source = $('#$id')[0]
+	
+
+	margins = {
+      top: 80,
+      bottom: 60,
+      left: 40,
+      width: 522
+    };
+    // all coords and widths are in jsPDF instance's declared units
+    // 'inches' in this case
+    pdf.fromHTML(
+    	source // HTML string or DOM elem ref.
+    	, margins.left // x coord
+    	, margins.top // y coord
+    	, {
+    		'width': margins.width // max width of content on PDF
+    		, 'elementHandlers': specialElementHandlers
+    	},
+    	function (dispose) {
+    	  // dispose: object with X, Y of the last line add to the PDF 
+    	  //          this allow the insertion of new lines after html
+          pdf.save('$filename.pdf');
+        },
+    	margins
+    )
+}
+"
+	:button -options [list onclick "javascript:generatePDF"] -fa fa-print $text
+
+
+
+}
 
 ##########################################
 # Syntax Highlight
