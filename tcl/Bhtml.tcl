@@ -51,7 +51,6 @@ nx::Class create bhtml {
 				version "3.2.0"
 				authors "Bootstrap Twitter Team"
 			}
-			lostmvc { css "/css/lostmvc.css" css-min "/css/lostmvc.css" }
 		}
 
 		#If the previous context was an object
@@ -82,6 +81,9 @@ nx::Class create bhtml {
 			}
 		}
 	#	return "${:cssinclude} ${:jsinclude}"
+		set f "/css/lostmvc.css" 
+		append :cssinclude "\n" [format {<link href="%s" rel="stylesheet">} $f]
+			 
 		set :computedPlugins 1
 	}
 
@@ -313,6 +315,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 							 {-active 0} {-disabled 0} {-url 0} {-newlist 0} 
 							  {-p ""} {-listOptions ""}  -- args} {
 		set list $args
+		
 		#Show only if show is positive
 		if {!$show} { return -code continue }
 
@@ -332,7 +335,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 
 		if {$newlist} { set list [my makeList {*}$list]  }
 
-		if {$url} { set list [my a {*}$list]  }
+		if {$url} { set list [my a -simple 1 {*}$list]  }
 
 		if {$active} { dict lappend  listOptions class active ; set list [join $list]  } 
 		if {$disabled} { dict  lappend listOptions disabled ; set list [join $list]  }
@@ -530,6 +533,10 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 			}
 			incr count	
 		}
+		if {$row != ""} {
+			append tbody [my htmltag tr $row ]	
+		}
+
 		return $tbody
 	}
 
@@ -846,13 +853,13 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 
 
 	##########################################
-	# Anchors 
+	# Anchors / Links 
 	##########################################
-	:public method a { {-class ""} {-title ""} {-new 0} {-htmlOptions ""} {-id ""} {-tooltip ""}  {-fa ""} {-type ""}
-					{-tooltip ""} {-popover ""} -- text {link "#"}} {
-					#set htmlOptions { class btn role button}
+	:public method link { {-class ""} {-title ""} {-new 0} {-htmlOptions ""} {-id ""} {-tooltip ""}  {-fa ""} {-type ""}
+					{-tooltip ""} {-popover ""} 	{-controller ""}  {-simple 0}  {-lang ""}  -- text {url "#"} {query ""}} {
+		set newUrl [:generateLink]
 
-		dict set htmlOptions href $link
+		dict set htmlOptions href $newUrl
 		if {$new} { dict set htmlOptions target "_blank"}
 		foreach cls $class {
 			dict lappend htmlOptions class $cls
@@ -869,7 +876,28 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		return [my htmltag -htmlOptions $htmlOptions a $text ]
 	}
 
-	:public method getUrl {{-controller ""}   {-url 1} {-lang ""} -- action {query ""}} {
+	:public method generateLink {} {
+		foreach refVar {controller simple lang url query} { :upvar $refVar $refVar }
+		if {$controller == ""} {
+			set controller ${:Controller} 
+		}
+
+		if {!$simple} {
+			set newUrl [:getUrl -controller $controller -lang $lang  $url $query  ]
+		} else {
+			set newUrl $url[ns_queryencode {*}$query]
+		}
+		return $newUrl
+	}
+	
+	#similair to a
+	:public method a {  args} {
+		return [my link {*}$args]
+	}
+
+
+
+	:public method getUrl {{-controller ""}   {-lang ""} -- action {query ""}} {
 
 		if {$controller == ""} {
 			set controller ${:Controller} 
@@ -880,29 +908,12 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 			set link /$action[ns_queryencode {*}$query]
 		} 
 		set urlLang [ns_session get urlLang]
-
 		if {${urlLang} ne "na"} { 
 			if {$lang eq ""} {
 				set lang ${urlLang}
 			}
 			set link /${lang}$link
 		}
-
-		return $link	
-	}
-
-	#Link method working together with 
-	:public method link { {-controller ""}  {-new 0} {-htmlOptions ""} {-simple 0}  {-lang ""} -- text url {query ""}} {
-		if {$controller == ""} {
-			set controller ${:Controller} 
-		}
-
-		if {!$simple} {
-			set newUrl [:getUrl -controller $controller -lang $lang  $url $query  ]
-		} else {
-			set newUrl $url
-		}
-		set link [my a -htmlOptions $htmlOptions -new $new $text $newUrl]
 		return $link	
 	}
 
@@ -1186,8 +1197,9 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		foreach {name value} [list aria-valuenow $now aria-valuemin $min aria-valuemax $max ] {
 			dict lappend htmlOptions $name $value
 		}
-
-		dict append htmlOptions style  "width: ${now}%;"
+		
+		set width [expr {int(double($now)/$max*100)}]
+		dict append htmlOptions style  "width: ${width}%;"
 		if {$data == ""} { set data "${now}%" } 	
 
 		if {$type != ""} { dict lappend htmlOptions class [my returnType "progress-bar" $type]  };
@@ -1318,28 +1330,36 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	#
 	#TODO use events and load ajax page..
 	#TODO beautify footer,header..etc:D
-	:public method modal {{-class ""}  {-size ""} {-f ""} {-close ""} {-h ""} {-htype ""} {-ftype ""} {-id ""} {-zindex ""} {-button ""} -- title data } {
+	:public method modal {{-class ""}  {-size ""} {-f ""} {-close ""} {-h ""} {-htype ""} {-ftype ""} {-id ""} {-zindex ""}
+					   {-launch 0} {-button ""} -- title data } {
 		set modalLabel modal-label-[generateCode 5 3]
 		set htmlOptions [list  class "modal fade" aria-hidden true role dialog tabindex -1 aria-labelledby $modalLabel ] ; #"
 		set modalFooter ""
-	
+
 		set modalHeader [:modalHeader]
 		set modalFooter [:modalFooter]
 	
 
+		:modalInitSettings
 		set body [my htmltag -htmlOptions [list class modal-body] div $data]
 		set content [my htmltag -htmlOptions [list class modal-content] div "$modalHeader $body $modalFooter"]
 		#INFO removing the next line makes the modal "Full screen width"
-		set modalDialogHtml [my htmltag -htmlOptions [list class modal-dialog] div $content] 
+		set modalDialogHtml [my htmltag -htmlOptions [list class "modal-dialog $size"] div $content] 
 		set modalHtml [my htmltag -htmlOptions $htmlOptions div $modalDialogHtml]
 
 		#create the button to activate the modal without writing javascript
 		#href "page" to load another page
 		set modalbutton [my button -class "btn-primary btn-lg" -options [list data-toggle modal data-target "#${id}" ] $button]	
 		append :components $modalHtml
-		#ns_puts $html
+		:modalLaunch 
 		return $modalbutton
-
+	}
+	:method modalLaunch {  } {
+		foreach refVar {id launch} { :upvar $refVar $refVar }
+		if {$launch} {
+			my js "\$('#$id').modal('show');" 
+			return -level 2 ""
+		}
 	}
 	
 	:method modalInitSettings {} {
