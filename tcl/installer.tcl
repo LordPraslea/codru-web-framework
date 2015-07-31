@@ -4,8 +4,20 @@
 #By creating the directory structure and pointing to everything needed..
 #puts "argc: $argc \t argv: $argv \t argv0: $argv0 \n  "
 global database
-set database dbipg2 
 
+proc getDatabase {} {
+	global database
+	set controller [Controller new]
+	$controller loadConfigFile
+	if {[ns_cache_get lostmvc config.[getConfigName] config]} {
+		set database [dict get $config database]
+		return $database
+	}
+	
+}
+if {[info exists ::argv]} {
+	getDatabase
+}
 proc help {} {
 	puts "=-=-=-=-=-=-= LostMVC Command Line Utility =-=-=-=-=-=-=\n
 NOTE: Most of these commands assume that your webserver is running on port 80 and you
@@ -197,7 +209,7 @@ proc generateModel {table model {bhtml ""}} {
 
 	dict set pr_stmt  table $table
 	global database 
-	set data [dbi_rows -db $database -bind $pr_stmt  -result flatlist  $sql]
+	set data [dbi_rows -db [getDatabase] -bind $pr_stmt  -result flatlist  $sql]
 	#error if no data
 	if {$data == ""} {
 		append errors  "The $table table doesn't seem to exist\n"
@@ -218,7 +230,7 @@ proc generateModel {table model {bhtml ""}} {
 	dict set pr_stmt  table $table 
 	dict set pr_stmt  type "PRIMARY KEY"
 	global database
-	set primary_keys [dbi_rows -db $database -bind $pr_stmt  -result flatlist  $sql]
+	set primary_keys [dbi_rows -db [getDatabase] -bind $pr_stmt  -result flatlist  $sql]
 
 	set attributes [dict create table $table primarykey id sqlcolumns { }] 
 	#Add validation, requirements and alias here
@@ -243,6 +255,7 @@ proc generateModel {table model {bhtml ""}} {
 			decimal { dict set attributes sqlcolumns $column validation numerical on all }
 			text { dict set attributes sqlcolumns $column validation string on all }
 			citext { dict set attributes sqlcolumns $column validation string on all }
+			inet { dict set attributes sqlcolumns $column validation string on all }
 			USER-DEFINED { dict set attributes sqlcolumns $column validation string on all }
 			timestamp* { dict set attributes sqlcolumns $column validation integer on all }
 			default { puts "$datatype where? for $column !" ; dict set attributes sqlcolumns $column validation { $datatype "Not implemented yet!" } }
@@ -258,7 +271,7 @@ proc generateModel {table model {bhtml ""}} {
 	dict set pr_stmt  table $table 
 	dict set pr_stmt  type "FOREIGN KEY"
 	global database
-	set foreign_keys [dbi_rows -db $database -bind $pr_stmt  -result flatlist  $sql]
+	set foreign_keys [dbi_rows -db [getDatabase] -bind $pr_stmt  -result flatlist  $sql]
 	foreach {constraint table column fktable fkcolumn} $foreign_keys {
 
 		set newcolumn [join [lrange [split $column _] 0 end-1] _]
