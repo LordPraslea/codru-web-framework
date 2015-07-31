@@ -106,8 +106,8 @@ proc allConfigRoutes {} {
 		if {![file exists $file]} { continue }
 		if {[info exists config]} { unset config }
 
-		set config [ns_adp_parse	-file  $file]
-		#set f [open $file r]
+		ns_adp_parse	-file  $file
+	#set f [open $file r]
 		#set config [read $f]
 		#close $f
 		if {[dict exists $config routes]} {
@@ -183,7 +183,7 @@ proc unknown {args} {
 		#	puts "Loading $cmdName new"
 			return [$cmdName new]
 		} else {
-			error "\[$cmdName $new\] No such file?"
+			error "\[$cmdName new\] No such file?"
 		}
 	}	else {
 		tailcall  original_unknown {*}$args
@@ -260,7 +260,14 @@ proc developmentFilesLoading {} {
 	}
 }
 
-
+foreach dir {tcl lang models views controllers modules templates} {
+	foreach method {POST HEAD GET} {
+		ns_register_proc $method /$dir/*  notFoundUrl
+	}
+}
+proc notFoundUrl {} {
+	ns_return 404 text/html "<h1>Couldn't find what you where searching for</h1>"
+}
 #Use this when we'll be able to use it at init
 #foreach server [glob -type d [ns_server serverdir]/* ] {
 #	append server /www
