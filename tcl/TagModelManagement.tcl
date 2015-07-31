@@ -40,7 +40,7 @@ nx::Class create TagModelManagement {
 			if {[lsearch -nocase  $values $tag] == -1} {
 				unset pr_stmt
 				dict set pr_stmt tag $tag
-				set sql "INSERT INTO $tagsTbl (tag) VALUES (:tag) RETURNING id"
+				set sql "INSERT INTO ${:schema}.$tagsTbl (tag) VALUES (:tag) RETURNING id"
 				set id  [dbi_0or1row -db ${:db} -array mytag -bind $pr_stmt $sql] 
 				lappend :addedTagList $mytag(id)
 			} else {
@@ -50,7 +50,7 @@ nx::Class create TagModelManagement {
 				dict set pr_stmt tag_id  $id		
 				dict set pr_stmt $interId $this_id
 
-				set sql_select "SELECT * FROM $interTbl WHERE tag_id = :tag_id AND $interId = :$interId "
+				set sql_select "SELECT * FROM  ${:schema}.$interTbl WHERE tag_id = :tag_id AND $interId = :$interId "
 				set linkedid  [dbi_0or1row -db ${:db}  -bind $pr_stmt $sql_select ]
 				
 				if {$linkedid} {			
@@ -76,7 +76,7 @@ nx::Class create TagModelManagement {
 				dict set pr_stmt tag_id $id
 
 			#	puts "Combining (esm_id,tag_id) ($esm_id,$id)"
-				set sql "INSERT INTO $interTbl ($interId,tag_id) VALUES (:$interId,:tag_id)"
+				set sql "INSERT INTO  ${:schema}.$interTbl ($interId,tag_id) VALUES (:$interId,:tag_id)"
 				set id  [dbi_dml -db ${:db} -bind $pr_stmt $sql] 
 			}
 		}
@@ -86,7 +86,7 @@ nx::Class create TagModelManagement {
 	:public method getTags {{-interTbl } {-tagsTbl tags} {-interId  } } {
 		#set sql_select "SELECT tag FROM tags t, esm_tags et WHERE "
 		dict set pr_stmt $interId [my get id]
-		set sql_select "SELECT tag FROM $tagsTbl t JOIN $interTbl et  ON t.id=et.tag_id WHERE et.$interId=:$interId "
+		set sql_select "SELECT tag FROM  ${:schema}.$tagsTbl t JOIN $interTbl et  ON t.id=et.tag_id WHERE et.$interId=:$interId "
 		set values  [dbi_rows -db [my db get] -columns columns -bind $pr_stmt $sql_select ]
 		#set tags? or just return them..?
 	#	puts "$values and [split $values ,] and [join $values ,]"
@@ -139,7 +139,7 @@ nx::Class create TagModelManagement {
 	:public method getTagCloud {{-interTbl } {-tagsTbl tags}  {-interId  } {-firstTable }
 							 {-firstColumnName ""} {-extraOptions ""} --  {firstId 0 } {minShow 1} } {
 		set sql_select "SELECT $tagsTbl.id,$tagsTbl.tag, count($tagsTbl.id) as Count
-		FROM $firstTable,$tagsTbl,$interTbl
+		FROM  ${:schema}.$firstTable,${:schema}.$tagsTbl,${:schema}.$interTbl
 		WHERE $firstTable.id   =  $interTbl.$interId 
 		AND $interTbl.tag_id = $tagsTbl.id
 		"
@@ -166,12 +166,12 @@ nx::Class create TagModelManagement {
 		#This selects distinct values!
 		set sql_size "
 		SELECT  count(DISTINCT $tagsTbl.id) as size
-		FROM $firstTable,$interTbl,$tagsTbl
+		FROM ${:schema}.$firstTable,${:schema}.$interTbl,${:schema}.$tagsTbl
 		WHERE $firstTable.id   = $interTbl.$interId 
 		AND $interTbl.tag_id = $tagsTbl.id "
 
 	set sql_select	"SELECT $tagsTbl.id,$tagsTbl.tag,count($tagsTbl.id) as Count,sum($firstTable.$valueColumn) as Total
-		FROM $firstTable,$tagsTbl,$interTbl
+		FROM ${:schema}.$firstTable,${:schema}.$tagsTbl,${:schema}.$interTbl
 		WHERE $firstTable.id   = $interTbl.$interId 
 		AND $interTbl.tag_id = $tagsTbl.id 	"
 		if {$firstColumnName != ""} {
