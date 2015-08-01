@@ -27,7 +27,7 @@ nx::Class create SQLSelect   {
 		set sql_select "SELECT $toSelect FROM $from WHERE $where_sql"
 
 		if {${:debug}} {
-			puts "DEBUG: findByCriteria SQL ${:sql} and ${:pr_stmt}"
+			puts "DEBUG: findByCriteria SQL ${sql_select} and ${pr_stmt}"
 		}
 
 		set result [dbi_0or1row -db ${:db} -array data -bind $pr_stmt $sql_select ]
@@ -142,7 +142,7 @@ nx::Class create SQLSelect   {
 	
 		my sqlstats ${:sql_select}
 		if {${:debug}} {
-			puts "DEBUG: SEARCH SQL ${:sql} and PRSTMT ${:pr_stmt}"
+			puts "DEBUG: SEARCH SQL ${:sql_select} and PRSTMT ${:pr_stmt}"
 		}
 		set values  [dbi_rows -db ${:db} -columns columns -bind ${:pr_stmt} ${:sql_select} ]
 		return [dict create columns $columns values $values ]
