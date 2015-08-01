@@ -12,6 +12,8 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 	:property {database ""}
 	:property {debug 0}
 
+	:property {outsideADP 0}
+
 	:variable -accessor public db 
 	:variable -accessor public schema public
 	:variable scenario insert
@@ -25,7 +27,10 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 
 	:method init {} {
 		#Get Default database 
-		ns_cache_get lostmvc config.[getConfigName] config
+		#
+ 		if {!${:outsideADP}} {
+			ns_cache_get lostmvc config.[getConfigName] config
+		}
 
 		
 		if {${:database} == ""} {
@@ -36,7 +41,6 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 		} else {
 			set :db ${:database}
 		}
-
 		if {[info exists config]} {
 			if {[dict exists $config schema ]} {
 				set :schema [dict get $config schema] 
