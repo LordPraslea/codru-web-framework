@@ -33,7 +33,7 @@ nx::Class create SQLSelect   {
 		set result [dbi_0or1row -db ${:db} -array data -bind $pr_stmt $sql_select ]
 		
 		if {$save} {
-			:set {*}[array get data]
+			:set -change 0 {*}[array get data]
 			set :newRecord 0
 			set :scenario update
 		}

@@ -24,10 +24,11 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 
 		set :sql "INSERT INTO ${:schema}.$table ${:columns} VALUES ${:insert} "
 		if {${:debug}} {
-			puts "DEBUG: INSERT SQL ${:sql} and ${:pr_stmt}"
+			ns_log notice "DEBUG: INSERT SQL ${:sql} and ${:pr_stmt}"
 		}
-		#If 1 or multiple primary keys, return.. otherwise don't return anything..
-		if {[dict exists ${:attributes} primarykey]} {
+		#If 1 or multiple primary keys, return..
+		#However if multi inserts.. don't return anything!
+		if {[dict exists ${:attributes} primarykey] && [llength $args] == 0} {
 			set return [:insertPrimaryKeyReturning]
 		} else {
 			#Inserting values with no primary key..
@@ -63,13 +64,13 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 
 	:method insertMultipleRows {args} {
 	#	ns_parseargs {columns values}	$args
-		foreach {columns rows} $args { }
+		foreach {columns rows} {*}$args { }
 		#Data is sanitized, later maybe add prepared statements?
 		foreach currentRow $rows {
 			set currentRow [ns_escapehtml $currentRow]
 			append :insert [:getSeparator ", "]  ('[join $currentRow ',']')
 		}
-		set :columns "($columns)"
+		set :columns "([join $columns ,])"
 	}
 
 	:method insertPrimaryKeyReturning {} {

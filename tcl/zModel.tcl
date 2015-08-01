@@ -280,14 +280,14 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 
 	#Set the "field"
 	#Also provides multiset (name value)
-	:public method set {args} {
+	:public method set {{-change 1} args} {
 		if {[expr {[llength $args]%2}]} { error "Wrong nr args, should be: name value ?name value? ..." }
 		foreach {name value} $args {
 			#TODO comment the if if you want to set columns that are not defined in the model
 			if {[dict exists ${:attributes} sqlcolumns $name]} {
-			#puts "Setting $name to $value"
 			#using ns_escapehtml instead of ns_quotehtml
 				dict set :attributes sqlcolumns $name value [ns_escapehtml $value] 
+				if {$change} {	:changedValue $name }
 			} elseif {[dict exists ${:attributes} relations $name]} {
 				dict set :attributes relations $name value [ns_escapehtml $value]
 			}
@@ -301,12 +301,29 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 			set value [my get $name]
 			incr value $incr
 			dict set :attributes sqlcolumns $name value [ns_escapehtml $value] 
+			:changedValue $name
 		} elseif {[dict exists ${:attributes} relations $name]} {
 			set value [my get $name]
 			incr value $incr
 			dict set :attributes relations $name value [ns_escapehtml $value]
 		}
 	}
+	
+	#We need a list of changed values (incr/set)
+	#save will only update those values (not the full thing)
+	#This list will be reset when inserting/updating
+	:public method changedValue {name} {
+		dict lappend :attributes changedValues $name
+		dict set :attributes changedValues [lsort -unique [dict get ${:attributes} changedValues ]]
+	}
+	
+	#Only keep unique fields 
+	:public method getFinalChangedValues {args} {
+		dict set :attributes changedValues [lsort -unique [dict get ${:attributes} changedValues ]]
+	}
+	
+	
+	
 	#Get the "field"
 	:public method get {name} {
 		if {[dict exists ${:attributes} sqlcolumns $name value]} {
