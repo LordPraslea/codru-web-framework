@@ -29,9 +29,7 @@ proc defineLanguages {server} {
 proc includeFromPath {path} {
 #	puts "Include from path $path"
 	foreach file [glob -nocomplain -- $path] {
-		puts "Including with NOCACHE $file"
 		ns_adp_include -tcl -nocache $file
-#		puts "\tIncluded model $file"
 	}
 }
 proc includeControllerFromPath {path {folder "" } {server ""}} {
@@ -190,8 +188,10 @@ proc unknown {args} {
 
 	}
 }
-proc loadControllerOrModel {name} {
-	set server [ns_pagepath]	
+proc loadControllerOrModel {name {server ""}} {
+	if {$server == ""} {
+		set server [ns_pagepath]	
+	}
 
 	if {0} {
 	set modelpath  "$server/models/*.tcl"
@@ -268,6 +268,13 @@ foreach dir {tcl lang models views controllers modules templates} {
 proc notFoundUrl {} {
 	ns_return 404 text/html "<h1>Couldn't find what you where searching for</h1>"
 }
+
+proc includeFromTclFolder {path} {
+	foreach file [glob -nocomplain -- $path] {
+		ns_adp_include -tcl -cache 100 $file
+		puts "Included special Tcl file $file"
+	}
+}
 #Use this when we'll be able to use it at init
 #foreach server [glob -type d [ns_server serverdir]/* ] {
 #	append server /www
@@ -300,6 +307,8 @@ apply {{} {
 			includeControllerFromPath $controllerpath $folder $server
 
 		}
+
+		includeFromTclFolder $server/tcl/*.tcl
 
 	}
 }}
