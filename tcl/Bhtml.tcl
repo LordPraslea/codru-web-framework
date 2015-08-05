@@ -994,7 +994,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	# DROPUP bgn-group
 	#TODO switch between button and a
 	:public method dropdown {{-class ""} {-list 1} {-split 0} {-type "default"} {-datawidth 300} {-nav 0}  -- btnText data} {
-		set htmlOptions { class btn-group};# class is either dropdown or btn-group
+		set htmlOptions { class btn-group };# class is either dropdown or btn-group
 		set :buttonClass ""
 		set :split $split 
 		set :list $list

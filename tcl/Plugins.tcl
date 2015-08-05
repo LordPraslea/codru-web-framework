@@ -421,17 +421,17 @@ bhtml public method messenger {{-type "info"} {-theme future} {-location "top"} 
 		}
 
 		set messengertheme [format "/css/messenger-theme-%s.css" $theme]
-		dict lappend plugins messenger css $messengertheme
-		dict lappend plugins messenger css-min $messengertheme
+		dict lappend :plugins messenger css $messengertheme
+		dict lappend :plugins messenger css-min $messengertheme
 
 		switch $theme {
 			flat {
-				dict lappend plugins messenger js "/js/messenger-theme-flat.js" 
-				dict lappend plugins messenger js-min "/js/messenger-theme-flat.js" 
+				dict lappend :plugins messenger js "/js/messenger-theme-flat.js" 
+				dict lappend :plugins messenger js-min "/js/messenger-theme-flat.js" 
 			}
 			future { 
-				dict lappend plugins messenger js "/js/messenger-theme-future.js"
-				dict lappend plugins messenger js-min "/js/messenger-theme-future.js"
+				dict lappend :plugins messenger js "/js/messenger-theme-future.js"
+				dict lappend :plugins messenger js-min "/js/messenger-theme-future.js"
 			}
 		}
 
