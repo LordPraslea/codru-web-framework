@@ -170,6 +170,7 @@ ns_runonce {
 	rename unknown original_unknown
 	puts "Renaming unknown to original_unknown"
 }
+
 #This procedure is supposed to load unloaded (or expired in cache) controllers,models  
 # ex: UserController new  or User new 
 proc unknown {args} {
@@ -188,6 +189,7 @@ proc unknown {args} {
 
 	}
 }
+
 proc loadControllerOrModel {name {server ""}} {
 	if {$server == ""} {
 		set server [ns_pagepath]	
@@ -219,7 +221,7 @@ proc loadControllerOrModel {name {server ""}} {
 		set file [fileutil::findByPattern $server/$folder $name.tcl]
 		if {$file ne "" } {
 			ns_adp_include -tcl -cache 100   $file
-			source   $file
+		#	source   $file
 			return 1
 		}
 	}

@@ -117,7 +117,7 @@ nx::Class create Form {
 	}
 	
 	#TODO label + multi
-	:public method radio {name args} {
+	:public method radio { {-inline 0} name args} {
 		set itemname [${:model} getAlias $name]
 		set id [${:model} classKey $name]
 		set data [my getData  $name $id]
@@ -125,7 +125,7 @@ nx::Class create Form {
 			set args [list $data $itemname]
 		}
 
-		set input [${:bhtml} radio -id $id $id {*}$args]
+		set input [${:bhtml} radio -inline $inline -id $id $id {*}$args]
 		append :${:form} $input
 	}
 
