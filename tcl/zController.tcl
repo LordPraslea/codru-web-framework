@@ -95,7 +95,13 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 		set bhtml [bhtml new]
 		set page [$bhtml jumbotron $heading \n$body]
 
-		:renderLayout
+
+		if {![ns_queryget ajaxRequest 0]} {
+			:renderLayout
+		} else {
+			set data [dict create json strict  location overwrite modal new title $heading  data $page ]
+			ns_puts [tcl2json $data]
+		}
 
 		ns_adp_close
 	}	
@@ -204,10 +210,10 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 					my errorPage [msgcat::mc  "Something went a little wrong.."] [msgcat::mc  "Error: %s Details: %s on line %d" \
 					"<b>$result<b>" "<pre>[dict get $options -errorinfo]</pre><br>" [dict get $options -errorline] ]
 				} else {
-					#TODO encode error and show it encoded.. so the user sends it to you 
+				#TODO encode error and show it encoded.. so the user sends it to you 
 					my errorPage [msgcat::mc  "A little error has occured"] [msgcat::mc  "Error: %s " \
-					"<b>$result<b>"  ]
-				ns_log Error "Error url [ns_conn url] $options $result "
+						"<b>$result<b>"  ]
+					ns_log Error "Error url [ns_conn url] $options $result "
 				}
 
 			}
