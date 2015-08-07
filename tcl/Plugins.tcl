@@ -569,7 +569,7 @@ bhtml public method highcharts {{-slideOpen 0} {-height 400} {-text ""} -- name 
 #  http://seiyria.github.io/bootstrap-slider/
 #  Bootstrap slider for sliding selecting.. 
 ###########################################
-bhtml public method slider { {-sliderid "allslider"} {-min 0} {-max 100 }   {-step 1} --  name {value 0} {secondval ""}} {
+bhtml public method slider { {-returnJs 1} {-sliderid "allslider"} {-min 0} {-max 100 } {-class ""}   {-step 1} --  name {value 0} {secondval ""}} {
 
 	set plugin slider
 	if {![my existsPlugin $plugin]} {
@@ -599,7 +599,7 @@ bhtml public method slider { {-sliderid "allslider"} {-min 0} {-max 100 }   {-st
 		#}
  #for 2 selectors.. do the value [25,50]
  set slider_options [list id $name name $name data-slider-id $sliderid \
-	 	data-slider-min $min data-slider-max $max data-slider-step $step data-slider-value $value ]
+	 	data-slider-min $min data-slider-max $max data-slider-step $step data-slider-value $value class $class]
 	set slider [my input -htmlOptions $slider_options  $name]
 	return $slider 
 
