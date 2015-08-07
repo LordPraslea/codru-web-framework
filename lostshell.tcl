@@ -52,7 +52,7 @@ nx::Class create LostShell {
 		cd $args
 	}
 	
-	:public  method delete {args} {
+	:public  method deleteBookmark {args} {
 		puts "Deleting bookmark $args"
 	}
 	

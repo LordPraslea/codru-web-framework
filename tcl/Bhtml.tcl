@@ -1244,7 +1244,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	# 	table , list, group list.. etc to style it
 	# Use the -append when you have a component text, etc.. and want to add the following:
 	# 	a table, list, group.. 
-	:public method panel {{-class ""} {-h ""}  {-size ""}   {-type ""} {-f ""} {-component 0}  {-append ""} {-active 0}   -- data} {
+	:public method panel {{-class ""} {-h ""}  {-size ""}  {-id ""}  {-type ""} {-f ""} {-component 0}  {-append ""} {-active 0}   -- data} {
 		set htmlOptions { class {panel panel-default} }
 		set :headingHtml ""
 		set :footerHtml ""
@@ -1252,6 +1252,8 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		foreach cls $class {
 			dict lappend htmlOptions class $cls
 		}
+
+		if {$id != ""} { dict set htmlOptions id $id  };
 		:panelHeaderAndFooter
 		if {$type != ""} { dict lappend htmlOptions class [my returnType "panel" $type]  };
 		#	if {$active} {dict lappend progressOptions class active}

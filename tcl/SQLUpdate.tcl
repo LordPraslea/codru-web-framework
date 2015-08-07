@@ -46,8 +46,7 @@ nx::Class create SQLUpdate -mixin [list SQLCommands]  {
 		set primarykey ""
 		if {[dict exists ${:attributes} primarykey]} { set primarykey  [dict get ${:attributes} primarykey]		}
 			
-		set changedValues [dict get ${:attributes} changedValues ]
-
+		set changedValues [:getFinalChangedValues]
 		foreach key [:getColumnsKeys] {
 			#update only keys that have a value that may be saved
 			if {[dict exists ${:attributes} sqlcolumns $key value]} {

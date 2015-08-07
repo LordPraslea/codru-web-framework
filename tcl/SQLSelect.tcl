@@ -6,10 +6,13 @@ nx::Class create SQLSelect   {
 	
 	:property sql_select
 
-	:method findByCriteria {{-relations 0} {-save 1} {-type pk} -- value } {
+	:method findByCriteria {{-relations 0} {-distinct 0} {-save 1} {-type pk} -- value } {
 		set table [dict get ${:attributes} table]
 		set from ${:schema}.$table
 		set toSelect *
+		if {$distinct} {
+			set distinct DISTINCT
+		} else { set distinct "" }
 		
 		if {$type == "pk"} {
 			set idValueList $value
@@ -24,7 +27,7 @@ nx::Class create SQLSelect   {
 		set where_sql [$criteria  getCriteriaSQL]
 		set pr_stmt  [$criteria getPreparedStatements]
 		
-		set sql_select "SELECT $toSelect FROM $from WHERE $where_sql"
+		set sql_select "SELECT $distinct $toSelect FROM $from WHERE $where_sql LIMIT 1"
 
 		if {${:debug}} {
 			puts "DEBUG: findByCriteria SQL ${sql_select} and ${pr_stmt}"
@@ -108,6 +111,7 @@ nx::Class create SQLSelect   {
 						{-criteria:object,type=SQLCriteria }
 						{-where ""}
 						{-order ""}
+						{-distinct 0}
 						{-orderType asc} 
 						{-selectSql ""}
 						{-pr_stmt ""} -- {toSelect *}
@@ -119,6 +123,10 @@ nx::Class create SQLSelect   {
 		if {![info exists criteria]} {
 			set criteria [SQLCriteria new -model [self]]
 		}
+
+		if {$distinct} {
+			set distinct DISTINCT
+		} else { set distinct "" }
 		
 		#DEBUG purposes, to be removed when things have been rewritten..
 		if {$where !=""} {  error "Model / SQLSelect / Search: -where option has been replaced by -criteria (SQLCriteria object)" }
@@ -165,7 +173,7 @@ nx::Class create SQLSelect   {
 	}
 
 	:method computeSearchSQL {} {
-		foreach refVar {table toSelect criteria relations } { :upvar $refVar $refVar }
+		foreach refVar {table toSelect distinct criteria relations } { :upvar $refVar $refVar }
 
 		set from ${:schema}.$table
 
@@ -177,7 +185,7 @@ nx::Class create SQLSelect   {
 		set where_sql [$criteria  getCriteriaSQL]
 		set :pr_stmt  [dict merge ${:pr_stmt} [$criteria getPreparedStatements]]
 
-		append :sql_select "SELECT $toSelect "
+		append :sql_select "SELECT $distinct $toSelect "
 		append :sql_select "FROM $from "
 		
 		if {$where_sql != ""} {
