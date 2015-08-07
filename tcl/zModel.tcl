@@ -319,7 +319,13 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 	
 	#Only keep unique fields 
 	:public method getFinalChangedValues {args} {
-		dict set :attributes changedValues [lsort -unique [dict get ${:attributes} changedValues ]]
+		set changed ""
+		if {[dict exists ${:attributes} changedValues]} {
+			set changed [lsort -unique [dict get ${:attributes} changedValues ]]
+			dict set :attributes changedValues $changed
+		}
+
+		return $changed
 	}
 	
 	
