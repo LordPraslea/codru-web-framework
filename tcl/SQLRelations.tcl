@@ -178,9 +178,12 @@ nx::Class create SQLRelations {
 		$criteria destroy
 
 		if {[info exists many_table]} {
-			lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_col_value}
+			#			lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_col_value}
+		#	FROM ${:schema}.$fk_table,${:schema}.$many_table
+		#	WHERE $sqlcriteria) as ok) as $ts"
+			lappend  newSelect " (SELECT DISTINCT ${fk_col_value}
 			FROM ${:schema}.$fk_table,${:schema}.$many_table
-			WHERE $sqlcriteria) as ok) as $ts"
+			WHERE $sqlcriteria) as $ts"
 			
 			#WHERE $many_table.$many_column = ${:table}.$column
 			#AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts
