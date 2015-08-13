@@ -177,10 +177,14 @@ nx::Class create SQLSelect   {
 
 		set from ${:schema}.$table
 
+		puts "toSelect is $toSelect"
 		if {$toSelect eq "*"} {
 			set toSelect "${table}.*" 
 		}
+		puts "now toSelect is $toSelect"
 		:generateRelationData 
+
+		puts "at last toSelect is $toSelect"
 
 		set where_sql [$criteria  getCriteriaSQL]
 		set :pr_stmt  [dict merge ${:pr_stmt} [$criteria getPreparedStatements]]

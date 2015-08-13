@@ -223,7 +223,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 					#The stack is viewable only in the log!
 					ns_log error "LostMVC Error URL: [ns_conn url] HASH: $hash  IP:[ns_conn peeraddr]
 					\n ERROR: $options \n
-					HEADERS: [ns_set print [ns_conn headers]] OUTPUTHEADERS: [ns_set print [ns_conn outputheaders]]   \n
+					HEADERS: [ns_set array [ns_conn headers]] OUTPUTHEADERS: [ns_set array [ns_conn outputheaders]]   \n
 					CLIENTDATA: [ns_conn clientdata]
 					"
 				}
