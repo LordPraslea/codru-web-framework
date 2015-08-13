@@ -41,6 +41,10 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 	}
 
 	:method insertModelColumns {} {
+		set :statementCount 0
+		set primarykey ""
+		if {[dict exists ${:attributes} primarykey]} { set primarykey  [dict get ${:attributes} primarykey]		}
+
 		foreach key [:getColumnsKeys]  {
 		#	Insert only keys that have a value and may be saved
 			if {[dict exists ${:attributes} sqlcolumns $key value]} {
@@ -49,6 +53,7 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 				}
 
 				if {[:get $key] == ""} { continue  }
+				if {$key in $primarykey} { continue }
 
 				set separator [:getCondition ", "]
 				append columns [format "%s%s" $separator   $key  ]
