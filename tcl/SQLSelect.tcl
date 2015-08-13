@@ -177,7 +177,7 @@ nx::Class create SQLSelect   {
 
 		set from ${:schema}.$table
 
-		if {$toSelect == "*"} {
+		if {$toSelect eq "*"} {
 			set toSelect "${table}.*" 
 		}
 		:generateRelationData 

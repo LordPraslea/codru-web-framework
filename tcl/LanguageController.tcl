@@ -95,8 +95,9 @@ nx::Class create LanguageController {
 			#After redirecting the execution goes on, even if it's unwanted
 			#Discovered bug when developing LifeBeyondApocalypse (multiple searches!)
 			#return -level 100 0
-			return -level 3 0
+			return 0
 		}
+		return 1
 	}
 
 	#TODO cache

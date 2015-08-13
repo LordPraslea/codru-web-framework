@@ -184,17 +184,18 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 
 		:redirectHttpToHttps
 	
-		:forceMultiLingual
+		if {[:forceMultiLingual]} {
 
-		if {$action == ""} {
+			if {$action == ""} {
 				if {![my preAction]} { return 0 }
 				my defaultAction
 				return 0
+			}
+
+			:determineAndRunUrlAction 
+
+			my	postAction
 		}
-
-		:determineAndRunUrlAction 
-
-		my	postAction
 	}
 
 	:method determineAndRunUrlAction {} {
@@ -206,14 +207,25 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 			try {
 				my [lindex $actionmethods $loc] 
 			} on error {result options } {
-				if {[ns_adp_ctl detailerror]} {
+				set config [ns_cache_get lostmvc config.[getConfigName]] 
+				
+				set mode [dict get $config mode]
+				if {$mode in "debug dev development"} {
 					my errorPage [msgcat::mc  "Something went a little wrong.."] [msgcat::mc  "Error: %s Details: %s on line %d" \
 					"<b>$result<b>" "<pre>[dict get $options -errorinfo]</pre><br>" [dict get $options -errorline] ]
 				} else {
-				#TODO encode error and show it encoded.. so the user sends it to you 
-					my errorPage [msgcat::mc  "A little error has occured"] [msgcat::mc  "Error: %s " \
-						"<b>$result<b>"  ]
-					ns_log Error "Error url [ns_conn url] $options $result "
+					#We encode only the errorinfo, not the stack this way we never give out information that might exist 
+					set hash [ns_sha1 $options]  
+					my errorPage [msgcat::mc  "Something went wrong somewhere"] \
+						[msgcat::mc  "Please provide the following code(s) to our developers:<br> %s <br><br> %s" \
+						$hash [ns_base64encode [zlib compress [dict get $options -errorinfo]]] ]
+
+					#The stack is viewable only in the log!
+					ns_log error "LostMVC Error URL: [ns_conn url] HASH: $hash  IP:[ns_conn peeraddr]
+					\n ERROR: $options \n
+					HEADERS: [ns_set print [ns_conn headers]] OUTPUTHEADERS: [ns_set print [ns_conn outputheaders]]   \n
+					CLIENTDATA: [ns_conn clientdata]
+					"
 				}
 
 			}
