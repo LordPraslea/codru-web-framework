@@ -569,7 +569,7 @@ bhtml public method highcharts {{-slideOpen 0} {-height 400} {-text ""} -- name 
 #  http://seiyria.github.io/bootstrap-slider/
 #  Bootstrap slider for sliding selecting.. 
 ###########################################
-bhtml public method slider { {-returnJs 1} {-sliderid "allslider"} {-min 0} {-max 100 } {-class ""}   {-step 1} --  name {value 0} {secondval ""}} {
+bhtml public method slider { {-returnJs 1} {-sliderid ""} {-min 0} {-max 100 } {-class ""}   {-step 1} --  name {value 0} {secondval ""}} {
 
 	set plugin slider
 	if {![my existsPlugin $plugin]} {
@@ -581,6 +581,9 @@ bhtml public method slider { {-returnJs 1} {-sliderid "allslider"} {-min 0} {-ma
 		}
 
 	}
+	if {$sliderid == ""} {
+		set sliderid $name
+	}
 	
 
 	my js [format { 
@@ -590,7 +593,7 @@ bhtml public method slider { {-returnJs 1} {-sliderid "allslider"} {-min 0} {-ma
 		//	}
 		tooltip: 'always',
 		});
-	} $name ]
+	} $sliderid ]
 	if {$secondval != ""} {
 		set value \[${value},${secondval}\]
 	}
@@ -598,7 +601,7 @@ bhtml public method slider { {-returnJs 1} {-sliderid "allslider"} {-min 0} {-ma
 	#	background: #BABABA;
 		#}
  #for 2 selectors.. do the value [25,50]
- set slider_options [list id $name name $name data-slider-id $sliderid \
+ set slider_options [list id $sliderid  data-slider-id $sliderid \
 	 	data-slider-min $min data-slider-max $max data-slider-step $step data-slider-value $value class $class]
 	set slider [my input -htmlOptions $slider_options  $name]
 	return $slider 
@@ -954,6 +957,47 @@ bhtml public method generateLabelTags {{-controller ""} tags} {
 		append newtags [: link -controller $controller -htmlOptions [list class {label label-success}] $tag tag/[ns_urlencode $tag]] " " 
 	}
 	return $newtags
+}
+
+bhtml public method btnPlusMinus {{-min 1} {-max 10} {-size "sm"} inputName {value 1}} {
+	set plugin btnplusminus
+	if {![my existsPlugin $plugin]} {
+		my addPlugin $plugin { 
+			js "/js/btnplusminus.js"
+			js-min "/js/btnplusminus.js"
+		}
+	}
+	return [string map "%inputName $inputName %min $min %max $max %value $value %size $size" {
+	<div class="input-group">
+          <span class="input-group-btn">
+              <button type="button" class="btn btn-danger btn-number btn-%size"  data-type="minus" data-field="%inputName">
+                <span class="glyphicon glyphicon-minus"></span>
+              </button>
+          </span>
+          <input type="text" name="%inputName" class="form-control input-number input-%size" value="%value" min="%min" max="%max">
+          <span class="input-group-btn">
+              <button type="button" class="btn btn-success btn-number btn-%size" data-type="plus" data-field="%inputName">
+                  <span class="glyphicon glyphicon-plus"></span>
+              </button>
+          </span>
+      </div>
+	}]
+}
+
+##########################################
+# Drag And Drop
+##########################################
+bhtml public method dad {} {
+	set plugin dad
+	if {![my existsPlugin $plugin]} {
+		my addPlugin $plugin { 
+			css "/css/jquery.dad.css"
+			css-min "/css/jquery.dad.css"
+			js "/js/jquery.dad.js"
+			js-min "/js/jquery.dad.js"
+		}
+	}
+
 }
 
 ##########################################
