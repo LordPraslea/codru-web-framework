@@ -26,11 +26,11 @@ nx::Class create bhtml {
 	:variable components 
 
  	:variable plugins  
-
+# === Usual public properties
 	:property -accessor public {Controller:optional ""}
 	:property -accessor public {cdn true}
 
-# == Init method
+# ==== Init method
 	:method	init {} {
 
 		set :scripts {
@@ -58,7 +58,7 @@ nx::Class create bhtml {
 
 	}
 
-# == Include Plugins
+# ==== Include Plugins
 #	This generates the JavaScript Script and CSS link HTML tags.
 	
 	:method computePlugins {} {
@@ -124,7 +124,7 @@ nx::Class create bhtml {
 			dict set :plugins $name $data  
 	}
 
-# === Misc things
+# ==== Misc things
 # Misc scripts, components and javascript  functions
 # 	
 	:public method components {} {
@@ -143,7 +143,7 @@ nx::Class create bhtml {
 	}
 
 
-	# == Cache bhtml components
+	# ==== Cache bhtml components
 	# NOTE these functions DO NOT compute the actual <link> or <script> tags
 	# the caching of whole pages will be done later
 	# getCacheData : returns JavaScript code, HTML Compoments and the JS & CSS files 
@@ -159,7 +159,7 @@ nx::Class create bhtml {
 	}
 	
 
-# == tag , html or htmltag 
+# ==== tag , html or htmltag 
 # Creating html tags.. good for now
 	:public method htmltag {{-htmlOptions ""} {-closingTag 1} {-singlequote 0} -- tag {data ""}} {
 		set attributes ""
@@ -178,11 +178,13 @@ nx::Class create bhtml {
 		}
 		return $html
 	}
-	#Aliases
+	
+	#==== Alias for htmltag
  	:public	method html {args} {
 		my htmltag {*}$args			
 	}
 	
+	#==== Alias for htmltag
 	:public method tag {args} {
 		my htmltag {*}$args
 	}
@@ -239,9 +241,9 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		return $tag
 	}
 
-	#"
+		
 	##########################################
-	# Badge and label 
+	# ===  Badge and label 
 	##########################################
 	:public method spanlabel {{-type info} -- data} {
 		#type success	warning	important	info 	inverse
@@ -254,7 +256,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	}
 
 	##########################################
-	# Jumbotron / Hero unit 
+	#  === Jumbotron / Hero unit 
 	########################################
 	:public	method jumbotron {{-htmlOptions ""} -- heading data} {
 		#TODO further implement..
@@ -265,7 +267,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	}
 
 	##########################################
-	# Breadcrumbs 
+	# === Breadcrumbs 
 	##########################################
 	:public method breadcrumb {{-type info} {-container 0} -- data} {		
 		set breadcrumb [my makeList -htmlOptions [list class breadcrumb ] -type ol $data  ]
@@ -277,7 +279,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	}
 
 	##########################################
-	# Blockquote 
+	# === Blockquote 
 	##########################################
 	:public	method blockquote {{-source ""} {-reverse 0} -- data} {
 		set htmlOptions ""
@@ -292,7 +294,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	}
 
 	##########################################
-	# Lists 
+	# == Lists 
 	##########################################
 	#These can be recursive..
 	##htmlOptions
@@ -349,7 +351,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 
 	}
 
-
+	# === makeGroup 
 	#what this does is make a list-group with a div and a instead of ul/li
 	#It's very simple, not as complex as makeList..
 	:public method makeGroup {{-htmlOptions ""}     -- data} {
@@ -376,7 +378,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		return $html
 	}
 	##########################################
-	# Description 
+	# === Description 
 	##########################################
 	 :public method desc {{-horizontal 0} -- data} {
 		set htmlOptions ""
@@ -390,7 +392,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	}
 
 	##########################################
-# Table
+	#  === Tables
 # 	Create beautiful tables without having to code everything..
 	# ##########################################
 	#At the moment no rowspan, no colspan..sorry:)
@@ -406,7 +408,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	# 1. Get a list of sublists where each sublist is a row
 	# 	Very easy to impose row and cell specific settings
 	###
-	#
+	# ==== Horizontal Tables with tableHorizontal
 	:public method tableHorizontal {{-rpr 0} {-striped 0} {-bordered 0} {-hover 0} {-condensed 0} {-responsive 0} {-class ""} {-hwidth 30} -- header data} {
 		set tdOptions ""
 		set htmlOptions [dict create class table]
@@ -442,7 +444,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		append html [my htmltag tbody $tbody]
 		return [my htmltag -htmlOptions $htmlOptions table $html]
 	}
-	
+	#==== HTML Table 
 	:public	method table {{-rpr 0} {-striped 0} {-bordered 0} {-hover 0} {-condensed 0} {-responsive 0} {-class ""} {-id ""} -- header data} {
 		set htmlOptions [dict create class table]
 		set html ""
@@ -542,7 +544,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 
 
 	##########################################
-	# Form 
+	# === Form 
 	##########################################
 	#TODO class like options.. create form then add thigns to it
 	#TODO when making horizontal form..make all other things horizontal!
@@ -812,7 +814,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 						# btn-block block level..
 						# Only BUTTONS are supported with navbar
 	:public method button {{-options ""}  {-class ""}  {-type "button"} {-fa "" }  {-id ""} {-placeholder ""} {-value ""} {-name ""} 
-						-- data} {
+						 data} {
 		set htmlOptions { class btn}
 
 		if {$type>0} { dict lappend htmlOptions class [my returnType "btn" $type]}	
