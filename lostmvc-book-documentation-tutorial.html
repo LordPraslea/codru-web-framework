@@ -1,9 +1,8 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.6.9" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="AsciiDoc 8.6.9">
 <title>Developing web applications with ease by using LostMVC on NaviServer</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -535,6 +534,40 @@ body.manpage div.sectionbody {
 }
 
 
+@media screen {
+  body {
+    max-width: 50em; /* approximately 80 characters wide */
+    margin-left: 16em;
+  }
+
+  #toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 13em;
+    padding: 0.5em;
+    padding-bottom: 1.5em;
+    margin: 0;
+    overflow: auto;
+    border-right: 3px solid #f8f8f8;
+    background-color: white;
+  }
+
+  #toc .toclevel1 {
+    margin-top: 0.5em;
+  }
+
+  #toc .toclevel2 {
+    margin-top: 0.25em;
+    display: list-item;
+    color: #aaaaaa;
+  }
+
+  #toctitle {
+    margin-top: 0.5em;
+  }
+}
 </style>
 <script type="text/javascript">
 /*<![CDATA[*/
@@ -734,8 +767,8 @@ asciidoc.install(4);
 <body class="book">
 <div id="header">
 <h1>Developing web applications with ease by using LostMVC on NaviServer</h1>
-<span id="author">Clinciu Andrei</span><br />
-<span id="email"><code>&lt;<a href="mailto:&lt;info@andreiclinciu.net&gt;">&lt;info@andreiclinciu.net&gt;</a>&gt;</code></span><br />
+<span id="author">Clinciu Andrei</span><br>
+<span id="email" class="monospaced">&lt;<a href="mailto:&lt;info@andreiclinciu.net&gt;">&lt;info@andreiclinciu.net&gt;</a>&gt;</span><br>
 <span id="revdate">2015</span>
 <div id="toc">
   <div id="toctitle">Table of Contents</div>
@@ -745,6 +778,23 @@ asciidoc.install(4);
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
+<%
+set bhtml [bhtml new]
+$bhtml addPlugin fontawesome {
+    css  "/css/font-awesome.css"
+        css-min  "/css/font-awesome.min.css"
+}
+%>
+
+<%= [$bhtml includeCssPlugins] %>
+<%= [$bhtml components] %>
+<%= [$bhtml includeJsPlugins] %>
+<%= [$bhtml putScripts] %>
+<style>
+body  {
+margin: 0 auto;
+}
+</style>
 <div class="paragraph"><p>Copyright &#169; 2015 Clinciu Andrei George - United Brain Power</p></div>
 <div class="paragraph"><p>Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3
@@ -758,6 +808,8 @@ For more information see (<a href="http://www.gnu.org/licenses/fdl.html">http://
 <div class="sect1">
 <h2 id="_the_world_with_software">1. The world with software</h2>
 <div class="sectionbody">
+<div class="paragraph"><p>Why this when you have things like Websh, rivet, tclhttpd, wub, wibble.. etc or even OpenACS?</p></div>
+<div class="paragraph"><p>A free book is excellent documentation. A free book written by the main developer is the best documentation.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -766,29 +818,485 @@ For more information see (<a href="http://www.gnu.org/licenses/fdl.html">http://
 <div class="paragraph"><p>Before we dive into the beautiful world of programming there are some prequistories.
 You need to work on Linux, as at this time <strong>LostMVS</strong> wasn&#8217;t tested on Windows at all.
 If you manage to compile and install <strong>NaviServer</strong> on windows yourself, you&#8217;re good to go!
-So fire up a <code>Virtual Box</code> and install your favourite <code>Linux</code> distribution,
+So fire up a <span class="monospaced">Virtual Box</span> and install your favourite <span class="monospaced">Linux</span> distribution,
 for development I&#8217;d suggest Linux Mint and for production Debian. But it&#8217;s up to you.</p></div>
+<div class="paragraph"><p>To follow this book you need to have a fair understanding of <strong>Tcl</strong>, <strong>Linux</strong>, <strong>SQL</strong>,
+<strong>HTML</strong>, <strong>CSS</strong> and a tiny bit of <strong>JavaScript</strong> including the <strong>jQuery</strong> and the <strong>Bootstrap</strong> frameworks.</p></div>
+<div class="paragraph"><p>When I say fair you don&#8217;t need to be an expert, but you have to know how  SQL works for example or how to
+build a simple static HTML website.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">The meaning of this handbook is that of a tutorial. It is meant to explain how to use LostMVC and how it works.
+It will be impossible to explain all the inner workings and detail all the tweaks and functions.
+For that you have the source code and the HTML generated!</td>
+</tr></table>
+</div>
 <div class="sect2">
 <h3 id="_naviserver_setup">2.1. NaviServer setup</h3>
 <div class="paragraph"><p>TODO setup NaviServer (automatically and generate script!)</p></div>
+<div class="sect3">
+<h4 id="_nsdbi">2.1.1. nsdbi</h4>
+</div>
 </div>
 <div class="sect2">
-<h3 id="_lostmvc_setup">2.2. LostMVC setup</h3>
+<h3 id="_nsphp">2.2. nsphp</h3>
+<div class="paragraph"><p>Optional PHP</p></div>
+</div>
+<div class="sect2">
+<h3 id="_next_scripting_framework">2.3. Next Scripting Framework</h3>
+<div class="paragraph"><p>NaviServer runs best with XOTCL or nx/nsf better known as Next Scripting framework.
+LostMVC was rewritten (easily though!) from TclOO to nx 2.0.
+It&#8217;s necessary that you understand nx and are able to use it.</p></div>
+<div class="paragraph"><p>We won&#8217;t teach you nx here, but you can go through the nice tutorial provided here:
+<a href="https://next-scripting.org/xowiki/docs/nx/tutorial/index1">https://next-scripting.org/xowiki/docs/nx/tutorial/index1</a></p></div>
+<div class="paragraph"><p>The installation is fairly simple.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_lostmvc_setup">2.4. LostMVC setup</h3>
 <div class="paragraph"><p>TODO Download LostMVC from <a href="http://unitedbrainpower.com">http://unitedbrainpower.com</a>
-After you&#8217;ve downloaded and extracted the lostmvc sources.</p></div>
-<div class="paragraph"><p>Now in the Config folder you have the SQL to RUN in PostgreSQL
-You also have a configuration file ubp-config.conf which you can open up, modify and move to /opt/ns/conf</p></div>
+After you&#8217;ve downloaded it extract it under /opt/ns/www/lostmvc</p></div>
+<div class="paragraph"><p>Now in the Config folder you have the lostmvc configuration file
+ubp-config which you can open up and read through if you like following the NaviServer documentation.</p></div>
+<div class="paragraph"><p>TODO You can install LostMVC using the commandline tool located in in <span class="monospaced">tcl/</span>, we&#8217;ll presume you&#8217;re in /opt/ns/www</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sudo <span style="color: #990000">.</span>/lostmvc/tcl/install<span style="color: #990000">.</span>tcl install_lostmvc</tt></pre></div></div>
+<div class="paragraph"><p>This simply copies the  lostmvc/tcl/* to /opt/ns/tcl/lostmvc/*, it sets up the ubp-config.conf.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_generating_websites_using_the_command_line_tool">2.5. Generating websites using the command-line tool</h3>
+<div class="paragraph"><p>To create your first application you just need to type the following:</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">.</span>/lostmvc/tcl/install<span style="color: #990000">.</span>tcl install mywebsite</tt></pre></div></div>
+<div class="paragraph"><p>The <span class="monospaced">install.tcl</span> file provides some easy to use functions which help you in creating apps.
+Like model creation, url creation for Module/Controller/View
+Crud, rbac and module installation.
+It uses a web file called <span class="monospaced">lostmvcli.adp</span> to talk to the webserver and can  be accessed only from 127.0.0.1.
+In the future this can change and it is however advised to use the <span class="monospaced">generator.adp</span>
+file which you can copy anywhere you like, open it up and change the password first though.</p></div>
+<div class="paragraph"><p>First we need to  setup our local hostname to <span class="monospaced">mywebsite</span> so when we go to the browser we&#8217;re redirected to the virtual server.
+Do this in your /etc/hosts file accordingly.</p></div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_how_8217_s_your_html">3. How&#8217;s your HTML ?</h2>
+<h2 id="_do_i_really_need_a_mvc">3. Do I really need a MVC?</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>A MVC (Model-View-Controller) is a software architecural pattern. It allows us to divide the software application in three interconnected parts.
+We thus separate the code components so we have more structure in our code.</p></div>
+<div class="paragraph"><p>The <span class="monospaced">Model</span> concerns itself with database connectivity.
+More than that a Model in LostMVC is actually a mapped SQL table. You can do Selects , Inserts, Updates, Deletes  operations without needing to write any SQL.
+Each Model is actually a class and you can define subobjects.</p></div>
+<div class="paragraph"><p>At the moment only PostgreSQL has been fully tested but you could easily use SQLite or MySQL
+or anyother database supported by NaviServer.</p></div>
+<div class="paragraph"><p>A <span class="monospaced">View</span> is in the case of LostMVC any .adp file that contains HTML tags  (CSS and JS is also permitted)  either written by you or generated with helper classes bhtml or Plugins.
+A view usually contains one page or subpage.
+To illustrate imagine you have a form you use for adding a product to a database, however that form might be also used in updating the product.
+We can have a general form view, a update view and a create view which both use the form view.</p></div>
+<div class="paragraph"><p>The <span class="monospaced">Controller</span> is actually the orchestrator of the whole application, it interconnects the Views with the Model.
+What you do in a Controller in web applications is load the query parameters, load the Model data and render the view.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_8217_s_your_html">4. How&#8217;s your HTML</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This chapter is an introduction to using bhtml. The default way to generate HTML in LostMVC.
+We best learn by examples, so we&#8217;ll have an example of every function out there.</p></div>
+<div class="paragraph"><p>Let&#8217;s start with what bhtml actually does.
+What it does is genertate HTML (wow, nothing new Sherlok) in a very convenient way.
+You have to generate a new bhtml object.
+The bhtml object actually loads the correct css and js files for you as you use specific functions.
+Per default bhtml initializes with jquery and bootstrap.
+This means that all you have to do is  insert the following line of code to include the javascript required.</p></div>
+<div class="paragraph"><p>This is a cool way to only load what you actually need without having to bother loading JavaScript yourself on a page.</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #000000">    1:</span> <span style="color: #009900">$bhtml</span> includeJsPlugins</tt></pre></div></div>
+<div class="paragraph"><p>Now let&#8217;s do something very simple. We generate a new bhtml object and we&#8217;ll show a simple alert to the screen!
+The alert is the first method to generate html you&#8217;ll see in the <span class="monospaced">Bhtml.tcl</span> file besides the <strong>tag</strong> method.</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%</span> <span style="font-weight: bold"><span style="color: #0000FF">set</span></span> bhtml <span style="color: #990000">[</span>bhtml new<span style="color: #990000">]</span>
+ns_puts <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> alert <span style="color: #FF0000">"Hello there!"</span><span style="color: #990000">]</span>
+<span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%
+set bhtml [bhtml new]
+ns_puts [$bhtml alert "Hello there!"]
+%>
+<div class="paragraph"><p>Pretty simple, right? Now let&#8217;s change the alert type.
+Note that we won&#8217;t regenerate the bthml since it was already generated.
+And we&#8217;ll use &lt;%= to output directly to the screen, no need for ns_puts anymore for oneliners!</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> alert <span style="color: #990000">-</span>type danger <span style="color: #FF0000">"DANGER DO NOT be naughty!"</span><span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%= [$bhtml alert -type danger "DANGER DO NOT be naughty!"] %>
+<div class="sect3">
+<h4 id="_spanlabel_and_badge">4.0.1. Spanlabel and badge</h4>
+<div class="listingblock">
+<div class="title">Now let&#8217;s see a spanlabel and a badge:</div>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> spanlabel <span style="color: #990000">-</span>type success <span style="color: #FF0000">"A step to success here!"</span><span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span>
+<span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> badge  <span style="color: #FF0000">"2"</span><span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%= [$bhtml spanlabel -type success "A step to success here!"] %>
+<%= [$bhtml badge "2"] %>
+</div>
+<div class="sect3">
+<h4 id="_hero_unit_jumbotron">4.0.2. Hero Unit (Jumbotron)</h4>
+<div class="paragraph"><p>A fast way to make a big header and some text for attention is to use the Bootstrap Hero/Jumbotron unit.</p></div>
+<div class="listingblock">
+<div class="title">Jumbotron example</div>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> jumbotron <span style="color: #FF0000">"Have you heard of lorem ipsum?"</span> <span style="color: #FF0000">"&lt;p&gt;Sed ut perspiciatis unde omnis iste natus error ....</span>
+<span style="color: #FF0000">    [$bhtml button -type success -class "</span>btn<span style="color: #990000">-</span>lg btn<span style="color: #990000">-</span>block<span style="color: #FF0000">" -fa fa-rocket Sure!]</span>
+<span style="color: #FF0000"> &lt;/p&gt;"</span> <span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<div class="container-fluid">
+<%= [$bhtml jumbotron "Have you heard of lorem ipsum?" "<p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium,
+    totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+    [$bhtml button -type success -class "btn-lg btn-block" -fa fa-rocket Sure!]
+    </p>" ] %>
+    </div>
+<div class="paragraph"><p>But you&#8217;ve said that bhtml should be used to generate HTML and you&#8217;ve just used a &lt;p&gt; tag!</p></div>
+<div class="paragraph"><p>True. But would it be faster to type &lt;p class="text-success"&gt; Hi! &lt;/p&gt; or the following ?</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> tag <span style="color: #990000">-</span>htmlOptions <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> class text<span style="color: #990000">-</span>success<span style="color: #990000">]</span> p <span style="color: #FF0000">"Hi!"</span> <span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span></tt></pre></div></div>
+</div>
+<div class="sect3">
+<h4 id="_breadcrumbs_generation">4.0.3. Breadcrumbs generation</h4>
+<div class="paragraph"><p>Sometimes generating HTML automatically defeats the purpose if you need some simple HTML.</p></div>
+<div class="paragraph"><p>Breadcrumbs are also easy to generate. Say you want to make an application of a library:</p></div>
+<div class="listingblock">
+<div class="title">Breadcrumbs show the current website trail</div>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> breadcrumb <span style="color: #FF0000">{</span>
+            <span style="color: #FF0000">{</span><span style="color: #990000">-</span>url <span style="color: #993399">1</span> <span style="color: #FF0000">"Library"</span> <span style="color: #990000">/</span>library<span style="color: #990000">/</span><span style="color: #FF0000">}</span>
+            <span style="color: #FF0000">{</span><span style="color: #990000">-</span>url <span style="color: #993399">1</span> <span style="color: #FF0000">"Non-Fiction"</span> <span style="color: #990000">/</span>library<span style="color: #990000">/</span>non<span style="color: #990000">-</span>fiction<span style="color: #990000">/</span><span style="color: #FF0000">}</span>
+            <span style="color: #FF0000">{</span><span style="color: #990000">-</span>url <span style="color: #993399">1</span> <span style="color: #FF0000">"Self-Help"</span> <span style="color: #990000">/</span>library<span style="color: #990000">/</span>non<span style="color: #990000">-</span>fiction<span style="color: #990000">/</span>self<span style="color: #990000">-</span>help<span style="color: #990000">/</span><span style="color: #FF0000">}</span>
+            <span style="color: #FF0000">{</span><span style="color: #990000">-</span>active <span style="color: #993399">1</span> <span style="color: #FF0000">"How to make friends and be happy"</span> <span style="color: #FF0000">}</span>
+<span style="color: #FF0000">}</span> <span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%= [$bhtml breadcrumb  {
+            {-url 1 "Library" /library/}
+            {-url 1 "Non-Fiction" /library/non-fiction/}
+            {-url 1 "Self-Help" /library/non-fiction/self-help/}
+            {-active 1 "Humour as a therapy" }
+} ] %>
+<div class="paragraph"><p>If you notice closely we can tell the breadcrumb to generate a url. And we can also tell it to make the breadcrumb active</p></div>
+</div>
+<div class="sect3">
+<h4 id="_blockquote">4.0.4. Blockquote</h4>
+<div class="listingblock">
+<div class="title">Sometimes we want to quote someone</div>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> blockquote <span style="color: #990000">-</span>reverse <span style="color: #993399">1</span> <span style="color: #990000">-</span><span style="font-weight: bold"><span style="color: #0000FF">source</span></span> <span style="color: #FF0000">"Antoine de Saint-Exupery"</span> <span style="color: #FF0000">" True happiness comes from the joy of deeds well done, the zest of creating things new."</span><span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%= [$bhtml blockquote -reverse 1 -source "Antoine de Saint-Exupery" " True happiness comes from the joy of deeds well done, the zest of creating things new."] %>
+</div>
+<div class="sect3">
+<h4 id="_generating_lists">4.0.5. Generating lists</h4>
+<div class="paragraph"><p>Next sometimes we want some lists and we can get very complicated and  nested behaviour by using some properties.
+To remember is that the makeList method is actually used by multiple other methods like <strong>breadcrumb</strong>, <strong>nav</strong>, <strong>dropdown</strong> etc.</p></div>
+<div class="paragraph"><p>The usage is very simple: makeList " $listitem1 $listitem2 etc..  "
+.Creating a list complicated list</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> makeList <span style="color: #990000">-</span>group <span style="color: #993399">1</span> <span style="color: #FF0000">{</span>
+    <span style="color: #FF0000">"&lt;b&gt;3 Potatoes&lt;/b&gt;"</span>
+    <span style="color: #FF0000">{</span><span style="color: #993399">1</span> Lavender<span style="color: #FF0000">}</span>
+    <span style="color: #FF0000">{</span><span style="color: #990000">-</span>class <span style="font-weight: bold"><span style="color: #0000FF">list</span></span><span style="color: #990000">-</span>group<span style="color: #990000">-</span>item<span style="color: #990000">-</span>danger <span style="color: #FF0000">{</span>some Onions and Garlic<span style="color: #FF0000">}}</span>
+    <span style="color: #FF0000">{</span><span style="color: #990000">-</span>url <span style="color: #993399">1</span> <span style="color: #990000">-</span>tooltip <span style="color: #FF0000">"-location left Sausage"</span> <span style="color: #FF0000">"2  Sausages"</span> <span style="font-style: italic"><span style="color: #9A1900">#clickme}</span></span>
+    <span style="color: #FF0000">{</span>And  some mediteranean herbs<span style="color: #FF0000">}</span>
+    <span style="color: #FF0000">{</span><span style="color: #990000">-</span>newlist <span style="color: #993399">1</span> <span style="color: #990000">-</span>p <span style="color: #FF0000">"How to cook"</span>  <span style="color: #990000">-</span>type ol    <span style="color: #990000">--</span> <span style="color: #FF0000">{</span><span style="color: #FF0000">"Boil 1 liter water "</span> <span style="color: #FF0000">"Add potatoes"</span> <span style="color: #FF0000">"Add remaining items to water"</span><span style="color: #FF0000">}}</span>
+
+<span style="color: #FF0000">}</span>   <span style="color: #990000">]</span></tt></pre></div></div>
+<div class="olist arabic"><div class="title">Some interesting things to note:</div><ol class="arabic">
+<li>
+<p>
+You can add HTML to list items
+</p>
+</li>
+<li>
+<p>
+Any list can have any type of CSS class you want
+</p>
+</li>
+<li>
+<p>
+You can even make it an URL. Notice that we added an extra tooltip to this item. Most BHTML items contain the tooltip &amp; popover options.
+</p>
+</li>
+<li>
+<p>
+A list within a list, that can be done easily.<br>
+</p>
+</li>
+</ol></div>
+<%= [$bhtml makeList -group 1 {
+    "<b>3 Potatoes</b>"
+    {1 Lavender}
+    {-class list-group-item-danger {some Onions and Garlic}}
+    {-url 1 -tooltip "-location left {Sausage is very good if it's from Germany}" "2  Sausages" #clickme}
+    {And  some mediteranean herbs}
+    {-newlist 1 -p "How to cook"  -type ol    -- {"Boil 1 liter water " "Add potatoes" "Add remaining items to water"}}
+
+}   ]
+%>
+</div>
+<div class="sect3">
+<h4 id="_grouping_data_with_makegroup">4.0.6. Grouping data with makeGroup</h4>
+<div class="paragraph"><p>Similair to  <strong>makeList</strong> we have <strong>makeGroup</strong> which makes something that looks like a list using list-grup css class and a div instead of ul/ol.</p></div>
+<div class="paragraph"><p>usage: <strong>makeGroup</strong> data
+The -p 1 means that the text in the data is enclosed in a paragraph. The rest is self explaintory.</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> makeGroup <span style="color: #FF0000">{</span>
+<span style="color: #FF0000">{</span> <span style="color: #990000">-</span>h <span style="color: #FF0000">"Chapter 1 - The Beginning"</span> <span style="color: #990000">-</span>p <span style="color: #993399">1</span> <span style="color: #990000">-</span>active <span style="color: #993399">1</span> <span style="color: #990000">-</span>type success <span style="color: #FF0000">"Learning LostMVC is fun"</span><span style="color: #FF0000">}</span>
+<span style="color: #FF0000">{</span> <span style="color: #990000">-</span>h <span style="color: #FF0000">"Chapter 2 - Advance into Darkness"</span> <span style="color: #990000">-</span>p <span style="color: #993399">0</span> <span style="color: #FF0000">{</span> LostMVC example <span style="color: #FF0000">}</span> <span style="color: #FF0000">}</span>
+<span style="color: #FF0000">{</span> <span style="color: #990000">-</span>h <span style="color: #FF0000">"Chapter 3 - Sunlight"</span> <span style="color: #990000">-</span>p <span style="color: #993399">0</span> <span style="color: #FF0000">{</span> A lot of useless lorem ipsum is needed here<span style="color: #990000">.</span> <span style="color: #FF0000">}</span> <span style="color: #FF0000">}</span>
+<span style="color: #FF0000">}</span><span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%= [$bhtml makeGroup {
+
+{ -h "Chapter 1 - The Beginning" -p 1 -active 1 -type success "Learning LostMVC is fun"}
+{ -h "Chapter 2 - Advance into Darkness" -p 0 { LostMVC example } }
+{ -h "Chapter 3 - Sunlight" -p 0 { A lot of useless lorem ipsum is needed here. } }
+    }] %>
+</div>
+<div class="sect3">
+<h4 id="_creating_descriptions_of_items">4.0.7. Creating descriptions of items</h4>
+<div class="paragraph"><p>Generation of descriptions using HTML dt,dd,dl tags easily by using the desc function.</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%=</span> <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> desc <span style="color: #990000">-</span>horizontal <span style="color: #993399">1</span> <span style="color: #FF0000">{</span>
+    RAM <span style="color: #FF0000">"Random Access Memory of a pc"</span>
+        CPU <span style="color: #FF0000">"Central processing unit"</span>
+        Tcl <span style="color: #FF0000">"Tool Command Language"</span>
+        OOP <span style="color: #FF0000">"Object Oriented Programming"</span>
+<span style="color: #FF0000">}</span><span style="color: #990000">]</span> <span style="color: #990000">%&gt;</span>
+</tt></pre></div></div>
+<%= [$bhtml desc -horizontal 1 {
+    RAM "Random Access Memory of a pc"
+        CPU "Central processing unit"
+        Tcl "Tool Command Language"
+        OOP "Object Oriented Programming"
+}] %>
+</div>
+<div class="sect3">
+<h4 id="_tables">4.0.8. Tables</h4>
+<div class="paragraph"><p>Generating tables in LostMVC is easy and fun. Since you don&#8217;t have to use for(each) yourself.
+All you have to do is give a list that contains headers and a list that contains the data.
+The tr and td count will be generated based on how many items are in your header.</p></div>
+<div class="listingblock">
+<div class="title">A vertical table using  tableHorizontal</div>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%</span>
+<span style="font-weight: bold"><span style="color: #0000FF">set</span></span> header <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> <span style="color: #FF0000">"First Name"</span> <span style="color: #FF0000">"Last Name"</span> <span style="color: #FF0000">"Age"</span> <span style="color: #FF0000">"City"</span><span style="color: #990000">]</span>
+<span style="font-weight: bold"><span style="color: #0000FF">set</span></span> data <span style="color: #FF0000">"Makowlski Bender 31 {New Jersy}"</span>
+ns_puts <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> tableHorizontal <span style="color: #990000">-</span>striped <span style="color: #993399">1</span> <span style="color: #990000">-</span>hover <span style="color: #993399">1</span> <span style="color: #990000">-</span>responsive <span style="color: #993399">1</span> <span style="color: #009900">$header</span> <span style="color: #009900">$data</span><span style="color: #990000">]</span>
+<span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data "Makowlski Bender 31 {New Jersy}"
+ns_puts [$bhtml tableHorizontal -striped 1 -hover 1 -responsive 1 $header $data]
+%>
+<div class="listingblock">
+<div class="title">Generating a normal table using table</div>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%</span>
+<span style="font-weight: bold"><span style="color: #0000FF">set</span></span> header <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> <span style="color: #FF0000">"First Name"</span> <span style="color: #FF0000">"Last Name"</span> <span style="color: #FF0000">"Age"</span> <span style="color: #FF0000">"City"</span><span style="color: #990000">]</span>
+<span style="font-weight: bold"><span style="color: #0000FF">set</span></span> data  <span style="color: #FF0000">{</span>
+Henry Lamprey <span style="color: #993399">21</span> Ryland Susanna Higginson <span style="color: #993399">22</span> Hueston Aaron Callicoat <span style="color: #993399">23</span> Honeycutt Mike Linsley <span style="color: #993399">24</span> Evens Zoe Hollinsworth <span style="color: #993399">25</span> Odham
+Ellen Delafield <span style="color: #993399">31</span> Coard Amy Coxson <span style="color: #993399">32</span> Baney Carolyn Arnold <span style="color: #993399">33</span> Julian Gabe Ketch <span style="color: #993399">34</span> Claver Chris Brockenbrough <span style="color: #993399">35</span> Brewton
+Gabe Rigdon <span style="color: #993399">36</span> Burnell Jay Noel <span style="color: #993399">37</span> Walmsley Tristan Rowntree <span style="color: #993399">38</span> Padmore Phil Nicolls <span style="color: #993399">39</span> Ashwill <span style="color: #FF0000">}</span>
+
+ns_puts <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> table <span style="color: #990000">-</span>striped <span style="color: #993399">1</span> <span style="color: #990000">-</span>hover <span style="color: #993399">1</span> <span style="color: #990000">-</span>responsive <span style="color: #993399">1</span> <span style="color: #009900">$header</span> <span style="color: #009900">$data</span><span style="color: #990000">]</span>
+<span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data  {
+Henry Lamprey 21 Ryland Susanna Higginson 22 Hueston Aaron Callicoat 23 Honeycutt Mike Linsley 24 Evens Zoe Hollinsworth 25 Odham
+Ellen Delafield 31 Coard Amy Coxson 32 Baney Carolyn Arnold 33 Julian Gabe Ketch 34 Claver Chris Brockenbrough 35 Brewton
+Gabe Rigdon 36 Burnell Jay Noel 37 Walmsley Tristan Rowntree 38 Padmore Phil Nicolls 39 Ashwill }
+ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 $header $data]
+%>
+<div class="paragraph"><p>If you want to give a row (or maybe just a TD) a type or an id, you can use -rpr.
+However this is more difficult to maintain because you need to make a list for every tr.
+.A special type of table using -rpr 1</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #990000">&lt;%</span>
+<span style="font-weight: bold"><span style="color: #0000FF">set</span></span> header <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> <span style="color: #FF0000">"First Name"</span> <span style="color: #FF0000">"Last Name"</span> <span style="color: #FF0000">"Age"</span> <span style="color: #FF0000">"City"</span><span style="color: #990000">]</span>
+<span style="font-weight: bold"><span style="color: #0000FF">set</span></span> data <span style="color: #FF0000">""</span>
+<span style="font-weight: bold"><span style="color: #0000FF">lappend</span></span> data <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> <span style="color: #990000">-</span>type success Henry Lamprey <span style="color: #993399">21</span> Ryland<span style="color: #990000">]</span>
+<span style="font-weight: bold"><span style="color: #0000FF">lappend</span></span> data <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span>  Aaron Callicoat <span style="color: #993399">23</span> Honeycutt<span style="color: #990000">]</span>
+<span style="font-weight: bold"><span style="color: #0000FF">lappend</span></span> data  <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> <span style="color: #990000">-</span>type danger Susanna Higginson <span style="color: #993399">22</span> Hueston<span style="color: #990000">]</span>
+<span style="font-weight: bold"><span style="color: #0000FF">lappend</span></span> data  <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> Mike Linsley <span style="color: #990000">-</span>type primary <span style="color: #993399">24</span> Evens<span style="color: #990000">]</span>
+
+ns_puts <span style="color: #990000">[</span><span style="color: #009900">$bhtml</span> table <span style="color: #990000">-</span>striped <span style="color: #993399">1</span> <span style="color: #990000">-</span>hover <span style="color: #993399">1</span> <span style="color: #990000">-</span>responsive <span style="color: #993399">1</span> <span style="color: #990000">-</span>rpr <span style="color: #993399">1</span> <span style="color: #009900">$header</span> <span style="color: #990000">[</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> <span style="color: #009900">$data</span><span style="color: #990000">]]</span>
+<span style="color: #990000">%&gt;</span></tt></pre></div></div>
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data ""
+lappend data [list -type success Henry Lamprey 21 Ryland]
+lappend data [list  Aaron Callicoat 23 Honeycutt]
+lappend data  [list -type danger Susanna Higginson 22 Hueston]
+lappend data  [list Mike Linsley {-type warning 24} Evens]
+
+ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 -rpr 1 $header  $data]
+
+%>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_views_system">5. Views System</h2>
 <div class="sectionbody">
 </div>
 </div>
 <div class="sect1">
-<h2 id="_do_i_really_need_a_mvc">4. Do I really need a MVC?</h2>
+<h2 id="_sql_models_and_the_database">6. SQL, Models and the database</h2>
 <div class="sectionbody">
+</div>
+</div>
+<div class="sect1">
+<h2 id="_controllers">7. Controllers</h2>
+<div class="sectionbody">
+</div>
+</div>
+<div class="sect1">
+<h2 id="_extra_plugins">8. Extra Plugins</h2>
+<div class="sectionbody">
+</div>
+</div>
+<div class="sect1">
+<h2 id="_real_life_example_1_detailed_blog_cms_application">9. Real Life Example 1: Detailed Blog/CMS Application</h2>
+<div class="sectionbody">
+</div>
+</div>
+<div class="sect1">
+<h2 id="_real_life_example_2_time_management_app">10. Real Life Example 2: Time Management App</h2>
+<div class="sectionbody">
+</div>
+</div>
+<div class="sect1">
+<h2 id="_real_life_example_3_project_management_app">11. Real Life Example 3: Project Management App</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.6
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>
+</tt></pre></div></div>
 <div class="listingblock">
 <div class="content"><!-- Generator: GNU source-highlight 3.1.6
 by Lorenzo Bettini
@@ -816,10 +1324,10 @@ http://www.gnu.org/software/src-highlite -->
 </div>
 </div>
 </div>
-<div id="footnotes"><hr /></div>
+<div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2015-03-11 17:24:16 EET
+Last updated 2015-08-21 16:01:56 EEST
 </div>
 </div>
 </body>

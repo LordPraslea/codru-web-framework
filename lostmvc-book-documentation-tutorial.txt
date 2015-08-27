@@ -8,6 +8,26 @@
 :numbered:
 :Website: http://unitedbrainpower.com
 
+++++
+<%
+set bhtml [bhtml new]
+$bhtml addPlugin fontawesome { 
+	css  "/css/font-awesome.css"
+		css-min  "/css/font-awesome.min.css"
+}
+%>
+
+<%= [$bhtml includeCssPlugins] %>
+<%= [$bhtml components] %>
+<%= [$bhtml includeJsPlugins] %>
+<%= [$bhtml putScripts] %>
+<style>
+body  {
+margin: 0 auto;
+}
+</style>
+++++
+
 Copyright (C) 2015 Clinciu Andrei George - United Brain Power
 
 Permission is granted to copy, distribute and/or modify this document
@@ -37,6 +57,9 @@ To follow this book you need to have a fair understanding of *Tcl*, *Linux*, *SQ
 When I say fair you don't need to be an expert, but you have to know how  SQL works for example or how to 
 build a simple static HTML website.
 
+NOTE: The meaning of this handbook is that of a tutorial. It is meant to explain how to use LostMVC and how it works.
+It will be impossible to explain all the inner workings and detail all the tweaks and functions.
+For that you have the source code and the HTML generated!
 
 === NaviServer setup
 TODO setup NaviServer (automatically and generate script!)
@@ -87,9 +110,9 @@ It uses a web file called +lostmvcli.adp+ to talk to the webserver and can  be a
 In the future this can change and it is however advised to use the +generator.adp+ 
 file which you can copy anywhere you like, open it up and change the password first though.
 
-First we need to  setup our local hostname to +mywebsite+ so when we 
+First we need to  setup our local hostname to +mywebsite+ so when we go to the browser we're redirected to the virtual server.
+Do this in your /etc/hosts file accordingly.
 
-=== 
 
 == Do I really need a MVC?
 A MVC (Model-View-Controller) is a software architecural pattern. It allows us to divide the software application in three interconnected parts.
@@ -112,8 +135,369 @@ What you do in a Controller in web applications is load the query parameters, lo
 
 
 == How's your HTML 
-Introduction to using bhtml.
-We best learn by examples, so we'll have an example of everything.
+This chapter is an introduction to using bhtml. The default way to generate HTML in LostMVC.
+We best learn by examples, so we'll have an example of every function out there.
+
+Let's start with what bhtml actually does.
+What it does is genertate HTML (wow, nothing new Sherlok) in a very convenient way.
+You have to generate a new bhtml object.
+The bhtml object actually loads the correct css and js files for you as you use specific functions.
+Per default bhtml initializes with jquery and bootstrap.
+This means that all you have to do is  insert the following line of code to include the javascript required.
+
+This is a cool way to only load what you actually need without having to bother loading JavaScript yourself on a page.
+
+[source,tcl,numbers]
+--------------------------------------------------
+$bhtml includeJsPlugins
+--------------------------------------------------
+
+Now let's do something very simple. We generate a new bhtml object and we'll show a simple alert to the screen!
+The alert is the first method to generate html you'll see in the +Bhtml.tcl+ file besides the *tag* method.
+
+[source,tcl]
+--------------------------------------------------
+<% set bhtml [bhtml new]
+ns_puts [$bhtml alert "Hello there!"]
+%>
+--------------------------------------------------
+
+++++
+<% 
+set bhtml [bhtml new]
+ns_puts [$bhtml alert "Hello there!"]
+%>
+++++
+
+Pretty simple, right? Now let's change the alert type. 
+Note that we won't regenerate the bthml since it was already generated.
+And we'll use <%= to output directly to the screen, no need for ns_puts anymore for oneliners!
+
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml alert -type danger "DANGER DO NOT be naughty!"] %>
+--------------------------------------------------
+
+++++
+<%= [$bhtml alert -type danger "DANGER DO NOT be naughty!"] %>
+++++
+
+==== Spanlabel and badge
+.Now let's see a spanlabel and a badge:
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml spanlabel -type success "A step to success here!"] %>
+<%= [$bhtml badge  "2"] %>
+--------------------------------------------------
+
+++++
+<%= [$bhtml spanlabel -type success "A step to success here!"] %>
+<%= [$bhtml badge "2"] %>
+++++
+
+==== Hero Unit (Jumbotron)
+A fast way to make a big header and some text for attention is to use the Bootstrap Hero/Jumbotron unit.
+
+.Jumbotron example
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml jumbotron "Have you heard of lorem ipsum?" "<p>Sed ut perspiciatis unde omnis iste natus error .... 
+	[$bhtml button -type success -class "btn-lg btn-block" -fa fa-rocket Sure!]
+ </p>" ] %>
+--------------------------------------------------
+
+++++
+<div class="container-fluid">
+<%= [$bhtml jumbotron "Have you heard of lorem ipsum?" "<p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, 
+	totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. 
+	[$bhtml button -type success -class "btn-lg btn-block" -fa fa-rocket Sure!]
+	</p>" ] %>
+	</div>
+++++
+
+But you've said that bhtml should be used to generate HTML and you've just used a <p> tag!
+
+True. But would it be faster to type <p class="text-success"> Hi! </p> or the following ?
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml tag -htmlOptions [list class text-success] p "Hi!" ] %>
+--------------------------------------------------
+
+
+==== Breadcrumbs generation
+Sometimes generating HTML automatically defeats the purpose if you need some simple HTML.
+
+Breadcrumbs are also easy to generate. Say you want to make an application of a library:
+
+
+.Breadcrumbs show the current website trail
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml breadcrumb {
+			{-url 1 "Library" /library/} 
+			{-url 1 "Non-Fiction" /library/non-fiction/}
+			{-url 1 "Self-Help" /library/non-fiction/self-help/}
+			{-active 1 "How to make friends and be happy" }
+} ] %>
+--------------------------------------------------
+
+++++
+<%= [$bhtml breadcrumb  {
+			{-url 1 "Library" /library/}
+			{-url 1 "Non-Fiction" /library/non-fiction/}
+			{-url 1 "Self-Help" /library/non-fiction/self-help/}
+			{-active 1 "Humour as a therapy" }
+} ] %>
+++++
+
+If you notice closely we can tell the breadcrumb to generate a url. And we can also tell it to make the breadcrumb active
+
+==== Blockquote
+.Sometimes we want to quote someone
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml blockquote -reverse 1 -source "Antoine de Saint-Exupery" " True happiness comes from the joy of deeds well done, the zest of creating things new."] %>
+--------------------------------------------------
+
+++++
+<%= [$bhtml blockquote -reverse 1 -source "Antoine de Saint-Exupery" " True happiness comes from the joy of deeds well done, the zest of creating things new."] %>
+++++
+
+==== Generating lists
+Next sometimes we want some lists and we can get very complicated and  nested behaviour by using some properties.
+To remember is that the makeList method is actually used by multiple other methods like *breadcrumb*, *nav*, *dropdown* etc. 
+
+The usage is very simple: makeList " $listitem1 $listitem2 etc..  "
+.Creating a list complicated list
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml makeList -group 1 {
+	"<b>3 Potatoes</b>" 
+	{1 Lavender}
+	{-class list-group-item-danger {some Onions and Garlic}} 
+	{-url 1 -tooltip "-location left Sausage" "2  Sausages" #clickme} 
+	{And  some mediteranean herbs} 
+	{-newlist 1 -p "How to cook"  -type ol    -- {"Boil 1 liter water " "Add potatoes" "Add remaining items to water"}}		
+
+}  	]
+--------------------------------------------------
+
+.Some interesting things to note:
+. You can add HTML to list items
+. Any list can have any type of CSS class you want 
+. You can even make it an URL. Notice that we added an extra tooltip to this item. Most BHTML items contain the tooltip & popover options.
+. A list within a list, that can be done easily. +
+
+++++
+<%= [$bhtml makeList -group 1 {
+	"<b>3 Potatoes</b>"
+	{1 Lavender}
+	{-class list-group-item-danger {some Onions and Garlic}}
+	{-url 1 -tooltip "-location left {Sausage is very good if it's from Germany}" "2  Sausages" #clickme}
+	{And  some mediteranean herbs} 
+	{-newlist 1 -p "How to cook"  -type ol    -- {"Boil 1 liter water " "Add potatoes" "Add remaining items to water"}}			
+
+}  	]
+%>
+++++
+
+==== Grouping data with makeGroup
+
+Similair to  *makeList* we have *makeGroup* which makes something that looks like a list using list-grup css class and a div instead of ul/ol.
+
+usage: *makeGroup* data
+The -p 1 means that the text in the data is enclosed in a paragraph. The rest is self explaintory.
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml makeGroup {
+{ -h "Chapter 1 - The Beginning" -p 1 -active 1 -type success "Learning LostMVC is fun"}
+{ -h "Chapter 2 - Advance into Darkness" -p 0 { LostMVC example } }
+{ -h "Chapter 3 - Sunlight" -p 0 { A lot of useless lorem ipsum is needed here. } }
+}] %>
+--------------------------------------------------
+
+++++
+<%= [$bhtml makeGroup {
+	
+{ -h "Chapter 1 - The Beginning" -p 1 -active 1 -type success "Learning LostMVC is fun"}
+{ -h "Chapter 2 - Advance into Darkness" -p 0 { LostMVC example } }
+{ -h "Chapter 3 - Sunlight" -p 0 { A lot of useless lorem ipsum is needed here. } }
+	}] %>
+++++
+
+==== Creating descriptions of items
+Generation of descriptions using HTML dt,dd,dl tags easily by using the desc function. 
+
+[source,tcl]
+--------------------------------------------------
+<%= [$bhtml desc -horizontal 1 {
+	RAM "Random Access Memory of a pc"
+		CPU "Central processing unit"
+		Tcl "Tool Command Language"
+		OOP "Object Oriented Programming"
+}] %>
+			  
+--------------------------------------------------
+
+++++
+<%= [$bhtml desc -horizontal 1 {
+	RAM "Random Access Memory of a pc"
+		CPU "Central processing unit"
+		Tcl "Tool Command Language"
+		OOP "Object Oriented Programming"
+}] %>
+			  
+++++
+
+==== Tables
+
+Generating tables in LostMVC is easy and fun. Since you don't have to use for(each) yourself.
+All you have to do is give a list that contains headers and a list that contains the data.
+The tr and td count will be generated based on how many items are in your header.
+
+.A vertical table using  tableHorizontal
+[source,tcl]
+--------------------------------------------------
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data "Makowlski Bender 31 {New Jersy}"
+ns_puts [$bhtml tableHorizontal -striped 1 -hover 1 -responsive 1 $header $data]
+%>
+--------------------------------------------------
+
+++++
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data "Makowlski Bender 31 {New Jersy}"
+ns_puts [$bhtml tableHorizontal -striped 1 -hover 1 -responsive 1 $header $data]
+%>
+++++
+
+.Generating a normal table using table
+[source,tcl]
+--------------------------------------------------
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data  {
+Henry Lamprey 21 Ryland Susanna Higginson 22 Hueston Aaron Callicoat 23 Honeycutt Mike Linsley 24 Evens Zoe Hollinsworth 25 Odham
+Ellen Delafield 31 Coard Amy Coxson 32 Baney Carolyn Arnold 33 Julian Gabe Ketch 34 Claver Chris Brockenbrough 35 Brewton
+Gabe Rigdon 36 Burnell Jay Noel 37 Walmsley Tristan Rowntree 38 Padmore Phil Nicolls 39 Ashwill }
+
+ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 $header $data]
+%>
+--------------------------------------------------
+
+++++
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data  {
+Henry Lamprey 21 Ryland Susanna Higginson 22 Hueston Aaron Callicoat 23 Honeycutt Mike Linsley 24 Evens Zoe Hollinsworth 25 Odham
+Ellen Delafield 31 Coard Amy Coxson 32 Baney Carolyn Arnold 33 Julian Gabe Ketch 34 Claver Chris Brockenbrough 35 Brewton
+Gabe Rigdon 36 Burnell Jay Noel 37 Walmsley Tristan Rowntree 38 Padmore Phil Nicolls 39 Ashwill }
+ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 $header $data]
+%>
+++++
+
+If you want to give a row (or maybe just a TD) a type or an id, you can use -rpr. 
+However this is more difficult to maintain because you need to make a list for every tr.
+.A special type of table using -rpr 1 
+[source,tcl]
+--------------------------------------------------
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data ""
+lappend data [list -type success Henry Lamprey 21 Ryland]
+lappend data [list  Aaron Callicoat 23 Honeycutt]
+lappend data  [list -type danger Susanna Higginson 22 Hueston]
+lappend data  [list Mike Linsley -type primary 24 Evens]
+
+ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 -rpr 1 $header [list $data]]
+%>
+--------------------------------------------------
+
+++++
+<%
+set header [list "First Name" "Last Name" "Age" "City"]
+set data ""
+lappend data [list -type success Henry Lamprey 21 Ryland]
+lappend data [list  Aaron Callicoat 23 Honeycutt]
+lappend data  [list -type danger Susanna Higginson 22 Hueston]
+lappend data  [list Mike Linsley {-type warning 24} Evens]
+
+ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 -rpr 1 $header  $data]
+
+%>
+++++
+
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+++++
+
+++++
+
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+++++
+
+++++
+
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+++++
+
+++++
+
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+++++
+
+++++
+
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+++++
+
+++++
+
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+++++
+
+++++
+
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+++++
+
+++++
 
 == Views System
 
@@ -126,6 +510,27 @@ We best learn by examples, so we'll have an example of everything.
 == Real Life Example 1: Detailed Blog/CMS Application
 == Real Life Example 2: Time Management App
 == Real Life Example 3: Project Management App
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+[source,tcl]
+--------------------------------------------------
+
+--------------------------------------------------
+
+[source,tcl]
+--------------------------------------------------
+
+
+--------------------------------------------------
 
 [source,tcl,numbers]
 --------------------------------------------------
