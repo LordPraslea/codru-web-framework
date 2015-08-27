@@ -53,7 +53,8 @@ nx::Class create SQLUpdate -mixin [list SQLCommands]  {
 				if {[dict exists ${:attributes} sqlcolumns $key save]} {
 					if {![dict get ${:attributes} sqlcolumns $key save]}	 { continue }
 				}
-				if {[:get $key] == ""} { continue  }
+
+				if {[:get $key] == "" && ![dict exists ${:attributes} sqlcolumns $key save_empty]} { continue  }
 				
 				#Not updating the primary keys 
 				if {$key in $primarykey} {

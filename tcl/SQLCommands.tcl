@@ -49,7 +49,8 @@ nx::Class create SQLCommands   {
 
 		}
 
-		if {$value != ""} { dict set :pr_stmt $statement $value }
+		#if {$value != ""} { dict set :pr_stmt $statement $value }
+		 dict set :pr_stmt $statement $value 
 		incr :statementCount
 		return $statement
 	}
