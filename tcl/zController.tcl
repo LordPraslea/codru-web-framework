@@ -200,6 +200,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 
 	:method determineAndRunUrlAction {} {
 		:upvar action action
+		set :action $action
 		set actionmethods [:info lookup methods action*]
 		if {[set loc [lsearch -nocase $actionmethods *$action]] != -1} {
 		#Catching errors outside the scope, errors inside an view are shown anyway:)
@@ -223,9 +224,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 					#The stack is viewable only in the log!
 					ns_log error "LostMVC Error URL: [ns_conn url] HASH: $hash  IP:[ns_conn peeraddr]
 					\n ERROR: $options \n
-					HEADERS: [ns_set array [ns_conn headers]] OUTPUTHEADERS: [ns_set array [ns_conn outputheaders]]   \n
-					CLIENTDATA: [ns_conn clientdata]
-					"
+					HEADERS: [ns_set array [ns_conn headers]] 			"
 				}
 
 			}
