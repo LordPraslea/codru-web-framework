@@ -496,27 +496,53 @@ namespace eval lostmvc {
 			close $fp
 		}
 
+		proc send_mail {args} {
+			set mail 0
+			set c [Controller new]
+			set config 	[$c getConfig]
 
-		proc send_mail_dev {to from subject body {Bcc ""} {cc ""}} {
+			if {[dict exists $config mailMode]} {
+				set mailMode [dict get $config mailMode] 
+			} else { set mailMode smtp }
+			switch -- $mailMode {
+				mandrill { 	sendmail_mandrill_smtp  {*}$args ; set mail 1  }
+				smtp { 	sendmail_dev  {*}$args ; set mail 1  }
+				naviserver { 	sendmail_naviserver  {*}$args ; set mail 1  }
+				default { 	sendmail_dev {*}$args  ; set mail 1  }
+			}
+
+			ns_log Warning "Mail sent in mode [dict get $config mailMode] " 
+		}
+
+		proc sendmail_dev {to from subject body {Bcc ""} {cc ""}} {
 			package require mime 
 			package require smtp
+
+			package require SASL ;#IF YYOU DON'T USE SASL IT WOn'T AUHENTICATE SUCCSESSFULLY!
 			set token [mime::initialize -canonical text/html  -string $body]
-			mime::setheader $token Subject $subject
-			mime::setheader $token From $from
-			mime::setheader $token To $to
 			if {$Bcc != ""} {  mime::setheader $token Bcc $Bcc -mode append }
 			#Sometimes the mail won't be sent because the ORIGINATOR isn't set as a good e-mail address..
 			#Next time if problems occur use the -debug 1 option
-			set config [ns_cache_get lostmvc config.[getConfigName]] 
+			if {![ns_cache_get lostmvc config.[getConfigName] config]} {
+				set c [Controller new]
+				set config 	[$c loadConfigFile]
+			} 
 
-			smtp::sendmessage $token -ports [list 465 587] -recipients $to -servers smtp.gmail.com -username [dict get $config mailsettings username] -password [::base64::decode [dict get $config mailsettings password]]
+                        #-header [list Date "[clock format [clock add [clock seconds] -15 minutes ]]"] 
 
+			smtp::sendmessage $token  -usetls 1 -ports [list 465 587 25] \
+			           -header [list From "$from"] \
+                        -header [list To "$to"] \
+                        -header [list Subject "$subject"]\
+			 -recipients $to -servers [dict get $config mailsettings server] -username [dict get $config mailsettings username] -password [::base64::decode [dict get $config mailsettings password]]
+
+			ns_log Warning "SMTP mail sent to $to " 
 			mime::finalize $token
+
 		}
 
 
-
-		proc send_mail_mandrill_smtp {to from subject body {Bcc ""} {cc ""}} {
+		proc sendmail_mandrill_smtp {to from subject body {Bcc ""} {cc ""}} {
 			package require mime 
 			package require smtp
 			package require SASL ;#IF YYOU DON'T USE SASL IT WOn'T AUHENTICATE SUCCSESSFULLY!
@@ -537,11 +563,10 @@ namespace eval lostmvc {
 				-header [list Date "[clock format [clock seconds]]"]
 			mime::finalize $token
 
-			ns_log Notice "Sent e-mail from $from to $to"
 		}
 
 		#Sending mail through naviserver
-		proc send_mail_naviserver {to from subject body {bcc ""} {cc ""}} {
+		proc sendmail_naviserver {to from subject body {bcc ""} {cc ""}} {
 		#	ns_sendmail $to info@unitedbrainpower.com $subject $body "" $bcc
 			set extraheaders [ns_set create]
 			ns_set put $extraheaders "MIME-Version" "1.0"
@@ -550,9 +575,7 @@ namespace eval lostmvc {
 			ns_sendmail $to $from $subject $body $extraheaders $bcc $cc
 		}
 
-		proc send_mail {args} {
-			send_mail_mandrill_smtp {*}$args 
-		}
+
 
 		############################
 		# Date and Time functions
@@ -623,8 +646,8 @@ namespace eval lostmvc {
 	   set unit [mc $unit]
 	   if {$num == 0} { return [mc "now"] }
 	   if {$num == 1} { return [mc {a %1$s ago} $unit] }
-	   if {$num == 2} { return [mc {a couple of %1$s ago} $unit] }
-	   if {$num > 2 && $num < 5} { return [mc {a few %1$s ago} $unit] }
+	   #if {$num == 2} { return [mc {a couple of %1$s ago} $unit] }
+	   #if {$num > 2 && $num < 5} { return [mc {a few %1$s ago} $unit] }
 	   return [mc {%1$s %2$s ago} $num $unit]
    }
    #LREMOVE
