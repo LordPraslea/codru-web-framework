@@ -280,16 +280,65 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 		puts "Installed new LostMVC Tcl files"
 	}
 
-	:object method installLostMVC {} {
+	:object method installLostMVC {{-host ""} {-user ""}} {
 		cd [dict get ${:configuration} scriptLocation]
-		set confirm "Install  LostMVC ? [pwd]" 
+	
+		if {$host == ""} { set location "At location /opt/ns/tcl/lostmvc " } else {
+			set location "At remote host $user@$host ? "
+		}
+		set confirm "Install  LostMVC  $location " 
 		if {![:terminal:confirm:continue -default y $confirm]} { return	}
-		exec >&@stdout sudo rm -rf /opt/ns/tcl/lostmvc	
-		exec >&@stdout sudo cp -rf tcl /opt/ns/tcl/lostmvc	
-		exec >&@stdout sudo chown -R www-data:www-data  /opt/ns/tcl/lostmvc	
-		#file delete -force -- /opt/ns/tcl/lostmvc 
-		#file copy tcl /opt/ns/tcl/lostmvc 
-		puts "Installed new LostMVC Tcl files"
+		if {$host == ""} {
+			exec >&@stdout sudo rm -rf /opt/ns/tcl/lostmvc	
+			exec >&@stdout sudo cp -rf tcl /opt/ns/tcl/lostmvc	
+			exec >&@stdout sudo chown -R www-data:www-data  /opt/ns/tcl/lostmvc	
+			#file delete -force -- /opt/ns/tcl/lostmvc 
+			#file copy tcl /opt/ns/tcl/lostmvc
+		} else {
+			#exec  rsync -ave ssh --rsync-path=sudo\ rsync /opt/ns/www/lostmvc/tcl/ $user@$host:/opt/ns/tcl/lostmvc/
+			exec >&@stdout  rsync -ave ssh --rsync-path=sudo\ rsync  /opt/ns/www/lostmvc/tcl/  $user@$host:/opt/ns/tcl/lostmvc/
+		
+		#	exec >&@stdout  ssh -t $user@$host "sudo cp -R lostmvc /opt/ns/tcl/lostmvc"
+#			exec >&@stdout sudo chown -R www-data:www-data  /opt/ns/tcl/lostmvc	
+		}
+
+		puts "Installed new LostMVC Tcl files $location !"
+	}
+	
+	:object method updateDomain { domain  } {
+		cd [dict get ${:configuration} scriptLocation]
+		set localLocation /opt/ns/www/$domain
+		if {[file exists $localLocation/www]} {
+			set config [:readConfigFile $localLocation/config ]
+			foreach {k v} $config { set $k $v }
+			exec >&@stdout  rsync -ave 'ssh -C' --rsync-path=sudo\ rsync   $localLocation/www $user@$host:$location
+			puts "Done sync'ing the domain!"
+				
+		} else {
+			puts "$domain doesn't seem to exist, sorry!"
+		}
+	}
+	
+	:object method readConfigFile { configFile } {
+		if {[file exists $configFile]} {
+				set file [open $configFile r]
+				set data [read $file]
+				close $file
+				return $data
+		} else {
+			#Ask details and write to file!
+			puts "No configuration file detected."
+			
+			dict set config host [:terminal:confirm "What hostname to connect to?"]
+			dict set config user [:terminal:confirm "What username to use?"]
+			dict set config location [:terminal:confirm "What's the location? Usually something like /var/www/$host/www"]
+			dict set config modules [:terminal:confirm "Which modules to update?  "]
+
+			set file [open $configFile w]
+			puts $file $config
+			close $file
+			return $config
+		}
 	}
 
 
