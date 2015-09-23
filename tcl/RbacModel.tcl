@@ -19,5 +19,4 @@ nx::Class create RbacModel {
 		set values  [dbi_rows -db [:db get] -columns columns -bind $pr_stmt $sql_select ]
 	}
 
-
 }

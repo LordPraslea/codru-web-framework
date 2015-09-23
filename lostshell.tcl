@@ -271,6 +271,16 @@ nx::Class create LostShell {
 		return $confirm
 	}
 
+	:method terminal:confirm {message} {
+		foreground green
+		puts -nonewline  stdout $defaultmsg 
+		flush stdout
+	
+		gets stdin confirm
+
+		return $confirm
+	}
+
 
 	:public  method commandlineprogress {{-total 50} {-char "#"} {-iteration 10} } {
 		puts -nonewline stdout {[}
@@ -302,6 +312,33 @@ array set color {black 0 red 1 green 2 yellow 3 blue 4 magenta 5 cyan 6 white 7 
 proc foreground x {exec tput -S << "setaf $::color($x)" > /dev/tty}
 proc background x {exec tput -S << "setab $::color($x)" > /dev/tty}
 proc reset {} {exec tput sgr0 > /dev/tty}
+
+array set bashcolor {
+	bold \033\[1m
+	dim \033\[2m
+	underline \033\[4m
+	blink \033\[5m
+	inverted \033\[7m
+	hidden \033\[8m
+	reset \033\[0m
+	
+	black \033\[30m
+	red \033\[31m
+	green \033\[32m
+	yellow \033\[33m
+	blue \033\[34m
+	magenta \033\[35m
+	cyan \033\[36m
+	lightgray \033\[37m
+	darkgray \033\[90m
+	lightred \033\[91m
+	lightgreen \033\[92m
+	lightyellow \033\[93m
+	lightblue \033\[94m
+	lightmagenta \033\[95m
+	lightcyan \033\[96m
+	white \033\[97m
+}
 
 if {[info exists argv0]} {
 	if { [info script] eq $::argv0 } {

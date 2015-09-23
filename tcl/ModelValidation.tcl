@@ -39,6 +39,7 @@ nx::Class create ModelValidation {
 			set columnerrors "";
 			if {![dict exists ${:attributes} sqlcolumns $column validation]} { continue }
 			foreach {valid extra} [dict get ${:attributes} sqlcolumns $column validation] {
+
 				if {[dict exists $extra on]} {
 					set on [dict get $extra on]
 			#		#If the scenario doesn't need validation.. just return
@@ -46,6 +47,7 @@ nx::Class create ModelValidation {
 						continue 
 					}
 				}
+
 				set currentColumnError [my switchValid $valid $extra $column]
 				if {$currentColumnError != 0} { lappend columnerrors $currentColumnError 	}
 			}

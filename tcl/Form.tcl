@@ -226,7 +226,7 @@ nx::Class create Form {
 
 		my beginGroup 
 		my label $field
-		my add [mc "If you see this field, do not enter any name. Just leave it be"]
+		my add [mc "If you see this field, do not enter any name. Just leave empty"]
 		my add [${:bhtml} input -type input -placeholder "enter your name" -id nameDetails name ]
 		my errorMsg $field
 		my endGroup -class "sr-only" $field 
