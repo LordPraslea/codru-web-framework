@@ -124,14 +124,71 @@ if {[ns_queryexists a]} {
 			$f destroy
 		}
 
-	} elseif {$a == "controller"} {
-	#  Controller based on these views in controllers/controllerName.tcl
-	#  Fields
-	#  Controller ID
-	#  Base Class
-	#  Action ID's (separate by space, comma or colon)
-	#  Code Template
-		append page [$bhtml jumbotron "Controller generation" "This page is still in the TODO phase.."]
+	} elseif {$a == "firstinstall"} {
+		
+		set c [Controller new]
+		set config [$c loadConfigFile]
+#		set config [ns_cache_get lostmvc config.[getConfigName]] 
+		set db [dict get $config database]
+
+		set exists [dbi_rows -db $db {SELECT EXISTS(
+		SELECT * 	FROM information_schema.tables 
+		WHERE   table_schema = 'public' AND    table_name = 'users');}]
+
+		set attributes [dict create table install primarykey id sqlcolumns {
+			username { validation { required true min-length { rule  5 } } }
+			password { validation { required true min-length { rule 10 }  } }
+			email { validation { required true email true   } }
+		} ]
+		set alias [dict create username "Superadmin Username" password Password email E-mail]
+		set model [Model new -attributes $attributes -alias  $alias]
+
+		#TODO full rbac for Blog?
+		#TODO full rbac for Shop ?
+		if {!$exists} {
+			set header "Install LostMVC"
+			set data "You can install the LostMVC database. Please provide the username & password for this website's  superadmin.
+			TODO Ask to install RBAC's of modules or do it automatically?"
+
+			if  {[ns_conn method] == "POST" && [ns_queryexists xsubmit]} {
+
+				set errors ""
+				set formdata [$model getQueryAttributes POST]
+				set formerrors [$model validate]
+
+				if {[llength $formerrors]  < 2} {
+
+					set modelname [ns_unescapehtml [$model get model]]
+					append page [installLostMVCDatabase $db $model  $bhtml]
+				}
+
+			}	
+		} else {
+			set header "Already installed"
+			set data "You've already installed the database"
+		}
+
+		if {!$exists} {
+			set f [Form new -model $model -bhtml $bhtml]
+			$f allErrors
+
+			foreach field {username password email} { 
+				$f beginGroup 
+				$f label $field 
+				if {$field == "password" } {
+					$f input -type password $field
+				} else {	$f input $field }
+				$f errorMsg $field
+				$f endGroup $field
+			}
+
+			$f add [$bhtml input  -type hidden a firstinstall] 
+			$f submit "Install Database" 
+			append data "<div class='rows'>" [$f endForm -action "" -method post -id generator -class "col-sm-4"] </div>
+			$f destroy
+		}
+
+		append page [$bhtml jumbotron $header $data]
 	} elseif {$a == "crud"} {
 	#	CRUD + VIEWS in views/{modelName}/file
 	# 		view index create update delete admin, 
@@ -263,7 +320,7 @@ if {[ns_queryexists a]} {
 		append page "RBAC ( Role Based Access Control) !"
 	} else {
 
-		append page "Welcome to the Generator, select something from the menu"
+		append page "<p>Welcome to the Generator, select something from the menu</p>"
 	}
 
 }

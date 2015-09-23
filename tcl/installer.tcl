@@ -586,6 +586,31 @@ proc generateRBAC {modelname authenticated guest {bhtml  ""}} {
 	return $page
 }
 
+proc installLostMVCDatabase {db model bhtml} {
+	foreach {var} {username password email} {
+		set $var	[ns_unescapehtml [$model get $var]]
+	}
+	#First insert everything in the database
+	puts "InstallLostMVC Database pagepath [ns_pagepath] dbfile [ns_pagepath]/../../lostmvc/config/lostmvc-db.tcl
+"
+	source [ns_pagepath]/../../lostmvc/config/lostmvc-db.tcl
+	#Create username and assign RBAC
+	set user [User new]
+	$user set username $username password [ns_sha1  $password] email $email status 3
+	if {![$user save]} {
+		return [$bhtml alert -type danger [$user getErrors] ]
+	}
+	set assign [RoleAssignment new]
+	if !{[$assign assign superadmin [$user get id]]} {
+		return [$bhtml alert -type danger [$assign getErrors] ]
+	}
+
+	set text "Installed Database! <br> Created $username <br> Assigned 'superadmin' role to $username"
+
+	if {$bhtml !=""} { append page [$bhtml alert -type success $text ] } else { append page $text } 
+	return $page
+}
+
 proc install {} {
 	set domain [lindex $::argv 1]
 	if {$::argc <= 1} { puts "Usage: install <domain>"; exit }
