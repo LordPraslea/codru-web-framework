@@ -62,7 +62,7 @@ nx::Class create AuthorizationRbac {
 	#	the user isn't logged in:) 
 	#	If roles exist, reset OK to 0 (untill validated!)
 	:method preActionVerifyRoleAccess {} {
-		foreach refVar {access action} { :upvar $refVar $refVar }
+		foreach refVar {access action ok} { :upvar $refVar $refVar }
 
 		if {[dict exists $access views $action roles]} {
 			set ok 0
@@ -250,6 +250,11 @@ nx::Class create AuthorizationRbac {
 		}
 	}
 
+#	:public method checkAccess {rolename} {
+#		 return [:verifyRole $rolename]
+#	}
+	
+
 
 	:public	method getModule {} {
 		#Gets the module needed for RBAC
@@ -264,6 +269,9 @@ nx::Class create AuthorizationRbac {
 
 
 	:public	method hasRole {rolename} {
+		return [my loadRoles $rolename 0]
+	}
+	:public	method checkAccess {rolename} {
 		return [my loadRoles $rolename 0]
 	}
 }
