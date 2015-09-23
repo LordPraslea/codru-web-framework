@@ -303,8 +303,8 @@ bhtml public method ckeditor {{-class ""} {-placeholder ""} {-id ""}  -- name {d
 bhtml public method markdown {{-class ""} {-placeholder ""} {-id ""}  -- name {data ""}} {
 	if {![my existsPlugin  markdown]} {
 		my  addPlugin markdown {
-			js { "/js/to-markdown.js" "/js/bootstrap-markdown.js"  }
-			js-min { "/js/to-markdown.js"  "/js/bootstrap-markdown.min.js" }
+			js { "/js/to-markdown.js" "/js/markdown/marked.js" "/js/bootstrap-markdown.js"  }
+			js-min { "/js/to-markdown.js" "/js/markdown/marked.min.js" "/js/bootstrap-markdown.min.js" }
 			css "/css/bootstrap-markdown.css"
 			css-min "/css/bootstrap-markdown.min.css"
 		}
@@ -313,7 +313,7 @@ bhtml public method markdown {{-class ""} {-placeholder ""} {-id ""}  -- name {d
 
 #	my js [format { CKEDITOR.replace('%s')  } $name ]
 	my js [format {$("#%s").markdown({ resize:'both',iconlibrary: 'fa'})} $name]
-	set input [my textarea -options [list data-provide markdown] -placeholder $placeholder -id $id $name $data]
+	set input [my textarea -options [list data-provide markdown ] -rows 10 -placeholder $placeholder -id $id $name $data]
 	return $input
 }
 
@@ -325,7 +325,7 @@ bhtml public method markdown {{-class ""} {-placeholder ""} {-id ""}  -- name {d
 #http://blueimp.github.io/Gallery/js/jquery.blueimp-gallery.min.js
 ##########################################
 
- bhtml public method imagegallery {{-class ""} {-borders true} {-tooltip ""}  {-thumbs 0} -- name {data ""}} {
+ bhtml public method imagegallery {{-class ""} {-borders true} {-tooltip ""}  {-thumbs 0} {-simpleLink 0} -- name {data ""}} {
 
  #TODO fullscreen and other options..
 	set plugin imagegallery
@@ -355,7 +355,7 @@ bhtml public method markdown {{-class ""} {-placeholder ""} {-id ""}  -- name {d
 		}	
 		if {$tooltip != ""} { foreach {opt val} [list data-toggle tooltip data-placement top title $desc]  { dict set imgOptions $opt $val } }
 		set image [my img -htmlOptions $imgOptions  -class " img-thumbnail" $thumb $desc]
-		set link [my a  -htmlOptions [list data-gallery ""] -title $desc $image $img ]
+		set link [my a  -simple $simpleLink -htmlOptions [list data-gallery ""] -title $desc $image $img ]
 		append alldata $link
 	}
 	set gallery [my htmltag -htmlOptions [list class $name] div $alldata]	
@@ -959,7 +959,7 @@ bhtml public method generateLabelTags {{-controller ""} tags} {
 	return $newtags
 }
 
-bhtml public method btnPlusMinus {{-min 1} {-max 10} {-size "sm"} inputName {value 1}} {
+bhtml public method btnPlusMinus {{-min 1} {-max 10} {-size "sm"} {-id "btnPlusMinus"} inputName {value 1}} {
 	set plugin btnplusminus
 	if {![my existsPlugin $plugin]} {
 		my addPlugin $plugin { 
@@ -967,14 +967,14 @@ bhtml public method btnPlusMinus {{-min 1} {-max 10} {-size "sm"} inputName {val
 			js-min "/js/btnplusminus.js"
 		}
 	}
-	return [string map "%inputName $inputName %min $min %max $max %value $value %size $size" {
-	<div class="input-group">
+	return [string map "%inputName $inputName %min $min %max $max %value $value %size $size id $id" {
+	<div id="div-%id" class="input-group">
           <span class="input-group-btn">
               <button type="button" class="btn btn-danger btn-number btn-%size"  data-type="minus" data-field="%inputName">
                 <span class="glyphicon glyphicon-minus"></span>
               </button>
           </span>
-          <input type="text" name="%inputName" class="form-control input-number input-%size" value="%value" min="%min" max="%max">
+          <input id="input-%id" type="text" name="%inputName" class="form-control input-number input-%size" value="%value" min="%min" max="%max">
           <span class="input-group-btn">
               <button type="button" class="btn btn-success btn-number btn-%size" data-type="plus" data-field="%inputName">
                   <span class="glyphicon glyphicon-plus"></span>
