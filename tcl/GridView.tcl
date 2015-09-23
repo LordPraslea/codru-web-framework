@@ -2,6 +2,8 @@ nx::Class create GridView -superclass [list bhtml] {
 
 	:property bhtml:required,object,type=bhtml
 
+	:property {url ""}   
+	:property {urlClass ""}   
 #TODO OPTIONS CAN BE GIVEN INTO A DICT?
 #TODO very important: VERIFY DATA AND DON'T GIVE IT TO DB IF NOT CORRECT
 #Give DICT with settings for each column..
@@ -320,8 +322,8 @@ nx::Class create GridView -superclass [list bhtml] {
 	:method gridSorting {  } {
 		if {${:sort_type} == "asc"} { set newsort_type "desc" } else { set newsort_type "asc" }
 		foreach th [dict get ${:data} columns] {
-			lappend :tablehead [format {-url 1  "%s" "%s" } [${:model} getAlias $th] \
-				[ns_queryencode ${:table}_sort $th	sort ${newsort_type}	${:table}_page ${:page}		${:table}_perpage ${:perpage}	{*}${:extraUrlVars}]]
+			lappend :tablehead [format {-url 1 -simple 1 -class  "%s"  "%s" "%s" } ${:urlClass} [${:model} getAlias $th] \
+				${:url}[ns_queryencode ${:table}_sort $th	sort ${newsort_type}	${:table}_page ${:page}		${:table}_perpage ${:perpage}	{*}${:extraUrlVars}]]
 		}
 	}
 	
@@ -333,7 +335,7 @@ nx::Class create GridView -superclass [list bhtml] {
 		set :tablehtml [${:bhtml} table -class "" -bordered 1 -striped 1 -hover 1  -rpr ${:rowId}   ${:tablehead}   ${:mydata} ]
 		
 		set pagination [Pagination new -size ${:size} -extraUrlVars ${:extraUrlVars} -page ${:page} \
-			-table ${:table} -lastpage ${:lastpage} -perpage ${:perpage} -sort ${:sort} -sort_type ${:sort_type}]	
+			-table ${:table} -lastpage ${:lastpage} -perpage ${:perpage} -sort ${:sort} -sort_type ${:sort_type} -url ${:url} -urlClass ${:urlClass}]	
 	
 		set divPagination [$pagination divPagination get]
 		set pageInfo [$pagination pageInfo get]
