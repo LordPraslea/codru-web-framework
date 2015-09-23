@@ -34,7 +34,6 @@ ns_parseargs { {-title ""} {-keywords ""} {-author ""} {-description ""} {-bhtml
 		  	<%=  [$bhtml nav -active [ns_queryget a] -tabs 0 -class "pull-right" {
 			{ -url 1  "Home" ""} 
 			{ -url 1 "Model generator" "?a=model"}
-			{ -url 1  "Controller generator" "?a=controller"}
 			{ -url 1  "CRUD generator" "?a=crud"}
 			{ -url 1  "RBAC generator" "?a=rbac"}
 			}] %>
@@ -43,9 +42,9 @@ ns_parseargs { {-title ""} {-keywords ""} {-author ""} {-description ""} {-bhtml
         <br>
           	<%=  [$bhtml navbar -class "navbar-static-top" -brand "LostMVC Generators"  -active [ns_queryget a] {
 			{-url 1  "Model " ?a=model }
-			{-url 1 "Controller" ?a=controller }
 			{-url 1  "CRUD" ?a=crud }
 			{-url 1  "RBAC" ?a=rbac }
+			{ -url 1  "First Install" "?a=firstinstall"}
 			}] %>
       </div>
 

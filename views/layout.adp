@@ -125,8 +125,8 @@ ns_puts {
             <div class="row" style="text-align:center">
                 <div class="col-lg-12">
 				<%= [$bhtml nav -tabs 0 -class "col-xs-offset-4" $data] %> 
-				<%= [$bhtml a -fa fa-file-text "Terms of Use" ] %> -
-				<%= [$bhtml a -fa fa-lock "Privacy Policy" ] %> -
+				<%= [$bhtml a -simple 1 -fa fa-file-text "Terms of Use" /html/terms.html ] %> -
+				<%= [$bhtml a -simple 1 -fa fa-lock "Privacy Policy"  /html/privacy.html ] %> -
 				<% ns_adp_puts  [$controller generateLanguageLinks $bhtml] %> 
                     <p class="copyright text-muted small">Copyright &copy; United Brain Power 2014-2015. All Rights Reserved</p>
                 </div>
