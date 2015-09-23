@@ -5,6 +5,9 @@
 ##########################################
 ##TODO CACHE!
 nx::Class create ListView -superclass [list bhtml] {
+	:property {url ""}   
+	:property {urlClass ""}   
+
 	:property bhtml:object,type=bhtml
 	:property {perpage 10}
 	:property {maxPerPage 50}
@@ -17,9 +20,8 @@ nx::Class create ListView -superclass [list bhtml] {
 	:property {perRow 1}
 
 	:property {extraUrlVars ""} 
-	#TODO NOT IMPLEMENTED YET, make it easier so you don't need to do -searchOptions [list -relations 1]
-	
 
+	#TODO NOT IMPLEMENTED YET, make it easier so you don't need to do -searchOptions [list -relations 1]
 	:property {relations 0}
 	:property {toSelect *} 
 	:property {class ""} 
@@ -161,7 +163,7 @@ nx::Class create ListView -superclass [list bhtml] {
 	:method generateListViewWithPagination {  } {
 
 		set pagination [Pagination new -size ${:size} -extraUrlVars ${:extraUrlVars} -page ${:page} \
-			-table ${:table} -lastpage ${:lastpage} -perpage ${:perpage} -sort ${:sort} -sort_type ${:sort_type}]	
+			-table ${:table} -lastpage ${:lastpage} -perpage ${:perpage} -sort ${:sort} -sort_type ${:sort_type} -url ${:url} -urlClass ${:urlClass}]	
 
 		set divPagination [$pagination divPagination get]
 		set pageInfo [$pagination pageInfo get]
@@ -193,7 +195,6 @@ nx::Class create ListView -superclass [list bhtml] {
 			append forcache " [$criteria getCriteriaSQL] [$criteria getPreparedStatements ] "
 		}
 		
-		puts "Forcache is $forcache"
 		ns_parseargs {{-key ""} time}	${:cache}
 		if {$key == ""} { 
 			set key [ns_sha1  $forcache]
