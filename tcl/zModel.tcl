@@ -19,6 +19,7 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 	:variable scenario insert
 
 	:variable sqlstats 
+	:variable relationSQL ""
 
 	:variable bhtml
 	:variable table  ;#table name
@@ -99,9 +100,7 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 		return ${:attributes}
 	}
 	:public method setAlias {name newalias} {
-		if {[dict exists ${:alias} $name ]} {
 			dict set alias $name $newalias
-		}
 	}
 	:public method getAlias {name} {
 		if {[dict exists ${:alias} $name]} {
@@ -111,6 +110,7 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 	:public method getTable {} {
 		return [dict get ${:attributes} table]
 	}
+
 
 
 	#SQL Stats command knowing what SQL was written for this page..
@@ -132,6 +132,25 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 		return [dict get ${:attributes} relations $relation]	
 	}
 
+
+	:method setRelation { relation relationdata } {
+		dict set :attributes relations relation $relationdata
+	}
+
+	:public method setRelationSQL {relation sql} {
+		dict set :relationSQL $relation $sql
+	}
+	
+	:public method getRelationSQL {relation} {
+		if {[dict exists ${:relationSQL} $relation]} {
+			return [dict get ${:relationSQL} $relation]
+		}
+		return ""
+	}
+	
+	
+
+	
 	##################Errors
 	:public method addError {name error} {
 		dict lappend :attributes errors $name [list $error]
@@ -327,7 +346,6 @@ nx::Class create Model -mixin [list  ModelRelations ] \
 
 		return $changed
 	}
-	
 	
 	
 	#Get the "field"
