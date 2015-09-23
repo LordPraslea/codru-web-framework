@@ -114,7 +114,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 		#return -level 3
 	}
 
-	:method notFound {{extra ""}} {
+	:public method notFound {{extra ""}} {
 		set n [ns_conn headers]
 	#puts	"[ns_set array [ns_conn outputheaders]]"
 		set bhtml [bhtml new]
@@ -135,7 +135,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 	#Returning to /index makes it simpler for URL generation since there can't be a controller without a view
 	#or an empty view that gets the actionIndex
 	:public method defaultAction {} {
-			ns_returnmoved [ns_conn location]/[my currentController]/index
+			ns_returnmoved [ns_conn location]/[:getLang]/[my currentController]/index
 	}
 
 	:public method defaultNotFound {} {
@@ -163,6 +163,15 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 		}]
 		return $config
 	}
+
+	:public method getConfig {args} {
+		if {![ns_cache_get lostmvc config.[getConfigName] config]} {
+				set config 	[:loadConfigFile]
+		}
+
+		return $config
+	}
+	
 
 	# urlaction provides the functionality to redirect the url
 	# to an action within the object of the controller.
@@ -202,7 +211,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 		:upvar action action
 		set :action $action
 		set actionmethods [:info lookup methods action*]
-		if {[set loc [lsearch -nocase $actionmethods *$action]] != -1} {
+		if {[set loc [lsearch -nocase $actionmethods action$action]] != -1} {
 		#Catching errors outside the scope, errors inside an view are shown anyway:)
 			if {![my preAction $action]} { return 0 }
 			try {
@@ -223,7 +232,8 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 
 					#The stack is viewable only in the log!
 					ns_log error "LostMVC Error URL: [ns_conn url] HASH: $hash  IP:[ns_conn peeraddr]
-					\n ERROR: $options \n
+\n	ERROR: [dict get  $options -errorinfo] \n
+STACK: [dict get  $options -errorstack] \n
 					HEADERS: [ns_set array [ns_conn headers]] 			"
 				}
 
@@ -306,7 +316,10 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 		ns_session put sessionexpired 1
 		#When redirecting to login, make it secure
 		set location [ns_conn location]
-		set location [join [lreplace [split $location : ] 0 0 https] :]
+		set config [:getConfig]
+		if {![dict exists $config noHttpsLogin]} {
+			set location [join [lreplace [split $location : ] 0 0 https] :]
+		}
 		ns_returnredirect $location/${:lang}/user/login
 		return 0
 	}
@@ -505,7 +518,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 	
 	#We restore the data from the database (if accidentally deleted)
 	:public method actionRestore {} {
-		set model [Post new]
+		set model [[:currentController] new]
 		set id [ns_queryget id ]
 
 		if {[$model restore $id]} {
