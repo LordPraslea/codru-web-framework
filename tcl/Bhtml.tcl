@@ -42,12 +42,15 @@ nx::Class create bhtml {
 			jquery { 	
 				js {/js/jquery.js}
 				js-min {/js/jquery.min.js} 
+				js-cdn { //code.jquery.com/jquery-1.11.3.min.js  }
 			}
 			bootstrap {
 				css {"/css/bootstrap.css" }
 				css-min {"/css/bootstrap.min.css" }
 				js "/js/bootstrap.js"
 				js-min "/js/bootstrap.min.js"
+				css-cdnb { https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css  }
+				js-cdn { https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js  }
 				version "3.2.0"
 				authors "Bootstrap Twitter Team"
 			}
@@ -75,8 +78,22 @@ nx::Class create bhtml {
 
 		foreach plugin [dict keys ${:plugins}] {
 			foreach {type file} [dict get ${:plugins} $plugin] {
-			#	puts "PLUGIN $plugin of $type and $file"
-				#If cdn = true.. we get javascript/css from 2 cnd's
+			
+				if {${:cdn}} { 
+					if {[string match *css* $type] && [dict exists ${:plugins} $plugin css-cdn] && $type != "css-cdn"}  {
+						continue
+					}
+					if {[string match *js* $type] && [dict exists ${:plugins} $plugin js-cdn] && $type != "js-cdn"}  {
+						continue
+					}
+					if {${:includeMinified} && ![regexp {.+-min|.+-cdn} $type]} {
+						continue
+					}
+
+				} elseif {${:includeMinified} && ![string match *-min* $type]} {
+						continue
+				}
+				
 				:switchPluginType $type $file
 			}
 		}
@@ -98,22 +115,15 @@ nx::Class create bhtml {
 	}
 	
 	:method switchPluginType {{-includeMinified 1} -- type file} {
-		if {$includeMinified} {
-			foreach {js css} {js-min css-min} { }
-		} else { 
-			foreach {js css} {js-min css-min} { }
-		}
-		#			if {${:cdn}} {  set file $cssfile/$file				}
-		if {$type == $css} {
+		if {$type in "css-min css-cdn css" } {
 			foreach f $file {
 				append :cssinclude "\n" [format {<link href="%s" rel="stylesheet">} $f]
 			}
-		} elseif {$type == $js} {
+		} elseif {$type in "js js-min js-cdn"} {
 			foreach f $file {
 				append :jsinclude "\n" [format {<script src="%s"></script>} $f]
 			}
 		}
-
 	}
 
 
@@ -778,6 +788,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	:public method fa {args} {
 		if {![my existsPlugin fontawesome]} {
 			:addPlugin fontawesome { 
+				css-cdn https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css
 				css  "/css/font-awesome.css"
 				css-min  "/css/font-awesome.min.css"
 			}
@@ -1118,7 +1129,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 		}
 
 		#set brand [my htmltag -htmlOptions [list class "navbar-brand" href "#"] ]
-		set brandHtml [my a -class "navbar-brand" $brand $brandUrl]
+		set brandHtml [my a -class "navbar-brand" -simple 1 $brand $brandUrl]
 
 		#Button for when there's not enough space to show the items
 		set head_button [my htmltag -htmlOptions \
