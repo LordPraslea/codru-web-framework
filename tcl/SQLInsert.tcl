@@ -53,7 +53,8 @@ nx::Class create SQLInsert -mixin [list SQLCommands]  {
 				}
 
 				if {[:get $key] == ""} { continue  }
-				if {$key in $primarykey} { continue }
+			
+				#	if {$key in $primarykey} { continue }
 
 				set separator [:getCondition ", "]
 				append columns [format "%s%s" $separator   $key  ]
