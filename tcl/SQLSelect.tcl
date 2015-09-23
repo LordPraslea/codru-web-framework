@@ -35,7 +35,7 @@ nx::Class create SQLSelect   {
 
 		set result [dbi_0or1row -db ${:db} -array data -bind $pr_stmt $sql_select ]
 		
-		if {$save} {
+		if {$save && $result} {
 			:set -change 0 {*}[array get data]
 			set :newRecord 0
 			set :scenario update
@@ -176,15 +176,11 @@ nx::Class create SQLSelect   {
 		foreach refVar {table toSelect distinct criteria relations } { :upvar $refVar $refVar }
 
 		set from ${:schema}.$table
-
-		puts "toSelect is $toSelect"
+	
+		:generateRelationData 
 		if {$toSelect eq "*"} {
 			set toSelect "${table}.*" 
 		}
-		puts "now toSelect is $toSelect"
-		:generateRelationData 
-
-		puts "at last toSelect is $toSelect"
 
 		set where_sql [$criteria  getCriteriaSQL]
 		set :pr_stmt  [dict merge ${:pr_stmt} [$criteria getPreparedStatements]]
