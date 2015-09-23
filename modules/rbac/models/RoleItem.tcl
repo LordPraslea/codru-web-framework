@@ -115,5 +115,58 @@ nx::Class create RoleItem -superclass Model {
 		}
 		 
 	}
+
+	:public method createRoleItem {{-new 1} type name description {bizRule ""} {data ""}} {
+		set ri [self] 
+		if {$new} {
+			set ri [RoleItem new] 
+		}
+		$ri set type $type name $name description $description bizrule $bizRule data $data
+		$ri insert
+		return $ri 
+	}
+
+	:public method createOperation { name description {bizRule ""} {data ""}} {
+		:createRoleItem 0 $name $description $bizRule $data	
+	}
+	:public method createTask { name description {bizRule ""} {data ""}} {
+		:createRoleItem 1 $name $description $bizRule $data	
+	}
+	:public method createRole { name description {bizRule ""} {data ""}} {
+		:createRoleItem 2 $name $description $bizRule $data	
+	}
+
+	:public method addChild {child} {
+		set ric [RoleItemChild new]
+		if {[RoleItem info instances $child] == $child } {
+			set child_id [$child get id]
+		#puts "RBAC [$child info class] == ::RoleItem "
+		} elseif {[string is integer $child] && $child != ""} {
+			set child_id $child
+		}	else {
+		#	:findByPk -save 0
+			dbi_0or1row -db [:db get]  "select id as child_id from role_item where name=:child"
+		}
+
+		if {[string is integer $child_id]} {
+			$ric set parent_id [:get id] child_id $child_id
+			return 	[$ric insert]
+		}
+	}
+
+	:public method findRole {{-new 1 } name} {
+		set ri [self]
+		if {$new} {
+			set ri [RoleItem new]
+		}
+		set criteria [SQLCriteria new -model $ri]
+		$criteria add name $name
+		if {[$ri findByCond  $criteria]} {
+			return $ri
+		}
+	}
+	
+	
+	
 }
 

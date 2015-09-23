@@ -8,7 +8,7 @@ nx::Class create RoleitemController -superclass Controller {
 	:method init {} {
 		#set attributes { %s }  
 		#next $attributes $alias
-		set :layout column2
+		set :layout rbaclayout
 		#my	setLayout layout
 	}
 

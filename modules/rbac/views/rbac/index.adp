@@ -30,7 +30,7 @@ ns_puts "<div class='col-lg-10'>$panel</div>"
 
 set h1 [$bhtml htmltag h1 "Role Assignments"]
 set ramodel [RoleAssignment new]
-set gridView [GridView new -sort user_id -toSelect "user item options"  -specialFunctions "options makeViewLink " -model $ramodel \
+set gridView [GridView new -sort user_id -toSelect "user_id user item_id item options"  -specialFunctions "options makeViewLink " -model $ramodel \
 	-searchOptions [list -relations 1] -bhtml $bhtml  ]
 set data [$gridView getGridView]
 set panel [$bhtml panel  -h $h1 $data]

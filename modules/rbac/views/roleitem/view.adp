@@ -8,7 +8,7 @@ dict set pageinfo title $title
 
 		dict set pageinfo breadcrumb [subst {
 			{-url 1 {[mc Home]} "/"}
-			{-url 1 {[mcRBAC]} /rbac/index}
+			{-url 1 {[mc RBAC]} /rbac/index}
 			{-active 1 "$title"}
 	} ]  
 	set id [$model get id]

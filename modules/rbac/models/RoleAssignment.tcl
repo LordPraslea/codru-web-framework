@@ -98,5 +98,15 @@ nx::Class create RoleAssignment -superclass Model {
 		#puts "Generated html $html \n"
 		return $html 	
 	}
+	#Bizrule and data..
+	:public method assign {itemName userid} {
+		set item_id [dbi_0or1row -db [:db get]  "select id from role_item where name=:itemName"]
+		if {[string is integer $item_id]} {
+			:set  user_id $userid item_id $item_id
+			return [:insert] 
+		}
+		return 0
+	}
+	
 }
 
