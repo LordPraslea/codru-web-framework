@@ -1,4 +1,8 @@
 nx::Class create Pagination -superclass [list bhtml] {
+
+	:property {url ""}
+	:property {urlClass ""}
+
 	:property {extraUrlVars "" } 
 	:property {size 0} 
 	:property page:required 
@@ -27,15 +31,16 @@ nx::Class create Pagination -superclass [list bhtml] {
 	:method createPagination {} {
 		for {set var ${:forFirstPage}} {$var <= ${:forLastPage} } {incr var} {
 			if {$var != ${:page}} {
-				lappend pagination "-url 1 $var	
-				[ns_queryencode ${:table}_page $var 	${:table}_sort ${:sort} 	${:table}_perpage ${:perpage} 	sort ${:sort_type} 	{*}${:extraUrlVars}]"
-			} else { lappend pagination "-active 1 -url 1 $var #" }
+				set pageName "Page $var"
+				lappend pagination "-url 1 -title [list $pageName] -class	[list ${:urlClass}]  $var	
+				${:url}[ns_queryencode ${:table}_page $var 	${:table}_sort ${:sort} 	${:table}_perpage ${:perpage} 	sort ${:sort_type} 	{*}${:extraUrlVars}]"
+			} else { lappend pagination "-active 1 -url 1  -class ${:urlClass}  # $var" }
 		}
 
-		set first [format {-url 1 "&laquo;" "%s" } \
-			[ns_queryencode ${:table}_page 1		${:table}_sort ${:sort}		${:table}_perpage ${:perpage}	sort ${:sort_type}	{*}${:extraUrlVars}]]
-		set last [format {-url 1 "&raquo;" "%s" } \
-			[ns_queryencode ${:table}_page ${:lastpage}		${:table}_sort ${:sort}		${:table}_perpage ${:perpage} 	sort ${:sort_type}	{*}${:extraUrlVars}]]  
+		set first [format {-url 1 -title "%s"  -class "%s" "&laquo;" "%s" } [mc "First page"] \
+			${:urlClass}	${:url}[ns_queryencode ${:table}_page 1		${:table}_sort ${:sort}		${:table}_perpage ${:perpage}	sort ${:sort_type}	{*}${:extraUrlVars}]]
+		set last [format {-url 1 -title "%s" -class "%s" "&raquo;" "%s" } [mc "Last page"] \
+			${:urlClass} ${:url}[ns_queryencode ${:table}_page ${:lastpage}		${:table}_sort ${:sort}		${:table}_perpage ${:perpage} 	sort ${:sort_type}	{*}${:extraUrlVars}]]  
 
 		set :htmlpagination [:pagination  -first $first -last $last   $pagination] 
 	}
@@ -51,7 +56,7 @@ nx::Class create Pagination -superclass [list bhtml] {
 			append selectdiv [my input -type hidden $k $v]
 		}
 		set gosubmit [my input  -type submit submit [mc "Per page"]]
-		set perpageform [my form -action [ns_queryencode ${:table}_page ${:page}	${:table}_sort ${:sort}	 \
+		set perpageform [my form -action ${:url}[ns_queryencode ${:table}_page ${:page}	${:table}_sort ${:sort}	 \
 			{*}${:extraUrlVars}] "$selectdiv <br> $gosubmit"] 	
 		append perpagediv " "  [my htmltag  -htmlOptions [list class [list col-sm-4 pull-right] style "max-width:110px;"] div  $perpageform ] ;#$selectdiv
 
