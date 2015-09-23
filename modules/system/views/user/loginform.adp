@@ -46,8 +46,8 @@ $f submit [mc "Login"] xsubmit "btn-block btn-lg"
 
 
 set extraLinks {<p class="text-center"><br>} 
-append extraLinks [$bhtml a [mc "Create a new account"] [my getUrl -controller user register]] 	 {
-<br>}  [$bhtml a [mc "Forgotten your password?"] [my getUrl -controller user reset]] "</p>"
+append extraLinks [$bhtml a -simple 1 [mc "Create a new account"] [my getUrl -controller user register]] 	 {
+<br>}  [$bhtml a -simple 1 [mc "Forgotten your password?"] [my getUrl -controller user reset]] "</p>"
 
 $f add $extraLinks
 set loginform [$f endForm  -horizontal 0 -action [my getUrl -controller user login] -method post -id users ]

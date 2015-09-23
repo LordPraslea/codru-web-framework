@@ -17,8 +17,9 @@ ns_puts [$bhtml htmltag h1 [dict get $pageinfo title ]]
 
 ns_puts [$bhtml detailView $model  {id username  email last_login_at creation_at status }]
 set upmodel [UserProfile new]
-ns_puts [$bhtml gridView -sort user_id  -toSelect [list  profile profile_value] $upmodel [list -relations 1]  ]
 
+set gridView [GridView new -sort user_id  -toSelect [list  profile profile_value] -model $upmodel -bhtml $bhtml -searchOptions [list -relations 1]  ]
+ns_puts [$gridView getGridView]
 %>
 
 

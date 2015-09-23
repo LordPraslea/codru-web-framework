@@ -82,13 +82,18 @@ nx::Class create UserController -superclass Controller {
 		$model setScenario register
 		if {[ns_conn method] == "POST"} {
 			set queryattributes [$model getQueryAttributes POST]
+			set msg [msgcat::mc "You've successfully registered."] 
 			:setRegisterModelInformation
 			if {[$model save]} {
 				set bhtml [bhtml new]
-				set jumbotron [$bhtml jumbotron [msgcat::mc "Account created successfully"]  [msgcat::mc "You've successfully registered. 
-				You will recieve an e-mail with an activation link.
-				Please click on it to activate your account and start saving time."]]
+
+			if {[:autoLoginAfterActivation]} {
+				:activateAutoLogin
+				:loginRedirect
+			} else {
+				set jumbotron [$bhtml jumbotron [msgcat::mc "Account created successfully"] $msg  ]
 				:simpleRender $jumbotron
+			}
 
 				:sendRegisterEmail
 				return [$model get id]
@@ -100,7 +105,7 @@ nx::Class create UserController -superclass Controller {
 	}
 
 	:method setRegisterModelInformation {args} {
-		:upvar model model
+		:upvar model model msg msg
 		#Encrypt password..
 		set password [$model get password]
 		if {$password != ""} {
@@ -110,6 +115,16 @@ nx::Class create UserController -superclass Controller {
 		$model set activation_code [generateCode 13]
 		$model set creation_at [getTimestamp]
 		$model set creation_ip [ns_conn peeraddr] 
+
+		set activate [mc "You will recieve an e-mail with an activation link."]	
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
+		if {[dict exists $config autoActivateAccount]} {
+			if {[dict get $config autoActivateAccount]} {
+				$model set status 2
+				set activate [mc "Your may now login!"]	 
+			}
+		}
+		append msg "  " $activate
 	}
 
 	:method sendRegisterEmail {  } {
@@ -146,7 +161,6 @@ nx::Class create UserController -superclass Controller {
 			set returnto [ns_session get returnto]
 			ns_session delete returnto
 			if {![string match *user/login* $returnto]} {
-				puts "Returning to $returnto"
 				ns_returnredirect $returnto
 				return -level 2 1
 			}
@@ -176,6 +190,7 @@ nx::Class create UserController -superclass Controller {
 
 			if {[:autoLoginAfterActivation]} {
 					:activateAutoLogin
+					:loginRedirect
 			} else {
 				my render login model $model extrainfo [$bhtml alert [msgcat::mc  "You've successfully activated your account. You may now login!"]] 
 			}
@@ -230,19 +245,7 @@ nx::Class create UserController -superclass Controller {
 		ns_session put userid [$model get id] 
 		ns_session put username [$model get username] 
 		ns_session put user_type [$model get user_type] 
-
-		if {[ns_session contains returnto]} {
-			set returnto [ns_session get returnto]
-			ns_session delete returnto 
-			#ns_returnredirect [ns_session get returnto] 
-			if {![string match *user/login* $returnto]} { 
-				ns_returnredirect $returnto 
-				return -level 2 0
-			}
-		} 
-		my redirect profile 
 	}
-
 
 	#Password Reset form fill to send e-mail
 	:public method actionReset {} {
@@ -272,7 +275,7 @@ nx::Class create UserController -superclass Controller {
 			if {[string match "*@*" $email ]} {
 				set tomatch email
 			} else { set tomatch username }
-			set criteria [SQLCriteria new -model [self]]
+			set criteria [SQLCriteria new -model $model]
 			$criteria add $tomatch $email
 
 			if {![$model findByCond -save 1 $criteria ]} {

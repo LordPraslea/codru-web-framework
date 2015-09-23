@@ -118,8 +118,9 @@ nx::Class create User -superclass [list Model] {
 					}
 				}
 				telephone {
-					unsafe { on all }
+					validation { string { on register } } 
 				}
+				credits { unsafe { on all } }
 
 			}
  }  
@@ -143,6 +144,21 @@ nx::Class create User -superclass [list Model] {
  }
 			#set db dbipg2
 		next 
+	}
+
+	:public method findByUserOrId { user } {
+		if {[string is integer $user]} {
+			return [:findByPk $user]
+		} else {
+			set criteria [SQLCriteria new -model [self]]
+			$criteria add username $user
+			return [:findByCond $criteria]
+		}
+	}
+	
+	:public method existsUser {extra column value} {
+
+	
 	}
 
 	:public method loadUserProfile { } {
@@ -292,14 +308,18 @@ nx::Class create User -superclass [list Model] {
 	}
 
 	:method loginSaveSession {  } {
-			ns_session put userid [my get id]
+		set userid [my get id]
+			ns_session put userid $userid
 			ns_session put username [my get username] 
 			ns_session put user_type [my get user_type] 
-
-			#Update the last login time
-			#TODO in future add login IP to another table..
-			:set last_login_at [getTimestamp]
+		
+			set timestamp [getTimestampTz]
+			:set last_login_at $timestamp
 			:set login_attempts 0
+
+			set login_ip [ns_conn peeraddr] 
+
+			dbi_dml -db [:db get] "INSERT INTO login_stats VALUES (:userid,:timestamp,:login_ip)"
 	}
 
 
