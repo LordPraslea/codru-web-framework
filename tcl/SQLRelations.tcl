@@ -181,22 +181,24 @@ nx::Class create SQLRelations {
 			#			lappend  newSelect " (SELECT array (SELECT DISTINCT ${fk_col_value}
 		#	FROM ${:schema}.$fk_table,${:schema}.$many_table
 		#	WHERE $sqlcriteria) as ok) as $ts"
-			set specialMultiSelect 	" (SELECT DISTINCT ${fk_col_value}
+			set relationSelectSQL 	" (SELECT DISTINCT ${fk_col_value}
 			FROM ${:schema}.$fk_table,${:schema}.$many_table
 			WHERE $sqlcriteria) as $ts" 
 
 			if {![info exists multiple_no_array]} {
-				set specialMultiSelect " (SELECT array $specialMultiSelect ) as $ts "
+				set relationSelectSQL " (SELECT array $relationSelectSQL) as $ts "
 			}
-			lappend  newSelect $specialMultiSelect
+			lappend  newSelect $relationSelectSQL
 		
-			
+			${:model} setRelationSQL $ts $relationSelectSQL 	
 			
 			#WHERE $many_table.$many_column = ${:table}.$column
 			#AND $fk_table.$fk_column = $many_table.$many_fk_column) as ok) as $ts
 
 		} else {
-			lappend newSelect "(SELECT $fk_col_value FROM ${:schema}.$fk_table WHERE  $sqlcriteria) as $ts"	
+			set relationSelectSQL "(SELECT $fk_col_value FROM ${:schema}.$fk_table WHERE  $sqlcriteria) as $ts"	
+			${:model} setRelationSQL $ts $relationSelectSQL 	
+			lappend newSelect $relationSelectSQL 
 		}
 	}
 
