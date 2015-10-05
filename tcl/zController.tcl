@@ -16,7 +16,7 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 	}
 
 
-	:public method render {{-controller ""} {-site ""} -- view args} {
+	:public method render {{-controller ""} {-site ""} {-ajax 0} -- view args} {
 		:upvar pageinfo pageinfo
 		set genbhtml 1
 		set vars ""
@@ -30,8 +30,11 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 			if {$controller == ""} { set controller	[my currentController] }
 			append page  [ns_adp_parse   -file ../views/$controller/$view.adp   {*}$vars ]
 		}
-
-		:renderLayout
+		if {!$ajax} {
+			:renderLayout
+		} else {
+			return $page
+		}
 
 		ns_adp_close
 	}
@@ -305,12 +308,14 @@ STACK: [dict get  $options -errorstack] \n
 	}
 
 
-	:public method returnLogin {} {
 		#Save the page the user was trying to view
 		#If he logs in afterwards return to his returnto variable
+	:public method returnLogin {} {
 		set returnto [ns_conn url]
 		if {[string length [ns_conn query]]} {
 			append returnto ?[ns_conn query]
+			#If via ajaxRequest we should cut the "ajaxRequest" part
+			set returnto [regsub {ajaxRequest=true} $returnto ""]
 		}
 		ns_session put returnto $returnto
 		ns_session put sessionexpired 1
@@ -320,7 +325,13 @@ STACK: [dict get  $options -errorstack] \n
 		if {![dict exists $config noHttpsLogin]} {
 			set location [join [lreplace [split $location : ] 0 0 https] :]
 		}
-		ns_returnredirect $location/${:lang}/user/login
+		if {[ns_queryget ajaxRequest 0]} {
+			set data [dict create json strict redirect $location/${:lang}/user/login   ]
+			ns_puts [tcl2json $data]
+			ns_adp_close ;#otherwise we'd have a new jsob object sent with unauthorised
+		} else {
+			ns_returnredirect $location/${:lang}/user/login
+		}
 		return 0
 	}
 
