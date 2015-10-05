@@ -34,7 +34,8 @@ nx::Class create Pagination -superclass [list bhtml] {
 				set pageName "Page $var"
 				lappend pagination "-url 1 -title [list $pageName] -class	[list ${:urlClass}]  $var	
 				${:url}[ns_queryencode ${:table}_page $var 	${:table}_sort ${:sort} 	${:table}_perpage ${:perpage} 	sort ${:sort_type} 	{*}${:extraUrlVars}]"
-			} else { lappend pagination "-active 1 -url 1  -class ${:urlClass}  # $var" }
+			} else { lappend pagination "-active 1 -url 1  -class [list ${:urlClass}]   $var #"  }
+			#puts "page ${:page} var $var urlClass ${:urlClass}  "
 		}
 
 		set first [format {-url 1 -title "%s"  -class "%s" "&laquo;" "%s" } [mc "First page"] \
