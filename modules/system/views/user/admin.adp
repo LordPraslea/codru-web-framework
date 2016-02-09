@@ -23,7 +23,9 @@ ns_puts [$bhtml htmltag h1 $title]
 	}
 
 
-ns_puts [$bhtml gridView -search 1 -admin 1 -toSelect [list username email last_login_at creation_at status user_type] $model ]
+	set gridView [GridView new -searchBar 1 -admin 1  -model $model -bhtml $bhtml \
+	-toSelect [list username email last_login_at creation_at status user_type]]
+ns_puts [$gridView getGridView  ]
 %>
 
 

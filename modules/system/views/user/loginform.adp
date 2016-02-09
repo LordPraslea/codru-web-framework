@@ -51,7 +51,7 @@ append extraLinks [$bhtml a -simple 1 [mc "Create a new account"] [my getUrl -co
 
 $f add $extraLinks
 set loginform [$f endForm  -horizontal 0 -action [my getUrl -controller user login] -method post -id users ]
-ns_puts [$bhtml panel -h [mc "Log in"] -type primary -size "col-sm-5 col-md-5 col-lg-5" $loginform]
+ns_puts [$bhtml panel -h [mc "Log in"] -type primary -size "col-xs-12 col-sm-10 col-md-6 col-lg-5" $loginform]
 $f destroy
 %>
 

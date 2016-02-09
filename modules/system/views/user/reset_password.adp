@@ -10,7 +10,7 @@ dict set pageinfo breadcrumb [subst  {
 
 ns_puts [$bhtml htmltag h1 $title]
 #ns_puts [ns_adp_parse -file form.adp ]
-set f [Form new -formType normal $model $bhtml]
+set f [Form new -formType normal -model $model -bhtml $bhtml]
 $f add [$bhtml htmltag -htmlOptions [list class help-block] p ""]
 $f allErrors
 set field password

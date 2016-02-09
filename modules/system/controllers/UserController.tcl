@@ -293,6 +293,7 @@ nx::Class create UserController -superclass Controller {
 	
 
 	:method setModelForReset {  } {
+		:upvar model model
 		$model set password_code [generateCode 13]	
 		$model set password_reset_at [getTimestamp]
 		#TODO verify if something is wrong or not..
@@ -316,7 +317,7 @@ nx::Class create UserController -superclass Controller {
 		set templateData  "%username [$model get username]   %sitename [dict get $config names sitename ] 
 		%activationlink $activationlink"
 		set	emailTemplate [:getDataFromTemplate /modules/system/views/user/reset_password_email.adp $templateData]
-		send_mail [$model get email] "[dict get $config names sitename ] <[dict get $config email]>" [msgcat::mc "Resetting your password at %s" [dict get $config names website]] $email_data  
+		send_mail [$model get email] "[dict get $config names sitename ] <[dict get $config email]>" [msgcat::mc "Resetting your password at %s" [dict get $config names website]] $emailTemplate  
 
 	}
 

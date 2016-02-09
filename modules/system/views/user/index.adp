@@ -17,7 +17,8 @@ dict set pageinfo menu "
 
 ns_puts [$bhtml htmltag h1 $title]
 
-ns_puts [$bhtml gridView -toSelect [list username email last_login_at creation_at status user_type] $model ]
+set gridView [GridView new  -toSelect [list username email last_login_at creation_at status user_type] -bhtml $bhtml -model $model ]
+ns_puts [$gridView getGridView]
 %>
 
 
