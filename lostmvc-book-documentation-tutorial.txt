@@ -429,15 +429,10 @@ ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 -rpr 1 $header  $data]
 %>
 ++++
 
-
-[source,tcl]
---------------------------------------------------
-
---------------------------------------------------
-
-++++
-
-++++
+==== Forms 
+Forms generation is done with the form and formGroup functions
+which you can always use.
+Generating forms will be looked at later in more depth. You can always take a look in Form.tcl for more information.
 
 
 [source,tcl]
@@ -450,6 +445,29 @@ ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 -rpr 1 $header  $data]
 ++++
 
 
+==== Label
+Labels are associated with form inputs, textboxes, selects, checkboxes and radiobuttons.
+LostMVC manages this automatically, you can generate a label manually using the following command:
+[source,tcl]
+--------------------------------------------------
+<%
+ns_puts [$bhtml label -for myid "Hello there!" ]
+
+%>
+--------------------------------------------------
+
+++++
+<%
+ns_puts [$bhtml label -for myid "Hello there!" ]
+
+%>
+++++
+
+==== Input fields and textarea
+
+LostMVC supports generation of complex input fields that have popovers or tooltips with bootstrap.
+
+
 [source,tcl]
 --------------------------------------------------
 
@@ -460,13 +478,24 @@ ns_puts [$bhtml table -striped 1 -hover 1 -responsive 1 -rpr 1 $header  $data]
 ++++
 
 
+==== Checkboxes and Radiobuttons
+
+Checkbox and radio buttons can be easily generated too.
+
+You can use a command to generate multiple checkboxes or radiobuttons
 [source,tcl]
 --------------------------------------------------
-
+<%
+ns_puts [$bhtml radio radiobtn [list yes "Yes I agree." no "No, I disagree." maybe "I'm not sure yet." ] ]
+ns_puts [$bhtml checkbox checkbox [list bike "Bike" motorcycle "Motorcycle" car "Car" other "Other autovehicle"]]
+%>
 --------------------------------------------------
 
 ++++
-
+<%
+ns_puts [$bhtml radio radiobtn [list yes "Yes I agree." no "No, I disagree." maybe "I'm not sure yet." ] ]
+ns_puts [$bhtml checkbox checkbox [list bike "Bike" motorcycle "Motorcycle" car "Car" other "Other autovehicle"]]
+%>
 ++++
 
 

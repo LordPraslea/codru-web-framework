@@ -82,9 +82,11 @@ nx::Class create Controller -mixin [list LanguageController ImageGalleryControll
 	#TODO find someother way to end execution..
 	:public method simpleRender  {page} {
 
-		:upvar pageinfo pageinfo
+		:upvar pageinfo pageinfo bhtml bhtml
 		dict set pageinfo breadcrumb  [list [mc Home]]
-		set bhtml [bhtml new]
+		if {![info exists bhtml]} {
+			set bhtml [bhtml new]
+		}
 	
 		:renderLayout 
 

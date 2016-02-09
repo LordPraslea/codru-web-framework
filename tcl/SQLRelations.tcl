@@ -55,7 +55,14 @@ nx::Class create SQLRelations {
 		if {$toSelect  == "*"} {
 			set relSelect [${:model} getRelationsKeys]
 			set colSelect [${:model} getColumnsKeys]
-			set toSelect [concat $colSelect $relSelect]
+
+			set sqlcolumns [dict get [${:model} getAttributes] sqlcolumns]
+
+			foreach column $colSelect {
+				if {[dict exists $sqlcolumns $column save]} { continue }
+				lappend newColSelect $column
+			}
+			set toSelect [concat $newColSelect $relSelect]
 		}
 
 		foreach ts $toSelect {

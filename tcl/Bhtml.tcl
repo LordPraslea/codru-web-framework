@@ -28,7 +28,7 @@ nx::Class create bhtml {
  	:variable plugins  
 # === Usual public properties
 	:property -accessor public {Controller:optional ""}
-	:property -accessor public {cdn true}
+	:property -accessor public {cdn false}
 
 # ==== Init method
 	:method	init {} {
@@ -315,6 +315,7 @@ time  {$bhtml htmltag -htmlOptions $htmlOptions  a $text} 1000
 	#
 	:public method makeList {{-type "ul"} {-htmlOptions ""}  {-group 0}  {-activeli ""}  -- data} {
 		if {$group} { dict lappend  htmlOptions class list-group  }
+		set html_list ""
 		foreach list  $data {
 			append html_list [:makeListItem -activeli $activeli -group $group  {*}$list ]	
 		}
