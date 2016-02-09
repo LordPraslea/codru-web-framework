@@ -209,7 +209,13 @@ nx::Class create GridView -superclass [list bhtml] {
 			foreach d ${:valuesdata} {
 				if {[expr {$count%${:columnsize}}]==0} { 
 				#Set the ID so we can use it later(if required..)
-					${:model} set id $d
+					#${:model} set id $d
+					#Set rest of data so we can access it!
+					set currentCount 0
+					foreach col [dict get ${:data} columns] {
+						${:model} set $col [lindex ${:valuesdata} $count+$currentCount ] 
+						incr currentCount
+					}
 				}
 				if {[set loc [expr {$count%${:columnsize}}]] in $functions } { 
 					set fun [lindex $functions	[lsearch $functions $loc]+1]
@@ -332,6 +338,7 @@ nx::Class create GridView -superclass [list bhtml] {
 		if {${:rowId}} {
 		#	set :mydata  ${:mydata}  ]
 		}
+		if {![info exists :mydata]} { return [:alert -type info [msgcat::mc "There is no data available"]] }
 		set :tablehtml [${:bhtml} table -class "" -bordered 1 -striped 1 -hover 1  -rpr ${:rowId}   ${:tablehead}   ${:mydata} ]
 		
 		set pagination [Pagination new -size ${:size} -extraUrlVars ${:extraUrlVars} -page ${:page} \
