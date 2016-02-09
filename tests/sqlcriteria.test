@@ -1,0 +1,99 @@
+package require tcltest 2.2
+namespace import -force ::tcltest::*
+
+eval ::tcltest::configure $argv
+
+#Testing sql criteria
+#
+test sqlcriteria-1.1 {Full Criteria for 'users' table (testing and, in, between and subcriteria)}    -setup {
+
+	ns_register_proc GET /sqlcriteria-1.1 {
+		set c [SQLCriteria new -table users]
+		$c add username andrei
+		$c add password supercool
+		$c add -fun in level {1 2 3 4 5}
+		$c add -fun between money {1000 10000}
+		set c2 [SQLCriteria new -table users]
+		$c2 add city brasov
+		$c2 add -cond OR city bucuresti
+		$c subcriteria $c2
+		ns_return 200 text/html [$c getCriteriaSQL]
+	}
+
+} -body  {
+    nstest::http -getbody 1  GET /sqlcriteria-1.1
+} -cleanup {
+    ns_unregister_op GET /sqlcriteria-1.1
+} -result {200 {  users.username = :username_0  AND  users.password = :password_1  AND users.level IN (:level_2,:level_3,:level_4,:level_5,:level_6)  AND users.money BETWEEN :money_7 AND :money_8  AND (  users.city = :city_0  OR  users.city = :city_1 ) }}
+
+
+test sqlcriteria-1.2 {Full Criteria for 'users' without table} -match glob   -setup {
+
+	ns_register_proc GET /sqlcriteria-1.2 {
+		set c [SQLCriteria new -table users]
+		$c add -includeTable 0 username andrei
+		$c add password supercool
+		$c add -fun in level {1 2 3 4 5}
+		$c add -fun between money {1000 10000}
+		set c2 [SQLCriteria new -table users]
+		$c2 add city brasov
+		$c2 add -cond OR city bucuresti
+		$c subcriteria $c2
+		ns_return 200 text/html [$c getCriteriaSQL]
+	}
+
+} -body  {
+    nstest::http -getbody 1  GET /sqlcriteria-1.2
+} -cleanup {
+    ns_unregister_op GET /sqlcriteria-1.2
+} -result {200 {  username = :username_0  AND  users.password = :password_1  AND users.level IN (:level_2,:level_3,:level_4,:level_5,:level_6)  AND users.money BETWEEN :money_7 AND :money_8  AND (  users.city = :city_0  OR  users.city = :city_1 ) }}
+
+
+test sqlcriteria-1.3 {Get preparedstatement for 'users' table (testing and, in, between and subcriteria)}    -setup {
+
+	ns_register_proc GET /sqlcriteria-1.3 {
+		set c [SQLCriteria new -table users]
+		$c add username andrei
+		$c add password supercool
+		$c add -fun in level {1 2 3 4 5}
+		$c add -fun between money {1000 10000}
+		set c2 [SQLCriteria new -table users]
+		$c2 add city brasov
+		$c2 add -cond OR city bucuresti
+		$c subcriteria $c2
+		ns_return 200 text/html [$c getPreparedStatements]
+	}
+
+} -body  {
+    nstest::http -getbody 1  GET /sqlcriteria-1.3
+} -cleanup {
+    ns_unregister_op GET /sqlcriteria-1.3
+} -result {200 {username_0 andrei password_1 supercool level_2 1 level_3 2 level_4 3 level_5 4 level_6 5 money_7 1000 money_8 10000 city_0 brasov city_1 bucuresti}}
+
+test sqlcriteria-1.4 {simple in} -match glob   -setup {
+
+	ns_register_proc GET /sqlcriteria-1.4 {
+		set c [SQLCriteria new -table users]
+		$c add -fun in level {1 2}
+		ns_return 200 text/html [$c getCriteriaSQL]
+	}
+
+} -body  {
+    nstest::http -getbody 1  GET /sqlcriteria-1.4
+} -cleanup {
+    ns_unregister_op GET /sqlcriteria-1.4
+} -result {200 { users.level IN (:level_0,:level_1) }}
+
+test sqlcriteria-2.1 {Criteria testing for Model} -setup {
+}   -body  {
+    nstest::http -getbody 1 -host lostmvc  GET /sqlcriteria.adp
+} -cleanup {
+} -result {200 {  users.username = :username_0  AND  users.password = :password_1 
+}}
+
+
+
+
+
+
+cleanupTests

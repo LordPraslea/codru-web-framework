@@ -12,6 +12,8 @@ namespace import tcltest::*
 eval configure $argv -singleproc true -testdir [file dirname [info script]]
 
 
+puts "FOLDER [file dirname [info script]]
+"
 
 rename tcltest::test tcltest::__test
 

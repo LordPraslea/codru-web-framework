@@ -1,0 +1,275 @@
+package require tcltest 2.2
+namespace import -force ::tcltest::*
+
+eval ::tcltest::configure $argv
+
+#
+# The following allows us to use ADP without a connection.
+#
+
+#ns_adp_ctl channel stdout
+#
+#
+#If you;re writing a test and the output is the same with your result,
+#don't forget that the result must end in the accolades without a space between them
+
+# Testing tag/htmltag
+test bhtml-1.1 {Basic bhtml tag example} -setup {
+    ns_register_proc GET /bhtml-1.1 {
+		set bhtml [bhtml new]
+		set return [$bhtml tag div "This is a test!"]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-1.1
+} -cleanup {
+    ns_unregister_op GET /bhtml-1.1
+} -result {200 {<div>This is a test!</div>}}
+
+test bhtml-1.2 { bhtml tag without closing tag } -setup {
+    ns_register_proc GET /bhtml-1.2 {
+		set bhtml [bhtml new]
+		set return [$bhtml tag -closingTag 0 -htmlOptions [list value "" name firstname type text] input]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-1.2
+} -cleanup {
+    ns_unregister_op GET /bhtml-1.2
+} -result {200 {<input value="" name="firstname" type="text" />}}
+
+
+test bhtml-1.3 { bthml test single quotes } -setup {
+    ns_register_proc GET /bhtml-1.3 {
+		set bhtml [bhtml new]
+		set return [$bhtml tag -closingTag 0 -singlequote 1 -htmlOptions [list value "" name firstname type text] input]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-1.3
+} -cleanup {
+    ns_unregister_op GET /bhtml-1.3
+} -result {200 {<input value='' name='firstname' type='text' />}}
+
+
+#Alert, breadcrumb, blockquote:
+test bhtml-2.1 { alert label test} -setup {
+    ns_register_proc GET /bhtml-2.1 {
+		set bhtml [bhtml new]
+		set return [$bhtml alert "Howdy friend!"]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-2.1
+} -cleanup {
+    ns_unregister_op GET /bhtml-2.1
+} -result {200 {<div class="alert alert-info "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>	Howdy friend!</div>}}
+
+test bhtml-2.2 { alert warning type with extra class} -setup {
+    ns_register_proc GET /bhtml-2.2 {
+		set bhtml [bhtml new]
+		set return [$bhtml alert -type warning -class login "You need to login to edit this page!"]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-2.2
+} -cleanup {
+    ns_unregister_op GET /bhtml-2.2
+} -result {200 {<div class="alert alert-warning login"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>	You need to login to edit this page!</div>}}
+
+test bhtml-2.3 {Jumbotron testing} -setup {
+    ns_register_proc GET /bhtml-2.3 {
+		set bhtml [bhtml new]
+		set return [$bhtml jumbotron "The allnew LostMVC" "A once in a lifetime opportunity!"]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-2.3
+} -cleanup {
+    ns_unregister_op GET /bhtml-2.3
+} -result {200 {<div class="jumbotron"><h1>The allnew LostMVC</h1> A once in a lifetime opportunity!</div>}}
+
+test bhtml-2.4 {Breadcrumb generation, this also tests if lists work!} -setup {
+    ns_register_proc GET /bhtml-2.4 {
+		set bhtml [bhtml new]
+		set title "The 100 year war."
+		set breadcrumb [subst {{-url 1 {Home} "/"}
+						 {-url 1 {History} /history/index}
+						 {-url 1 {Europe} /history/europe/index}
+						 {-active 1 "$title"}
+		}]
+		set return [$bhtml breadcrumb $breadcrumb]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-2.4
+} -cleanup {
+    ns_unregister_op GET /bhtml-2.4
+} -result {200 {<ol class="breadcrumb"><li><a href="/">Home</a></li><li><a href="/history/index">History</a></li><li><a href="/history/europe/index">Europe</a></li><li class="active">The 100 year war.</li></ol>}}
+
+test bhtml-2.5 {Blockquote in reverse} -setup {
+    ns_register_proc GET /bhtml-2.5 {
+		set bhtml [bhtml new]
+		set return [$bhtml blockquote -reverse 1 -source "United Brain Power"  "A simple yet efficient framework"]
+		ns_return 200 text/html $return
+    }
+} -body {
+    nstest::http -getbody 1  GET /bhtml-2.5
+} -cleanup {
+    ns_unregister_op GET /bhtml-2.5
+} -result {200 {<blockquote class="blockquote-reverse">A simple yet efficient framework<footer>United Brain Power</footer></blockquote>}}
+
+#Desc testing
+test bhtml-2.6 {Desc test} -setup {
+	ns_register_proc GET /bhtml-2.6 {
+		set bhtml [bhtml new]
+		set return [$bhtml desc -horizontal 1 {
+			RAM "Random Access Memory of a pc"
+			CPU "Central processing unit"
+			Tcl "Tool Command Language"
+			OOP "Object Oriented Programming"
+		}] 
+		ns_return 200 text/html $return
+	}
+} -body {
+    nstest::http -getbody 1  GET /bhtml-2.6
+} -cleanup {
+    ns_unregister_op GET /bhtml-2.6
+} -result {200 {<dl class="dl-horizontal"><dt>RAM</dt><dd>Random Access Memory of a pc</dd><dt>CPU</dt><dd>Central processing unit</dd><dt>Tcl</dt><dd>Tool Command Language</dd><dt>OOP</dt><dd>Object Oriented Programming</dd></dl>}} 
+
+#MakeList & MakeGroup tests Tests
+test bhtml-3.1 {MakeList Test BHTML} -setup {
+	ns_register_proc GET /bhtml-3.1 {
+
+		set bhtml [bhtml new]
+		set return [$bhtml makeList -group 1 {
+			"<b>3 Potatoes</b>"
+			{1 Lavender}
+			{-class list-group-item-danger {some Onions and Garlic}}
+			{-url 1 -tooltip "-location left {Sausage is very good if it's from Germany}" "2  Sausages" #clickme}
+			{And  some mediteranean herbs} 
+			{-newlist 1 -p "How to cook"  -type ol    -- {"Boil 1 liter water " "Add potatoes" "Add remaining items to water"}}			
+		}  	]
+		ns_return 200 text/html $return
+	}
+} -body {
+
+    nstest::http -getbody 1  GET /bhtml-3.1
+} -cleanup {
+    ns_unregister_op GET /bhtml-3.1
+} -result {200 {<ul class="list-group"><li class="list-group-item"><b>3 Potatoes</b></li><li class="list-group-item">1 Lavender</li><li class="list-group-item-danger list-group-item">{some Onions and Garlic}</li><li class="list-group-item"><a href="#clickme" data-toggle="tooltip" data-placement="left" title="Sausage is very good if it's from Germany">2  Sausages</a></li><li class="list-group-item">And some mediteranean herbs</li><li class="list-group-item">How to cook <ol><li>Boil 1 liter water</li><li>Add potatoes</li><li>Add remaining items to water</li></ol></li></ul>}}
+
+test bhtml-3.2 {MakeList View script generated} -setup {
+	ns_register_proc GET /bhtml-3.2 {
+
+		set bhtml [bhtml new]
+		$bhtml makeList -group 1 {
+			"<b>3 Potatoes</b>"
+			{1 Lavender}
+			{-class list-group-item-danger {some Onions and Garlic}}
+			{-url 1 -tooltip "-location left {Sausage is very good if it's from Germany}" "2  Sausages" #clickme}
+			{And  some mediteranean herbs} 
+			{-newlist 1 -p "How to cook"  -type ol    -- {"Boil 1 liter water " "Add potatoes" "Add remaining items to water"}}			
+		}  	
+		ns_return 200 text/html [$bhtml putScripts]
+	}
+} -body {
+
+    nstest::http -getbody 1  GET /bhtml-3.2
+} -cleanup {
+    ns_unregister_op GET /bhtml-3.2
+} -result {200 {<script> 
+   $(document).ready(function(){
+
+			$('[data-toggle="tooltip"]').tooltip();
+			$('[data-toggle="popover"]').popover({trigger: "hover"});
+		
+}); 
+    </script>}}
+
+
+#MakeGroup tests
+test bhtml-3.3 {MakeGroup chapters testing} -setup {
+	ns_register_proc GET /bhtml-3.3 {
+
+		set bhtml [bhtml new]
+		set return [$bhtml makeGroup {
+			{ -h "Chapter 1 - The Beginning" -p 1 -active 1 -type success "Learning LostMVC is fun"}
+			{ -h "Chapter 2 - Advance into Darkness" -p 0 { LostMVC example } }
+			{ -h "Chapter 3 - Sunlight" -p 0 { A lot of useless lorem ipsum is needed here. } }
+		}]
+		ns_return 200 text/html $return
+	}
+} -body {
+
+    nstest::http -getbody 1  GET /bhtml-3.3
+} -cleanup {
+    ns_unregister_op GET /bhtml-3.3
+} -result {200 {<div class="list-group"><a class="list-group-item active list-group-item-success" href="#"><h4 class="list-group-item-heading">Chapter 1 - The Beginning</h4> <p class="list-group-item-text">Learning LostMVC is fun</p></a><a class="list-group-item" href="#"><h4 class="list-group-item-heading">Chapter 2 - Advance into Darkness</h4>  LostMVC example </a><a class="list-group-item" href="#"><h4 class="list-group-item-heading">Chapter 3 - Sunlight</h4>  A lot of useless lorem ipsum is needed here. </a></div>}}
+
+
+
+#Tables test`
+test bhtml-4.1 {TableHorizontal test case} -setup {
+	ns_register_proc GET /bhtml-4.1 {
+
+		set bhtml [bhtml new]
+		 set header [list "First Name" "Last Name" "Age" "City"]
+		 set data "Makowlski Bender 31 {New Jersy}"
+		ns_return 200 text/html [$bhtml tableHorizontal -striped 1 -hover 1 -responsive 1 $header $data]
+	}
+} -body {
+
+    nstest::http -getbody 1  GET /bhtml-4.1
+} -cleanup {
+    ns_unregister_op GET /bhtml-4.1
+} -result {200 {<table class="table table-striped table-hover table-responsive"><tbody><tr><th width="30%">First Name</th> <td>Makowlski</td></tr><tr><th width="30%">Last Name</th> <td>Bender</td></tr><tr><th width="30%">Age</th> <td>31</td></tr><tr><th width="30%">City</th> <td>New Jersy</td></tr></tbody></table>}}
+
+
+test bhtml-4.2 {TableHorizontal test case} -setup {
+	ns_register_proc GET /bhtml-4.2 {
+
+		set bhtml [bhtml new]
+		set header [list "First Name" "Last Name" "Age" "City"]
+		set data  {
+			Henry Lamprey 21 Ryland Susanna Higginson 22 Hueston Aaron Callicoat 23 Honeycutt Mike Linsley 24 Evens Zoe Hollinsworth 25 Odham
+			Ellen Delafield 31 Coard Amy Coxson 32 Baney Carolyn Arnold 33 Julian Gabe Ketch 34 Claver Chris Brockenbrough 35 Brewton
+			Gabe Rigdon 36 Burnell Jay Noel 37 Walmsley Tristan Rowntree 38 Padmore Phil Nicolls 39 Ashwill }
+
+		ns_return 200 text/html  [$bhtml table -striped 1 -hover 1 -responsive 1 $header $data]
+	}
+} -body {
+
+    nstest::http -getbody 1  GET /bhtml-4.2
+} -cleanup {
+    ns_unregister_op GET /bhtml-4.2
+} -result {200 {<table class="table table-striped table-hover table-responsive"><thead><tr><th>First Name</th><th>Last Name</th><th>Age</th><th>City</th></tr></thead><tbody><tr><td>Henry</td><td>Lamprey</td><td>21</td><td>Ryland</td></tr><tr><td>Susanna</td><td>Higginson</td><td>22</td><td>Hueston</td></tr><tr><td>Aaron</td><td>Callicoat</td><td>23</td><td>Honeycutt</td></tr><tr><td>Mike</td><td>Linsley</td><td>24</td><td>Evens</td></tr><tr><td>Zoe</td><td>Hollinsworth</td><td>25</td><td>Odham</td></tr><tr><td>Ellen</td><td>Delafield</td><td>31</td><td>Coard</td></tr><tr><td>Amy</td><td>Coxson</td><td>32</td><td>Baney</td></tr><tr><td>Carolyn</td><td>Arnold</td><td>33</td><td>Julian</td></tr><tr><td>Gabe</td><td>Ketch</td><td>34</td><td>Claver</td></tr><tr><td>Chris</td><td>Brockenbrough</td><td>35</td><td>Brewton</td></tr><tr><td>Gabe</td><td>Rigdon</td><td>36</td><td>Burnell</td></tr><tr><td>Jay</td><td>Noel</td><td>37</td><td>Walmsley</td></tr><tr><td>Tristan</td><td>Rowntree</td><td>38</td><td>Padmore</td></tr><tr><td>Phil</td><td>Nicolls</td><td>39</td><td>Ashwill</td></tr></tbody></table>}}
+
+test bhtml-4.3 {Special table using -rpr 1 (row per row)} -setup {
+	ns_register_proc GET /bhtml-4.3 {
+
+		set bhtml [bhtml new]
+		set header [list "First Name" "Last Name" "Age" "City"]
+		set data ""
+		lappend data [list -type success Henry Lamprey 21 Ryland]
+		lappend data [list  Aaron Callicoat 23 Honeycutt]
+		lappend data  [list -type danger Susanna Higginson 22 Hueston]
+		lappend data  [list Mike Linsley {-type warning 24} Evens]
+
+		ns_return 200 text/html [$bhtml table -striped 1 -hover 1 -responsive 1 -rpr 1 $header  $data]
+
+
+	}
+} -body {
+
+    nstest::http -getbody 1  GET /bhtml-4.3
+} -cleanup {
+    ns_unregister_op GET /bhtml-4.3
+} -result {200 {<table class="table table-striped table-hover table-responsive"><thead><tr><th>First Name</th><th>Last Name</th><th>Age</th><th>City</th></tr></thead><tbody><tr class="success"><td>Henry</td><td>Lamprey</td><td>21</td><td>Ryland</td></tr><tr><td>Aaron</td><td>Callicoat</td><td>23</td><td>Honeycutt</td></tr><tr class="danger"><td>Susanna</td><td>Higginson</td><td>22</td><td>Hueston</td></tr><tr><td>Mike</td><td>Linsley</td><td class="warning">24</td><td>Evens</td></tr></tbody></table>}}
+
+
+#################################
+# Forms
+#################################
+
+cleanupTests
