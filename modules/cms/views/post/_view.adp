@@ -10,8 +10,8 @@ append article [$bhtml tag -htmlOptions "class blog-post-meta" div $blog_meta]
 set data [string range [$model get post] 0 500 ]
 if {$status == 4 && ![ns_session contains userid]} {
 	append data  [mc "This is a 500 character free preview.."] <br>
-	append data [$bhtml link -controller user [$bhtml fa fa-book fa-lg][mc "Login to view the full post"]  /login] " [mc or] "
-	append data [$bhtml  link -controller user [$bhtml fa fa-laptop fa-lg][mc "create a new account for free"]  /register]
+	append data [$bhtml link -controller user [$bhtml fa fa-book fa-lg][mc "Login to view the full post"]  login] " [mc or] "
+	append data [$bhtml  link -controller user [$bhtml fa fa-laptop fa-lg][mc "create a new account for free"]  register]
 } else {
 append data "... " [my link -controller blog [$bhtml fa fa-book fa-lg][mc  "Continue reading.."] [$model get slug]]
 }

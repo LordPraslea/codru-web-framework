@@ -6,7 +6,7 @@
 set title [$model get title]
 $model bhtml $bhtml
 
-dict set pageinfo title "United Brain Power - $title"
+dict set pageinfo title " $title"
 
 		dict set pageinfo breadcrumb [subst {
 			{-url 1 {[mc Home]} "/"}
@@ -45,7 +45,8 @@ set status [$model get status]
 if {$status == 2 && ![my verifyAuth]} {
 
 #ns_puts [$bhtml htmltag h1 $title]
- append article [$bhtml tag h2 [mc "This blog post is accesible only to registered users. Please %s to view it." [$bhtml link  [mc {log in}] /user/login ]]
+ append article [$bhtml tag h2 [mc "This blog post is accesible only to registered users. Please %s to view it." [$bhtml link  [mc {log in}] /user/login ]]]
+ ns_puts $article
 } else { 
 $bhtml syntaxHighlighter 
 

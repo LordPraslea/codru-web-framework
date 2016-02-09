@@ -11,7 +11,7 @@ nx::Class create PostController  -superclass Controller {
 	#next $attributes $alias
 		set :layout blog
 		#my	setLayout layout
-		dict set :pageinfo author "United Brain Power"
+		dict set :pageinfo author ""
 	}
 
 	:public method accessRules {} {
@@ -224,7 +224,9 @@ nx::Class create PostController  -superclass Controller {
 		set actions [my getUrlAction]
 		if {$actions == ""} { set actions [ns_urldecode [ns_get tag]]}
 		set tag [Tags new]
-		if {[$tag findByCond  [list tag $actions]]} {
+		set criteria [SQLCriteria new -model $tag]
+		$criteria add tag $actions
+		if {[$tag findByCond  $criteria]} {
 
 			dict set pr_stmt tag_id [$tag get id]
 			set sql_select "SELECT post_id FROM blog_tags  WHERE tag_id=:tag_id "

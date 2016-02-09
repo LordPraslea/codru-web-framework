@@ -1,11 +1,10 @@
 <%
 
-
+my set :layout layout
 $model bhtml [set bhtml [bhtml new]]
-puts "[$model bhtml] you see a bhtml!"
 set title [$model get title]
 
-dict set pageinfo title "$title - United Brain Power"
+dict set pageinfo title "$title "
 
 		dict set pageinfo breadcrumb [subst {
 			{-url 1 {[mc Home]} "/"}
@@ -49,9 +48,13 @@ $bhtml  addPlugin tclbrush {
 
 append article [$bhtml htmltag -htmlOptions [list class "text-center"] h1 $title]
 #set blog_meta "[beautifulDate [$model get creation_at]] by  [$bhtml link -controller blog  [$model get author] author [list author [$model get author]]]"
-set blog_meta "[$bhtml fa fa-lg fa-calendar]  [beautifulDate [$model get public_at]] [mc by] [$bhtml fa fa-lg fa-user] 
-[$bhtml link -controller cms  [$model get author] author/[$model get author]] [$bhtml fa fa-lg fa-clock-o] [$model get reading_time] [mc minutes] "
-append blog_meta  [$bhtml tag -htmlOptions [list class ""] div "[$bhtml fa fa-lg fa-tag] [mc Tags]: $tags "]
+#set blog_meta "[$bhtml fa]fa-lg fa-calendar]  [beautifulDate [$model get public_at]] [mc by] [$bhtml fa fa-lg fa-user] 
+#[$bhtml link -controller cms  [$model get author] author/[$model get author]] [$bhtml fa fa-lg fa-clock-o] [$model get reading_time] [mc minutes] "
+#append blog_meta  [$bhtml tag -htmlOptions [list class ""] div "[$bhtml fa fa-lg fa-tag] [mc Tags]: $tags "]
+set blog_meta ""
+if { [my hasRole adminPost]} {
+	set blog_meta [$bhtml link [mc "Update"]  cms/update [list id $id] ]
+}
 append article [$bhtml tag -htmlOptions "class blog-post-meta" div $blog_meta]
 
 if {$status == 4 && ![my verifyAuth]} {

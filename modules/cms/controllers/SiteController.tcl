@@ -11,7 +11,7 @@ nx::Class create SiteController -superclass Controller {
 		#next $attributes $alias
 		set :layout layout
 		#my	setLayout layout
-		dict set pageinfo author "United Brain Power"
+		dict set pageinfo author ""
 		next
 	}
 

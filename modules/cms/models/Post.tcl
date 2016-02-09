@@ -203,7 +203,7 @@ nx::Class create Post -superclass Model {
 		set posts [my search -limit $total -orderType desc -order public_at -criteria $criteria "id title slug public_at"]	
 	#	set bhtml [my bhtml]
 		foreach [dict get $posts columns] [dict get $posts values] {
-			set time [howlongago [clock scan $public_at]]
+			set time [howlongago [scanTz $public_at]]
 			set time $public_at
 			append latestposts <p>[${:bhtml} tag small $time]<br>[${:bhtml} link -controller blog $title $slug]</p>
 		}		

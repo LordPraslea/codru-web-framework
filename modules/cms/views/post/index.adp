@@ -32,6 +32,8 @@ if {[my verifyAuth]} { lappend allowedStatus 2}
 $c add -fun IN status $allowedStatus
 $c add -op <= public_at [getTimestamp] 
 $c add cms 0 
+
+$model bhtml $bhtml
 lappend options -relations 1 -criteria $c
 set listview [ListView new  -perpage 5 -sort public_at -sort_type desc \
 	-toSelect $toSelect  -view _view -bhtml $bhtml -model $model -searchOptions $options ]

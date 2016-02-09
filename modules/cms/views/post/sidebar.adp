@@ -1,7 +1,7 @@
 <%
 
 #ns_parseargs { userid model bhtml } [ns_adp_argv]
-ns_puts [ns_cache_eval -expires 600 lostmvc blog.sideBar {
+ns_puts [ns_cache_eval -expires 600 lostmvc blog.sideBar.[getConfigName] {
 	$model bhtml $bhtml
 	set tagCloud [$model getTagCloud -firstId 0 -firstColumnName cms  1]
 	#set htmlTagCloud [$bhtml table -bordered 1 -striped 1 -hover 1 [dict get $tagCloud columns] [dict get $tagCloud values]  ]
