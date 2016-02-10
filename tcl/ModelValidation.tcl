@@ -190,13 +190,17 @@ nx::Class create ModelValidation {
 				if {[ns_queryget name] != ""} {
 					return [msgcat::mc {Oops, something went wrong, did you fill in the name? If you're a human DON'T fill it in. Try again.}]
 				}	
-			}
+			} else {  return [:verifyCaptcha $value] }
 		} else {
-			if {![string match -nocase $value [ns_session get humanTest]]} {
-				return [msgcat::mc 	{The code you've entered is incorrect, try again.}] 
-			}
+			return [:verifyCaptcha $value]
 		}
 		#:unset captcha
+	}
+	:method verifyCaptcha {value} {
+		if {![string match -nocase $value [ns_session get humanTest]]} {
+			return [msgcat::mc 	{The code you've entered is incorrect, try again.}] 
+		}
+		return ""
 	}
 
 }
