@@ -1,7 +1,7 @@
 
 <%
 
-set f [Form new $model $bhtml]
+set f [Form new -model $model -bhtml $bhtml]
 $f add [$bhtml htmltag -htmlOptions [list class help-block] p [mc "Fields with * are requried."]]
 $f allErrors
 set field id

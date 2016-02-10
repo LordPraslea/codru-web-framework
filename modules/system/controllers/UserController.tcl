@@ -32,6 +32,7 @@ nx::Class create UserController -superclass Controller {
 			index { allow { users @ } roles {superadmin} }	
 			update { allow { users @ } roles { isSelf superadmin } }
 			delete { allow { users @ } roles { superadmin } }
+			create { allow { users @ } roles { superadmin } }
 			admin { allow { users @ } roles { superadmin } }
 			captcha { allow {users *} }
 		} 
@@ -83,20 +84,22 @@ nx::Class create UserController -superclass Controller {
 		if {[ns_conn method] == "POST"} {
 			set queryattributes [$model getQueryAttributes POST]
 			set msg [msgcat::mc "You've successfully registered."] 
-			:setRegisterModelInformation
-			if {[$model save]} {
-				set bhtml [bhtml new]
+			if {[$model validate] == 0} {
+				:setRegisterModelInformation
+				if {[$model save]} {
+					set bhtml [bhtml new]
 
-			if {[:autoLoginAfterActivation]} {
-				:activateAutoLogin
-				:loginRedirect
-			} else {
-				set jumbotron [$bhtml jumbotron [msgcat::mc "Account created successfully"] $msg  ]
-				:simpleRender $jumbotron
-			}
+					if {[:autoLoginAfterActivation]} {
+						:activateAutoLogin
+						:loginRedirect
+					} else {
+						set jumbotron [$bhtml jumbotron [msgcat::mc "Account created successfully"] $msg  ]
+						:simpleRender $jumbotron
+					}
 
-				:sendRegisterEmail
-				return [$model get id]
+					:sendRegisterEmail
+					return [$model get id]
+				}
 			}
 		}
 		$model set password ""
@@ -495,6 +498,46 @@ nx::Class create UserController -superclass Controller {
 		} else {  	return $model; }
 	
 	} 
+
+	:public method actionCreate {} {
+		set model [User new]
+
+		$model setScenario create
+		if {[ns_conn method] == "POST"} {
+			set queryattributes [$model getQueryAttributes POST ]
+			puts "action user create attributes $queryattributes"
+			if {[$model get password] !=""} {
+				set password [$model get password]
+				$model set password [ns_sha1 [$model get password]]
+			} else {
+				set password [generateCode 10 3]
+				$model set password [ns_sha1 $password]
+			}
+
+			$model set status 2
+
+			if {[$model save]} {
+				my redirect view id [$model get id] 
+				:sendCreateAccountEmail
+				return 1
+			}
+
+		}
+		my render create model $model
+
+	}
+
+	:method sendCreateAccountEmail {  } {
+		:upvar model model password password
+		set config [ns_cache_get lostmvc config.[getConfigName]] 
+		set templateData 	"%username [$model get username]  %sitename [dict get $config names sitename ]
+			%password $password"
+		set	emailTemplate [:getDataFromTemplate /modules/system/views/user/create_account_email.adp $templateData]
+
+		send_mail [$model get email] "[dict get $config names sitename ] <[dict get $config email]>" \
+			[msgcat::mc "Your new account at %s" [dict get $config names website]] $emailTemplate  
+	}
+
 
 
 	:public method  redirectLogin {} {

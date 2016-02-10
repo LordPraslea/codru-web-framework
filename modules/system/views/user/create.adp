@@ -16,7 +16,7 @@ dict set pageinfo menu "
 "
 
 ns_puts [$bhtml htmltag h1 $title]
-ns_puts [ns_adp_parse -file form.adp ]
+ns_puts [ns_adp_parse -file createnewaccount.adp ]
 %>
 
 

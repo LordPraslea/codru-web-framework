@@ -30,8 +30,8 @@ nx::Class create User -superclass [list Model] {
 				username {
 					unsafe { on {update reset reset_password passwordprofileupdate profileupdate } }
 					validation {
-						string { on {login register} }
-						required { on {login register} }
+						string { on {login register create} }
+						required { on {login register create} }
 						between { rule "3 30"  on {login register} }
 						unique { on register }
 					}
@@ -39,9 +39,9 @@ nx::Class create User -superclass [list Model] {
 				password {
 					unsafe { on {reset profileupdate} }
 					validation {
-						string { on {passwordprofileupdate resetpassword login register} }
-						required {   on {passwordprofileupdate resetpassword login register} }
-						min-length { rule 8  on {passwordprofileupdate resetpassword login register} }
+						string { on { passwordprofileupdate resetpassword login register create } }
+						required {   on { passwordprofileupdate resetpassword login register }  }
+						min-length { rule 8  on { passwordprofileupdate resetpassword login register } }
 					}
 				}
 				retype_password {
@@ -59,7 +59,7 @@ nx::Class create User -superclass [list Model] {
 					validation {
 						email { on {register}  }
 						string { on register }
-						required { on {register reset} }
+						required { on {register reset create} }
 						unique { on register }
 					}
 				}
@@ -120,7 +120,7 @@ nx::Class create User -superclass [list Model] {
 				telephone {
 					validation { string { on register } } 
 				}
-				credits { unsafe { on all } }
+				credits { 	validation { string { on create } } }
 
 			}
  }  
@@ -170,7 +170,9 @@ nx::Class create User -superclass [list Model] {
 			:setupValidationForUserProfile $ptvalues
 
 			#TODO FINISH THIS
-			set upvalues [$up search -numericStmt 1 -where [list user_id [ns_session get userid]  ]]
+			set criteria [SQLCriteria new -model $up]
+			$criteria add user_id [ns_session get userid]
+			set upvalues [$up search -criteria $criteria]
 			if {$upvalues != ""} {
 				foreach [dict get $upvalues columns] [dict get $upvalues values] {
 					set fieldname [lindex $extrafields [lsearch $extrafields $profile_id]+1]
@@ -181,6 +183,7 @@ nx::Class create User -superclass [list Model] {
 
 	#columns id type name required
 	:method setupValidationForUserProfile {profileTypeValues} {
+		upvar extrafields extrafields
 			foreach [dict get $profileTypeValues columns] [dict get $profileTypeValues values] {
 				#setup validation
 				set fieldname [join [string tolower $name] _]
