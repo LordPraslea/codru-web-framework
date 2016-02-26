@@ -81,7 +81,6 @@ if {0} {
 #		}
 #	}
 
-	ns_register_adp GET /lang/* modules/system/controllers/Controller.adp
 
 }
 proc registerRoute {server route  location } {
@@ -217,10 +216,13 @@ proc loadControllerOrModel {name {server ""}} {
 	}
 	}
 	package require fileutil
+	loadConfigFile
+	set production [isProductionMode]
+	set cacheTime [expr {$production?600:10}]
 	foreach folder {controllers models modules} {
 		set file [fileutil::findByPattern $server/$folder $name.tcl]
 		if {$file ne "" } {
-			ns_adp_include -tcl -cache 100   $file
+			ns_adp_include -tcl -cache 600   $file
 		#	source   $file
 			return 1
 		}
@@ -228,6 +230,24 @@ proc loadControllerOrModel {name {server ""}} {
 	return 0
 
 }
+proc isProductionMode {} {
+	set config [ns_cache_get lostmvc config.[getConfigName]]
+	if {[dict exists $config   mode]} {
+		set mode [dict get $config mode]
+		if {[regexp {dev.*|debug$} $mode]} {
+			return 0
+		}
+	}
+	return 1
+}
+ proc loadConfigFile {} {
+ 	set config	[ns_cache_eval -timeout 5 -expires 100 lostmvc config.[getConfigName]  { 
+			ns_adp_parse	-file  [ns_pagepath]/tcl/config.adp 
+			return $config
+		}]
+		return $config
+
+ }
 
 #If in development mode, always reload controllers,models
 #TODO maybe later do a reload of functions!

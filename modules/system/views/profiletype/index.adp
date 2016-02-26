@@ -16,7 +16,8 @@ dict set pageinfo menu "
 "
 
 ns_puts [$bhtml htmltag h1 $title]
-ns_puts [$bhtml gridView -makeAllLinks [list update] $model ]
+set gridView [GridView new -makeAllLinks update -model $model -bhtml $bhtml ]
+ns_puts [$gridView getGridView ]
 %>
 
 

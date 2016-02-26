@@ -18,7 +18,6 @@ nx::Class create SQLUpdate -mixin [list SQLCommands]  {
 		if {$type == "model"} {
 			:updateModelColumns
 		} else  {
-		#	:updateMultipleRows
 		}
 
 		set where [${:whereCriteria} getCriteriaSQL]

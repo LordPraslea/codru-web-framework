@@ -18,12 +18,12 @@ nx::Class create UserprofileController -superclass Controller {
 		# views	<view> [allow||deny]  roles [list roles]  users ["username"|*=al|@=logged in]
 		# actions  
 		return [dict create views { 
-			view  { allow { users @ } roles { admin} }	
-			index { allow { users @ } roles {admin} }	
-			update { allow { users @ } roles { isSelf admin} }
-			create { allow { users @ } roles { isSelf  admin} }
-			delete { allow { users @ } roles { isSelf admin} }
-			admin { allow { users @ } roles { admin} }
+			view  { allow { users @ } roles { superadmin} }	
+			index { allow { users @ } roles { superadmin} }	
+			update { allow { users @ } roles { isSelf superadmin} }
+			create { allow { users @ } roles { isSelf  superadmin} }
+			delete { allow { users @ } roles { isSelf superadmin} }
+			admin { allow { users @ } roles { superadmin} }
 		}   ]
 	}
 

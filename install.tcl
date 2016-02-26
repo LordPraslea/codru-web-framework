@@ -118,9 +118,10 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 	:object method downloadExtractAndCD {{-outputFile "" } {-folder ""} name fileurl} {
 		puts "Downloading $name"
 		#reconfirms and retries to download
+		if {![file exists [file tail $fileurl]] || [file exists $outputFile]} {
 		if {$outputFile != ""} {
 			exec >&@stdout wget -c -O $outputFile $fileurl 
-			set filename $output
+			set filename $outputFile
 		} else {
 			exec >&@stdout wget -c  $fileurl 
 			set filename [file tail $fileurl] 
@@ -128,6 +129,7 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 
 		puts "Extracting the archive file: "
 		exec >&@stdout tar zxf $filename
+	} else { set filename [expr {$outputFile !="" ?  $outputFile :  [file tail $fileurl]  }] }
 
 		if {$folder == ""} {
 			set folder [file rootname [file rootname $filename]]
@@ -144,8 +146,12 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 		set confirm "Download, Compile and Install  NaviServer? Webserver for running LostMVC. Default location /opt/ns" 
 		if {![:terminal:confirm:continue -default y $confirm]} { return	}
 
+
 		set fileurl 	[dict get ${:configuration} naviserver webserver ]
-		:downloadExtractAndCD  NaviServer $fileurl
+		#:downloadExtractAndCD  -outputFile naviserver.tar.gz NaviServer $fileurl
+
+			:downloadExtractAndCD   NaviServer $fileurl
+	
 
 		foreground green
 		puts "Configuring & Installing NaviServer (with [dict get ${:configuration} cores]  cores)  "
@@ -157,9 +163,10 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 
 		puts "Setting user permissions"
 		set nsuser www-data
-		exec >&@stdout sudo useradd $nsuser
+		catch {exec >&@stdout sudo useradd $nsuser}
 		exec >&@stdout sudo chown -R $nsuser /opt/ns/logs
 		#Use /opt/ns/www or /home/$user/www ..? for users
+		catch {exec >&@stdout sudo mkdir /opt/ns/www}
 		exec >&@stdout sudo chown -R $nsuser:$nsuser /opt/ns/www
 
 
@@ -167,9 +174,13 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 		#Installing as a service
 		set confirm "Do you want to install NaviServer as a service in init.d ?" 
 		if {[:terminal:confirm:continue $confirm]} { 
-			exec >&@stdout sudo cp [dict get ${:configuration} scriptLocation]/config/nsd /etc/init.d/
+			catch {file mkdir config}
+			file copy -force [dict get ${:configuration} scriptLocation]/config .
+		
+			exec >&@stdout sudo cp config/nsd /etc/init.d/
 			exec >&@stdout sudo chmod +x /etc/init.d/nsd
 			exec >&@stdout sudo update-rc.d nsd defaults
+			exec >&@stdout sudo cp  config/nsd.logrotate /etc/logrotate.d/
 		}
 
 		cd [dict get ${:configuration} scriptLocation]
@@ -194,6 +205,17 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 	:object method installAndConfigurePostgreSQL {} {
 		set confirm "Do you want to install and configure  PostgreSQL Server with libpq-dev support?" 
 		if {![:terminal:confirm:continue -default y $confirm]} { return	}
+		exec sudo locale-gen en_US.UTF-8 ;# We need Correct locale otherwise failure wille nsure
+		exec sudo apt-get install locales ;# We need Correct locale otherwise failure wille nsure
+		exec sudo dpkg-reconfigure locales ;# We need Correct locale otherwise failure wille nsure
+		#export LANGUAGE=en_US.UTF-8
+		#export LANG=en_US.UTF-8
+		#export LC_ALL=en_US.UTF-8
+
+#sudo pg_createcluster 9.4 main --start
+
+
+		
 		puts "INstalling PostgreSQL webserver and libpq-dev "
 		exec >&@stdout 	sudo apt-get install postgresql postgresql-contrib libpq-dev
 	
@@ -202,23 +224,28 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 		set password [:terminal:confirmPassword "Configuring Postgresql, please enter a password for postgres (used for database and linux user with FULL ACCESS)"]
 	
 		exec >&@stdout 	sudo su postgres -c "psql -c \"ALTER USER postgres WITH PASSWORD '$password';\""
-		echo -e "$password\n$password\n" | passwd postgres
+		#exec >&@stdout echo -e "$password\n$password\n" | passwd postgres
 
 		puts "Enter a username to be used for connecting to PostgreSQL (using something different than postgres is good for security):"
 		gets stdin username
 		set password [:terminal:confirmPassword	 "Enter password for user $username"]
 		puts "Creating role"
 		exec >&@stdout 	sudo su postgres -c "psql -c \"	CREATE ROLE $username WITH LOGIN PASSWORD '$password' VALID UNTIL '2099-01-01';\" "
-		exec >&@stdout 	sudo su postgres -c "psql -c \" ALTER USER lostone WITH PASSWORD 'LostInSpacE';\""
+		exec >&@stdout 	sudo su postgres -c "psql -c \" ALTER USER lostone WITH PASSWORD '$password';\""
 		#	exec >&@stdout 	sudo su postgres -c psql -c 
 		#
 		#Modifying peer to md5 ONLY AFTER we setup everything
-		exec >&@stdout  sudo vim -c ":%s/\s\s\s\speer/\tmd5/" -c ":wq!" /etc/postgresql/9.3/main/pg_hba.conf
-		exec >&@stdout  sudo service postgres restart
+		exec >&@stdout  sudo vim -c ":%s/\s\s\s\speer/\tmd5/" -c ":wq!" /etc/postgresql/9.4/main/pg_hba.conf
+		exec >&@stdout  sudo service postgresql restart
 		puts "Modified peer to md5 in /etc/postgres/9.3/main/pg_hba.conf restarting postgres.."
 
 
 	}
+	#TODO install
+#	TclOO nx  nx::serializer msgcat tclgd base64 json
+#sudo teacup install tclgd
+#sudo teacup install json
+
 
 	:object method installNaviServerModules {} {
 	#nsdbi
@@ -274,7 +301,7 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 		set confirm "Create new SSL certificate?" 
 		if {![:terminal:confirm:continue -default y $confirm]} { return	}
 		exec >&@stdout sudo rm -rf /opt/ns/tcl/lostmvc	
-		exec >&@stdout sudo cp -rf tcl /opt/ns/tcl/lostmvc	
+		exec >&@stdout sudo cp -rf tcl /opt/ns/tcl/lostmvc	c
 		#file delete -force -- /opt/ns/tcl/lostmvc 
 		#file copy tcl /opt/ns/tcl/lostmvc 
 		puts "Installed new LostMVC Tcl files"
@@ -296,6 +323,15 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 			#file copy tcl /opt/ns/tcl/lostmvc
 		} else {
 			#exec  rsync -ave ssh --rsync-path=sudo\ rsync /opt/ns/www/lostmvc/tcl/ $user@$host:/opt/ns/tcl/lostmvc/
+			if {0} {
+				
+				sudo visudo
+%rsync ALL=(ALL) NOPASSWD:/usr/bin/rsync
+
+sudo addgroup rsync
+#VERY IMPORTANT TO NOT REMOVE USER FROMK OTHER GROUPA!
+sudo usermod  -a  -G rsync lostone
+}
 			exec >&@stdout  rsync -ave ssh --rsync-path=sudo\ rsync  /opt/ns/www/lostmvc/tcl/  $user@$host:/opt/ns/tcl/lostmvc/
 		
 		#	exec >&@stdout  ssh -t $user@$host "sudo cp -R lostmvc /opt/ns/tcl/lostmvc"
@@ -428,8 +464,10 @@ nx::Object create InstallLostMVC -object-mixin LostShell {
 
 
 	}
+
 if {[info exists argv0]} {
-	if { [info script] eq $::argv0 } {
+	if { [info script] eq $::argv0 || [starkit::startup] eq "sourced"} {
 		InstallLostMVC install
 	} 
 }
+

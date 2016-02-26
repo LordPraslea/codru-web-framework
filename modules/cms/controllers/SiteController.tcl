@@ -84,11 +84,20 @@ nx::Class create SiteController -superclass Controller {
 	}
 
 	:public method defaultNotFound {} {
-		set pc [PostController new]
-		$pc lang [my getLang]
-		$pc defaultNotFound
-		$pc setLayout blog
-		#ns_puts "Yeah, bloggin for ya!"
+		set urlv [ns_conn urlv]
+		set index 1
+		if {${:urllang} ne "na" && [string length [lindex $urlv 0]] == 2 } { incr index 1 }
+		set action [string tolower [lindex [join [split $url /]] $index]]
+
+		if {![file exists [ns_pagepath]/modules/cms/views/site/$action.adp]} {
+			my render $action
+		
+		} else {
+			set pc [PostController new]
+			$pc lang [my getLang]
+			$pc defaultNotFound
+			$pc setLayout blog
+		}
 	}
 
 	
