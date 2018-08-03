@@ -10,7 +10,7 @@ It was a high concurrenty MVC framework with a lot things in it.
 [Learn more on my Blog about what Codru Web framework was](https://andreiclinciu.net/blog/what-was-lostmvc-codru-web-framework)
 
 
-[See why I've abandoned it'](https://andreiclinciu.net/blog/the-lostmvc-codru-project-is-officialy-abandoned-reasons-and-what-ive-learned)
+[See why I've abandoned it and what I learned from this experience](https://andreiclinciu.net/blog/the-lostmvc-codru-project-is-officialy-abandoned-reasons-and-what-ive-learned)
 
 
 ## Copyright and License
