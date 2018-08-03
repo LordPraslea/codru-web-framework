@@ -7,8 +7,10 @@ Codru or LostMVC (older version) was a Web Framework I've developed between 2013
 It was developed using Tcl and made especially for the NaviServer (Aolserver) Web server.
 It was a high concurrenty MVC framework with a lot things in it.
 
-[link Learn more on my Blog about what Codru Web framework was](https://andreiclinciu.net/blog/what-was-lostmvc-codru-web-framework)
-[link See why I've abandoned it'](https://andreiclinciu.net/blog/the-lostmvc-codru-project-is-officialy-abandoned-reasons-and-what-ive-learned)
+[Learn more on my Blog about what Codru Web framework was](https://andreiclinciu.net/blog/what-was-lostmvc-codru-web-framework)
+
+
+[See why I've abandoned it'](https://andreiclinciu.net/blog/the-lostmvc-codru-project-is-officialy-abandoned-reasons-and-what-ive-learned)
 
 
 ## Copyright and License
